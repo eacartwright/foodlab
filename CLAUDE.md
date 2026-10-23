@@ -93,8 +93,9 @@ tombstones (`deleted`), restorable with Undo or the page's Restore.
   build, and a headless walkthrough (add product with a new store, recipe with parsed lines,
   food links, `+` search, Eat with lunch filters, staples, store page, offline add then sync,
   phone layout in dark, Back closing the drawer, Share to foodlab). 2026-10-22 on NOSTROMO:
-  install, tests, typecheck and `npm run dev` all fine. Not a git repo yet, not deployed.
-- **Next:** try it on NOSTROMO; `git init` and push; deploy
+  install, tests, typecheck and `npm run dev` all fine. Pushed to
+  github.com/eacartwright/foodlab (private, `main`). Not deployed yet.
+- **Next:** deploy
   (runbook "First deploy"); install on the Android phone and enter real lunches.
 - Then M2 (DESIGN.md §10): derived facts from the log on pages, per-recipe product override,
   recipe cards, a Tags page.

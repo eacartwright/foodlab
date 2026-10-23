@@ -19,7 +19,7 @@ setup); this file has only what's different. Legend: **[Evan]** = needs Evan.
 
 ## First deploy (not done yet)
 
-1. **[Evan]** Push the repo to GitHub (`eacartwright/foodlab`, private), from NOSTROMO.
+1. Push the repo to GitHub (`eacartwright/foodlab`, private), from NOSTROMO. Done 2026-10-22.
 2. On the mini PC:
    ```powershell
    git clone https://github.com/eacartwright/foodlab C:\Apps\foodlab
