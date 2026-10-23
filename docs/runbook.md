@@ -17,7 +17,7 @@ setup); this file has only what's different. Legend: **[Evan]** = needs Evan.
 | Backups | Daily to `\\evnas\Junk\Tech\DBBackups\foodlab`, 30 kept |
 | Log | `C:\Apps\foodlab\data\server.log` |
 
-## First deploy (not done yet)
+## First deploy (done 2026-10-22)
 
 1. Push the repo to GitHub (`eacartwright/foodlab`, private), from NOSTROMO. Done 2026-10-22.
 2. On the mini PC:

@@ -94,8 +94,8 @@ tombstones (`deleted`), restorable with Undo or the page's Restore.
   food links, `+` search, Eat with lunch filters, staples, store page, offline add then sync,
   phone layout in dark, Back closing the drawer, Share to foodlab). 2026-10-22 on NOSTROMO:
   install, tests, typecheck and `npm run dev` all fine. Pushed to
-  github.com/eacartwright/foodlab (private, `main`). Not deployed yet.
-- **Next:** deploy
-  (runbook "First deploy"); install on the Android phone and enter real lunches.
+  github.com/eacartwright/foodlab (private, `main`). Deployed the same day: live at
+  https://foodlab.evans.tools (Access login on the app, the five icon paths public).
+- **Next:** install on the Android phone, check Share to foodlab, and enter real lunches.
 - Then M2 (DESIGN.md §10): derived facts from the log on pages, per-recipe product override,
   recipe cards, a Tags page.
