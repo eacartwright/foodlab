@@ -1,0 +1,62 @@
+#Requires -RunAsAdministrator
+<#
+  Sets this PC up to run foodlab around the clock (the same pattern as sideshow's install.ps1):
+    - writes .env (port, backup folder)
+    - registers the "foodlab" scheduled task: starts at boot, runs whether or not anyone is
+      signed in, and restarts the server if it exits (scripts\run.cmd)
+    - allows the port through Windows Firewall on private networks (LAN / Tailscale)
+    - builds the app and starts it
+  Run once from an admin PowerShell in the server's clone (C:\Apps\foodlab):
+    .\scripts\install.ps1 [-Port 8082] [-BackupDir <folder>]
+  Safe to run again. A setting you leave out keeps its value from .env; on a first install it
+  defaults to port 8082 and backups in data\backups.
+  The mini PC uses: -Port 8082 -BackupDir \\evnas\Junk\Tech\DBBackups\foodlab
+#>
+param(
+  [int]$Port,
+  # Daily database copies; keep them off this machine (NAS, OneDrive). "" = data\backups.
+  [string]$BackupDir
+)
+
+$ErrorActionPreference = "Stop"
+$root = Split-Path $PSScriptRoot -Parent
+Set-Location $root
+
+# Only PORT and FOODLAB_BACKUP_DIR are ours; keep every other line.
+$envLines = @()
+$current = @{}
+if (Test-Path "$root\.env") {
+  foreach ($line in Get-Content "$root\.env") {
+    if ($line -match "^(PORT|FOODLAB_BACKUP_DIR)=(.*)$") { $current[$Matches[1]] = $Matches[2] }
+    else { $envLines += $line }
+  }
+}
+if (-not $PSBoundParameters.ContainsKey("Port")) {
+  $Port = if ($current.PORT) { [int]$current.PORT } else { 8082 }
+}
+if (-not $PSBoundParameters.ContainsKey("BackupDir")) {
+  $BackupDir = if ($current.ContainsKey("FOODLAB_BACKUP_DIR")) { $current.FOODLAB_BACKUP_DIR } else { "" }
+}
+$envLines += "PORT=$Port"
+if ($BackupDir) { $envLines += "FOODLAB_BACKUP_DIR=$BackupDir" }
+# No byte-order mark: Node would read it as part of the first key.
+[IO.File]::WriteAllLines("$root\.env", $envLines, (New-Object Text.UTF8Encoding $false))
+Write-Host "== .env" -ForegroundColor Cyan
+$envLines | Where-Object { $_ -match "^(PORT|FOODLAB_BACKUP_DIR)=" } | ForEach-Object { Write-Host "   $_" }
+
+Write-Host "== scheduled task 'foodlab'" -ForegroundColor Cyan
+$action = New-ScheduledTaskAction -Execute "cmd.exe" -Argument "/c `"$root\scripts\run.cmd`"" -WorkingDirectory $root
+$trigger = New-ScheduledTaskTrigger -AtStartup
+$principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount -RunLevel Highest
+$settings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit ([TimeSpan]::Zero) -StartWhenAvailable `
+  -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -RestartCount 999 -RestartInterval (New-TimeSpan -Minutes 1)
+Register-ScheduledTask -TaskName foodlab -Action $action -Trigger $trigger -Principal $principal `
+  -Settings $settings -Description "foodlab server ($root)" -Force | Out-Null
+
+Write-Host "== firewall (port $Port, private networks)" -ForegroundColor Cyan
+Get-NetFirewallRule -DisplayName "foodlab" -ErrorAction SilentlyContinue | Remove-NetFirewallRule
+New-NetFirewallRule -DisplayName "foodlab" -Direction Inbound -Protocol TCP -LocalPort $Port `
+  -Profile Private -Action Allow | Out-Null
+
+& "$PSScriptRoot\update.ps1" -NoPull
+exit $LASTEXITCODE

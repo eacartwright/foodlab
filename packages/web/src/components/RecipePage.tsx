@@ -1,0 +1,321 @@
+import {
+  GF_LABEL,
+  METHODS,
+  METHOD_LABEL,
+  formatAmount,
+  formatQuantity,
+  today,
+  type Id,
+  type Recipe,
+  type RecipeIngredient,
+} from "@foodlab/shared";
+import { useEffect, useState } from "react";
+import { addLog, ensureFood, ingredientsFromText, remove, setIngredientFood } from "../actions";
+import { Markdown } from "../markdown";
+import { A, go, pathOf, setQuery, useRoute } from "../router";
+import { data, put, useData } from "../sync";
+import { showToast } from "../toast";
+import { ConfirmDialog } from "./ConfirmDialog";
+import { DraftInput, DraftTextarea, Field, NumberInput, Picker, RatingInput, Segmented } from "./controls";
+import { EatingFields, LogSection } from "./eating";
+import { Deleted, NotFound } from "./FoodPage";
+import { lunchFacts, Section } from "./rows";
+
+// A recipe has two faces (DESIGN.md §5.4): it reads like a recipe, and Edit shows its fields.
+
+export function RecipePage({ id }: { id: string }) {
+  const { state } = useData();
+  const { query } = useRoute();
+  const r = state.recipes[id];
+  const fresh = !!r && !r.ingredients.length && !r.instructions;
+  // A new recipe opens in Edit, and stays there until Done (the mode is in the address).
+  useEffect(() => {
+    if (fresh && !query.has("edit")) setQuery({ edit: "1" });
+  }, [fresh, query]);
+  if (!r) return <NotFound what="recipe" />;
+  const editing = query.get("edit") === "1" || (fresh && query.get("edit") !== "0");
+  return editing ? <RecipeEdit r={r} /> : <RecipeView r={r} />;
+}
+
+function RecipeView({ r }: { r: Recipe }) {
+  const { view } = useData();
+  const [open, setOpen] = useState<Id | null>(null);
+  const save = (patch: Partial<Recipe>) => put("recipes", { ...(data().state.recipes[r.id] ?? r), ...patch });
+  const time = [r.prepMin ? `prep ${r.prepMin} min` : null, r.cookMin ? `cook ${r.cookMin} min` : null];
+  const meta = [
+    r.method ? METHOD_LABEL[r.method] : null,
+    r.yieldQty !== null || r.yieldUnit ? `makes ${r.yieldQty !== null ? formatQuantity(r.yieldQty) : ""} ${r.yieldUnit}`.replace(/\s+/g, " ").trim() : null,
+    ...time,
+    r.glutenFree !== "unknown" ? GF_LABEL[r.glutenFree] : null,
+  ].filter(Boolean);
+  const lunch = lunchFacts(r);
+  const tags = r.tagIds.map((t) => view.tag(t)).filter((t) => t && !t.deleted);
+  const madeToday = view.logOf(r.id).some((e) => e.kind === "made" && e.date === today());
+
+  return (
+    <article className="page recipe">
+      {r.deleted && <Deleted onRestore={() => save({ deleted: false })} />}
+      <div className="page-kind">
+        🍳 Recipe
+        <span className="spacer" />
+        <button className="btn" onClick={() => setQuery({ edit: "1" })}>
+          ✎ Edit
+        </button>
+      </div>
+      <h1 className="recipe-title">{r.name}</h1>
+      {meta.length > 0 && <p className="recipe-meta">{meta.join(" · ")}</p>}
+      {(tags.length > 0 || lunch || r.status === "want") && (
+        <div className="chips">
+          {r.status === "want" && <span className="badge">want to try</span>}
+          {tags.map((t) => (
+            <A key={t!.id} className="tag" href={t!.kind === "meal" ? `/eat?tag=${t!.id}` : `/?q=${encodeURIComponent(t!.name)}`}>
+              {t!.name}
+            </A>
+          ))}
+          {lunch && <span className="muted small">{lunch}</span>}
+        </div>
+      )}
+      <div className="recipe-actions">
+        <RatingInput value={r.rating} onChange={(rating) => save({ rating })} size="big" />
+        <button
+          className="btn"
+          disabled={madeToday}
+          onClick={() => {
+            addLog("recipes", r.id, "made", "");
+            if (r.status === "want") save({ status: "tried" });
+            showToast("Logged: made it today");
+          }}
+        >
+          {madeToday ? "✓ Made today" : "Made it today"}
+        </button>
+      </div>
+
+      <div className="recipe-body">
+        <section className="ingredients">
+          <h3>Ingredients</h3>
+          {r.ingredients.length ? (
+            <ul>
+              {r.ingredients.map((i) => (
+                <li key={i.id}>
+                  <button className={`ing ${open === i.id ? "open" : ""} ${i.optional ? "optional" : ""}`} onClick={() => setOpen(open === i.id ? null : i.id)} aria-expanded={open === i.id}>
+                    {i.line}
+                  </button>
+                  {open === i.id && <IngredientCard r={r} i={i} />}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="empty-line">None yet.</p>
+          )}
+        </section>
+        <section className="instructions">
+          <h3>Instructions</h3>
+          {r.instructions ? <Markdown text={r.instructions} /> : <p className="empty-line">None yet.</p>}
+        </section>
+      </div>
+      {r.notes && (
+        <Section title="Notes">
+          <Markdown text={r.notes} />
+        </Section>
+      )}
+      {r.links.length > 0 && (
+        <Section title="Links">
+          <ul className="plain">
+            {r.links.map((l) => (
+              <li key={l}>
+                <a href={l} target="_blank" rel="noreferrer noopener">
+                  {l.replace(/^https?:\/\/(www\.)?/, "")}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </Section>
+      )}
+      <LogSection itemKind="recipes" itemId={r.id} />
+    </article>
+  );
+}
+
+/** Tapping an ingredient: what I usually buy for it, where else it's used, and fixing the link. */
+function IngredientCard({ r, i }: { r: Recipe; i: RecipeIngredient }) {
+  const { view } = useData();
+  const [relink, setRelink] = useState(false);
+  const food = view.food(i.foodId);
+  const best = food ? view.preferredProduct(food.id) : undefined;
+  const also = food ? view.recipesUsing(food.id).filter((x) => x.id !== r.id) : [];
+  return (
+    <div className="ing-card">
+      {food ? (
+        <>
+          <div className="ing-card-head">
+            <A href={pathOf("foods", food.id)} className="strong">
+              {food.name}
+            </A>
+            {food.staple && <span className="staple-mark">★</span>}
+            {[i.prep, i.note].filter(Boolean).length > 0 && <span className="muted small">{[i.prep, i.note].filter(Boolean).join("; ")}</span>}
+          </div>
+          {best ? (
+            <div>
+              Usually <A href={pathOf("products", best.id)}>{best.name}</A>
+              {best.storeIds.length > 0 && <span className="muted"> · {best.storeIds.map((s) => view.store(s)?.name).join(", ")}</span>}
+            </div>
+          ) : (
+            <div className="muted small">No favorite product yet.</div>
+          )}
+          {also.length > 0 && (
+            <div className="small">
+              Also in{" "}
+              {also.slice(0, 5).map((x, n) => (
+                <span key={x.id}>
+                  {n > 0 && ", "}
+                  <A href={pathOf("recipes", x.id)}>{x.name}</A>
+                </span>
+              ))}
+              {also.length > 5 && ` and ${also.length - 5} more`}
+            </div>
+          )}
+        </>
+      ) : (
+        <div className="muted small">Not linked to a food.</div>
+      )}
+      {relink ? (
+        <Picker
+          autoFocus
+          value={i.foodId}
+          options={view.foods.map((f) => ({ id: f.id, label: f.name }))}
+          placeholder="Which food?"
+          createLabel="New food"
+          onChange={(foodId) => {
+            setIngredientFood(r, i.id, foodId);
+            setRelink(false);
+          }}
+          onCreate={(n) => ensureFood(n)}
+        />
+      ) : (
+        <button className="btn subtle small-btn" onClick={() => setRelink(true)}>
+          {food ? "Wrong food?" : "Link a food"}
+        </button>
+      )}
+    </div>
+  );
+}
+
+function RecipeEdit({ r }: { r: Recipe }) {
+  const { view } = useData();
+  const [confirm, setConfirm] = useState(false);
+  const save = (patch: Partial<Recipe>) => put("recipes", { ...(data().state.recipes[r.id] ?? r), ...patch });
+  const done = () => setQuery({ edit: r.ingredients.length || r.instructions ? null : "0" });
+
+  return (
+    <article className="page">
+      {r.deleted && <Deleted onRestore={() => save({ deleted: false })} />}
+      <div className="page-kind">
+        🍳 Recipe · editing
+        <span className="spacer" />
+        <button className="btn primary" onClick={done}>
+          Done
+        </button>
+      </div>
+      <div className="title-row">
+        <DraftInput className="title-input" value={r.name} required aria-label="Name" onCommit={(name) => save({ name })} />
+      </div>
+
+      <div className="fields">
+        <Field label="Ingredients">
+          <DraftTextarea
+            className="input mono-ish"
+            rows={5}
+            value={r.ingredients.map((i) => i.line).join("\n")}
+            placeholder={"One per line:\n2 slices American cheese\n1 lemon, zested\n1½ cups cooked rice (optional)"}
+            onCommit={(text) => save({ ingredients: ingredientsFromText(text, r.ingredients) })}
+          />
+          {r.ingredients.length > 0 && (
+            <table className="parsed">
+              <thead>
+                <tr>
+                  <th>Amount</th>
+                  <th>Food</th>
+                  <th>Prep / note</th>
+                </tr>
+              </thead>
+              <tbody>
+                {r.ingredients.map((i) => (
+                  <tr key={i.id}>
+                    <td className="nowrap">{formatAmount(i.quantity, i.unit) || "—"}</td>
+                    <td>
+                      <Picker
+                        value={i.foodId}
+                        options={view.foods.map((f) => ({ id: f.id, label: f.name }))}
+                        placeholder="No food"
+                        createLabel="New food"
+                        onChange={(foodId) => setIngredientFood(r, i.id, foodId)}
+                        onCreate={(n) => ensureFood(n)}
+                      />
+                    </td>
+                    <td className="muted small">
+                      {[i.prep, i.note, i.optional ? "optional" : ""].filter(Boolean).join("; ")}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </Field>
+        <Field label="Instructions">
+          <DraftTextarea
+            className="input"
+            rows={5}
+            value={r.instructions}
+            placeholder={"1. Toast the bread\n2. …\n\n**bold**, - bullets and links work"}
+            onCommit={(instructions) => save({ instructions })}
+          />
+        </Field>
+        <Field label="Method">
+          <Segmented value={r.method} options={METHODS} labels={METHOD_LABEL} onChange={(method) => save({ method })} />
+        </Field>
+        <Field label="Makes">
+          <div className="inline">
+            <NumberInput className="input narrow" value={r.yieldQty} placeholder="1" onCommit={(yieldQty) => save({ yieldQty })} aria-label="How many" />
+            <DraftInput className="input" value={r.yieldUnit} placeholder="sandwich, loaf, servings…" onCommit={(yieldUnit) => save({ yieldUnit })} aria-label="Of what" />
+          </div>
+        </Field>
+        <Field label="Time (min)">
+          <div className="inline">
+            <NumberInput className="input narrow" value={r.prepMin} placeholder="prep" onCommit={(prepMin) => save({ prepMin })} aria-label="Prep minutes" />
+            <NumberInput className="input narrow" value={r.cookMin} placeholder="cook" onCommit={(cookMin) => save({ cookMin })} aria-label="Cook minutes" />
+          </div>
+        </Field>
+        <EatingFields item={r} save={save} />
+        <Field label="Notes">
+          <DraftTextarea className="input" rows={3} value={r.notes} placeholder="What makes it work, what you'd change…" onCommit={(notes) => save({ notes })} />
+        </Field>
+      </div>
+
+      <div className="page-foot">
+        <button className="btn primary" onClick={done}>
+          Done
+        </button>
+        <span className="spacer" />
+        {!r.deleted && (
+          <button className="btn danger" onClick={() => setConfirm(true)}>
+            Delete
+          </button>
+        )}
+      </div>
+      {confirm && (
+        <ConfirmDialog
+          title={`Delete “${r.name}”?`}
+          confirm="Delete"
+          onCancel={() => setConfirm(false)}
+          onConfirm={() => {
+            setConfirm(false);
+            remove("recipes", r);
+            go("/recipes", { replace: true });
+          }}
+        >
+          <p>If it just wasn't good, rate it 👎 instead, so you remember. You can undo a delete right after.</p>
+        </ConfirmDialog>
+      )}
+    </article>
+  );
+}

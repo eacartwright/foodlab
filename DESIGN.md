@@ -1,0 +1,385 @@
+# foodlab — Design
+
+*v0.3 · 2026-10-23 · living document, edit freely*
+
+## 1. Purpose
+
+foodlab is **my external memory for food**: what foods are, which specific products I buy and
+what I think of them, where I buy them, what I can make, what I've learned making it, and
+(later) where I eat. Not a recipe app. (Formerly planned as The Pantry Ledger.)
+
+The question it answers first is **"what can I eat?"**, and the most urgent version of that is
+**"what do I bring for lunch tomorrow?"** That answer pulls from recipes and products (and
+later restaurant dishes) at once, not from recipes alone.
+
+Two goals:
+
+1. **The system remembers things for me without making me maintain it.** The everyday path is
+   a few fields; the rich detail exists when I care about it.
+2. **Fast answers.** "Work lunches that pack cold and keep 3 days", "everything with lemon",
+   "what do I buy at Wegmans" are one search or one tap.
+
+Over time it also shows **my food infrastructure**: the foods that keep turning up in what I
+like are the staples I should always have, and staples + preferred products + stores are most
+of a standing shopping list.
+
+## 2. Principles (in priority order)
+
+1. **Rich data underneath, simple interaction on top.** Adding a product is name, food, rating,
+   done. Adding a recipe is name, ingredients, instructions, done. Everything else is optional
+   and can come later.
+2. **Never delete what I didn't like.** A 👎 product stays, with why ("too salty, doesn't
+   melt"), so six months later I know I tried it.
+3. **Foods are concepts, products are things I buy.** Recipes use foods ("American cheese");
+   a food knows my preferred products. Finding a better cheese changes one place, not 40 recipes.
+4. **Derive what can be derived.** Preferred products, "used in", "contains lemon", staple
+   suggestions and history are worked out, not typed in.
+5. **Tags over categories, fields where I filter.** Breakfast/lunch/work lunch/quick/no-cook
+   overlap, so they're tags. "Needs a microwave" and "keeps 3 days" are fields, because the
+   lunch view filters on them.
+6. **Recipes are living records.** Experiments go in a dated log; the recipe isn't overwritten.
+7. **The data outlives any service.** Self-hosted, one SQLite file of ordinary relational
+   tables, backed up like sideshow.
+8. **Store exact, show human.** Quantities are stored as exact numbers and units so scaling
+   and weights can come later without re-entering anything.
+9. **One database, two personalities.** Foods, products and stores look like a database
+   editor (fields, links, lists); a recipe reads like a recipe. Same records underneath.
+10. **Phone for capture and lookup, desktop for curating.** Capture and lookup screens are
+    phone-first (store, kitchen); bulk editing and tidying are desktop work.
+11. **Same stack and conventions as sideshow** (§9).
+
+## 3. Non-goals (for now, not forever)
+
+Nutrition and allergen calculation, barcode scanning, pantry inventory (how many eggs I have),
+meal planning, price tracking, recipe scraping and OCR, AI generation or substitution engines,
+multiple users, native apps. Any can come later once the core is in daily use; nothing in the
+model blocks them (inventory would hang off foods and products, like staples do).
+
+## 4. Core concepts
+
+```
+                 is a (parentId)                    form of (formOfId)
+   Cheese ◀──────────── American cheese     Lemon ◀──────────── Lemon juice
+                              ▲                                      ▲
+                     product of (foodId)                    product of (foodId)
+                              │                                      │
+                  Kraft Deli Deluxe ──sold at──▶ Wegmans ◀──sold at── Santa Cruz Organic
+                                                   ▲
+Ham & cheese sandwich ─ingredient in─▶ American cheese, GF bread…     (stores ⋈ products)
+       │
+       ├─ tagged ─▶ Lunch, Work lunch
+       └─ logged ─▶ 10/22 made · "used Cooper Sharp, better"
+```
+
+**Eatables** answer "what can I eat?": recipes and products now, dishes at restaurants later
+(M3). They share the eating fields (§4.5). Foods don't: a food is a concept, not a meal.
+
+### 4.1 Relationship vocabulary
+
+Everything the app stores between things is one of these. Everything else is derived.
+
+| Link | From → to | Stored as | Example |
+|---|---|---|---|
+| **is a** | food → food | `food.parentId` | American cheese is a Cheese |
+| **form of** | food → food | `food.formOfId` | Lemon juice is a form of Lemon |
+| **product of** | product → food | `product.foodId` | Santa Cruz Organic is a product of Lemon juice |
+| **sold at** | product ⋈ store | `product_stores` | Santa Cruz Organic is sold at Wegmans |
+| **ingredient in** | food → recipe | `recipe_ingredients` (+ quantity, unit, prep) | 2 slices American cheese in Ham & cheese |
+| **tagged** | anything ⋈ tag | `item_tags` | Ham & cheese is tagged Work lunch |
+| **logged** | log entry → recipe/product | `log_entries` | 10/22 made it, used Cooper Sharp |
+| *substitutes for* | food → food | later; food notes until then | cornstarch for flour |
+
+Read backwards or computed, not stored: **used in** (ingredient in, reversed), **sells**
+(sold at, reversed), **forms** (form of, reversed), **preferred product** (the food's products
+by rating), **potential staple** (§4.7), **times made / last made** (log entries).
+
+### 4.2 Food
+
+| Field | Notes |
+|---|---|
+| `name` | Required. "American cheese", "lemon juice", "GF sandwich bread". |
+| `parentId` | **Is a**, optional, any depth, for browsing (Cheese → American cheese). |
+| `formOfId` | **Form of**, optional: a derived food (Lemon juice → Lemon). |
+| `staple` | Something I want to keep in the house. Not inventory. |
+| `shelfLife` | Optional text ("3 weeks opened, fridge"). Belongs on a form or product, not on Lemon. |
+| `notes` | What I know about it generally (melts well, mild), substitutions, storage. |
+| `tags` | |
+
+**Form vs prep.** A form is its own food with its own page; a prep is a word on a recipe line
+("diced", "zested"). The test for promoting a prep to a form: **does it have its own products,
+its own shelf life, or its own substitutions?** Lemon juice has all three, so it's a form.
+Zest, for me, has none, so it's prep ("1 lemon, zested") until I start buying dried zest; then
+it becomes a form and recipes don't change. "Bottled lemon juice" isn't a food at all: bottled
+is just what lemon juice's *products* are, and fresh is its *form of* link back to Lemon.
+
+A food's page shows: what it is (parent) and what it's a form of; its forms; its products, best
+first; the recipes that use it (and those using its forms); the preps used on it in recipes.
+
+### 4.3 Product
+
+| Field | Notes |
+|---|---|
+| `name` | Required. "Kraft Deli Deluxe American Slices". |
+| `foodId` | **Product of**. Optional at capture ("unsorted"), easy to fill later. |
+| `brand` | |
+| `storeIds` | **Sold at**, any number of stores. |
+| `buyAgain` | yes · no · blank. Separate from rating: liked but too pricey, etc. |
+| `shelfLife` | Optional. |
+| eating fields | §4.5 |
+
+Ready-made meals I buy (a Wegmans prepared bowl, a frozen meal) are products, with or without
+a food.
+
+### 4.4 Store
+
+`name`, `notes`. A store's page lists every product I know is sold there, grouped ❤️ / 👍 /
+not rated / 👎 don't buy. Searching "Wegmans" finds the store and its products.
+
+### 4.5 Recipe
+
+| Field | Notes |
+|---|---|
+| `name` | Required. |
+| `method` | `assembly` · `no-cook` · `cook` · `bake`. A sandwich or cereal is a legit recipe. |
+| `yieldQty` / `yieldUnit` | "1 sandwich", "1 loaf", "12 muffins", "4 servings". |
+| `prepMin` / `cookMin` | Optional. |
+| `instructions` | Light Markdown (lists, bold, links). |
+| eating fields | §4.6 |
+
+**Recipe ingredient**: `position`, the original `line`, `foodId`, `quantity` (exact number),
+`unit`, optional `grams` (later), `prep`, `optional`, `note`, optional `productId` (later: this
+recipe wants Cooper Sharp, not the food's usual pick). I type lines; they're parsed:
+
+```
+2 slices American cheese          → 2 · slices · American cheese
+1 lemon, zested                   → 1 · — · Lemon · prep "zested"
+1½ cups cooked rice (optional)    → 1.5 · cups · cooked rice · optional
+salt, to taste                    → — · — · salt · prep "to taste"
+```
+
+The food is matched by name (or created) and the line is kept as typed, so a parse I don't
+like never loses anything. Plurals and case match the same food ("Lemons" → Lemon).
+
+### 4.6 Eating fields (recipes, products; dishes later)
+
+| Field | Values |
+|---|---|
+| `rating` | 👎 · 👍 · ❤️, blank = not rated. |
+| `status` | `tried` · `want to try`. |
+| `glutenFree` | `yes` · `GF option` · `no` · `unknown` (default). |
+| `notes` | |
+| `links` | URLs (recipe source, product page, Find Me Gluten Free). |
+| `travels` | `packs cold` · `needs microwave` · `eat as-is`. Shown when tagged Work lunch. |
+| `keepsDays` | Days it lasts in the fridge. |
+| `effort` | `grab` (buy it) · `quick` (< 15 min) · `prep` (cook ahead). |
+
+### 4.7 Staples
+
+- **Marked**: the `staple` flag on a food, set by me.
+- **Suggested**: foods that aren't staples but show up in **2 or more recipes I've rated 👍 or
+  ❤️** (or have made), counted through their forms too ("Garlic — in 6 recipes you like").
+  One tap marks one.
+- **The standing list**: each staple with its preferred product and where that's sold, grouped
+  by store. That's the boilerplate shopping list, with no inventory needed. (A real shopping
+  list, with "need it now", is later.)
+
+### 4.8 Log entry (the history of everything)
+
+One dated record on a recipe or product: `date` (today by default), `kind` (`made` · `ate` ·
+`bought` · `note` · `rating`), optional `rating` (how it was *this time*), `text`.
+
+- The current rating is a field on the thing; **changing it writes a `rating` log entry by
+  itself** (👍 → 👎), so rating history exists without my keeping it.
+- "I made Lemon Chicken on 08/22" is a `made` entry. No separate recipe-instance object until
+  log entries prove too thin (actual quantities, photos).
+- The recipe itself is edited separately when I decide a change is permanent.
+
+### 4.9 Tags
+
+Shared by everything, two kinds:
+
+- **Meal tags**, a fixed list so filters are reliable: Breakfast · Lunch · **Work lunch** ·
+  Dinner · Snack · Dessert. Shown as chips, never misspelled.
+- **Personal tags**, free-form and autocompleted: quick, no-cook, meal prep, comfort food,
+  "good when I'm exhausted".
+
+"Contains lemon" is **not** a tag: search derives it from ingredients (§5.1).
+
+## 4a. Model decisions
+
+Answers to the ChatGPT sessions' modeling questions. Each is revisitable once there's data.
+
+- **Own object or field?** An object if I'd search it, link to it, or it has history: food,
+  product, store, recipe, log entry, tag (place and dish later). Everything else is a field.
+- **Ingredient = food + quantity + unit + prep.** "Shredded cheddar" is cheddar, prep
+  "shredded"; diced/minced/sliced onion are all onion.
+- **Granularity:** a separate food only if I'd **buy or substitute it differently**. Chicken
+  thigh, yes; bone-in chicken thigh, only if a recipe cares; large chicken thigh, no (size goes
+  in the line: "2 large").
+- **Food vs product:** facts about the food in general go on the food; opinion, brand, where I
+  buy it, price and package go on the product.
+- **Opinion:** 👎 / 👍 / ❤️ + buy again + tried / want to try + staple. No taste/texture/value
+  sub-scores: they wouldn't change what I buy.
+- **History:** current state is editable fields; history is log entries, written by me or
+  automatically (rating changes). Nothing else is versioned.
+- **Stores are objects** (2026-10-23): "what do I buy at Wegmans" is a real question, and a
+  text field would have to be torn apart later.
+- **Substitutions:** notes on the food until there are enough to deserve a link.
+- **Gluten-free stays manual:** deriving it from ingredients would be confidently wrong too often.
+- **Would I actually enter this?** Every field must pass that test to be on the everyday form.
+  Anything that only "theoretically" would gets stored if supplied, never asked for.
+
+## 5. Views
+
+```
+Desktop                                         Phone
+┌──────────┬───────────────────────────────┐   ┌──────────────────────┐
+│ foodlab  │  [ breakfast + lemon + potato ] │   │ ☰ foodlab            │
+│          │  + Food  + Product  + Recipe   │   │ [ search…          ] │
+│ Search   │                                │   │ + Food + Prod + Rec  │
+│ Eat      │  Recipes · Products · Foods …  │   │ …results / recent    │
+│ ──────── │                                │   │                (+)   │
+│ Foods    │                                │   └──────────────────────┘
+│ Products │                                │   ☰ opens the same menu as
+│ Recipes  │                                │   a drawer; (+) = Quick add
+│ Stores   │                                │
+│ Staples  │                                │
+│ ⚙        │                                │
+└──────────┴───────────────────────────────┘
+```
+
+### 5.1 Search (home)
+
+One box over everything. **Terms joined with `+` must all match**: "breakfast + lemon + potato"
+finds what is tagged Breakfast *and* involves lemon *and* potato. Without `+` the whole text is
+one term. A term matches a thing through its name, brand, notes, tags, its food and that food's
+parents and forms, a recipe's ingredient foods (and their parents: "meat" finds a recipe with
+chicken thigh when Chicken thigh is a Meat), and its stores ("wegmans" finds what's sold there).
+Plurals match ("potatoes" = "potato").
+
+Results are grouped Recipes · Products · Foods · Stores, ❤️ first. With several terms, things
+matching only some of them follow under **Partial matches**, most terms first. With nothing
+typed: Add buttons, meal shortcuts into Eat, and recently changed things.
+
+### 5.2 Eat (what can I eat?)
+
+Meal chips (Breakfast · Lunch · Work lunch · Dinner · Snack · Dessert) over one mixed list of
+recipes and products with that tag: ❤️, then 👍, then not rated; 👎 hidden unless asked.
+Filters: tried / want to try, gluten-free, and for **Work lunch**: travels, keeps ≥ N days,
+effort. Each row shows what matters for the decision (rating, travels, keeps, effort).
+
+### 5.3 Lists (the database personality)
+
+Foods, Products, Recipes, Stores: a filter box and rows with the useful columns (a product's
+food, brand, stores, rating; a food's parent, form-of, product and recipe counts, staple).
+Clicking a row opens its page.
+
+### 5.4 Pages
+
+Every field edited in place and saved as I go. Links are links: Lemon juice → Santa Cruz → its
+stores → Wegmans → everything sold there. Every page has **Delete** (a tombstone, with Undo).
+
+A **recipe** opens in **recipe view** (the casual personality): yield and time, ingredients as
+written with each food a link, instructions, notes and history. Tapping an ingredient shows a
+small card (preferred product, other recipes using it, Open). **Edit** switches to the fields
+and the ingredient lines. A new recipe opens in Edit.
+
+### 5.5 Quick add and sharing into foodlab
+
+**+** (header on desktop, floating on the phone) opens Quick add: Food · Product · Recipe, the
+name focused, then only the everyday fields (product: food, rating, stores, meal tags). Enter
+saves and opens the new page; **Add another** keeps the form open.
+
+**Share to foodlab (Android):** installed from Chrome, foodlab is a share target. Sharing a page
+(a recipe site, a product listing, a Find Me Gluten Free place) opens Quick add with its title
+as the name and its link filled in.
+
+### 5.6 Staples
+
+Marked staples by store (the standing list, §4.7), then Suggested staples with **Mark staple**.
+
+## 6. Later (designed for, not built)
+
+- **Scaling** in three layers: exact quantity → human measurement (3½ tbsp) → practical, using
+  the measuring tools I own. Ingredient behavior (discrete: eggs, onions; sensitive: salt,
+  leavening) decides how to round.
+- **Weight alongside volume** (`grams` on ingredients), with a volume/weight toggle.
+- **Techniques** as their own pages ("dicing an onion"), linked from instructions.
+- **Variants** (my version, small batch). Until then, log entries and notes cover it.
+- **Substitutions** as links. Until then, food notes.
+- **Inventory and a shopping list**: "need it" on a staple, then counts if they earn their keep.
+
+## 7. Look & feel
+
+Same as sideshow: the same fonts and token structure, high contrast, visible focus, light/dark
+from one set of tokens with a per-device System/Light/Dark setting, `--tap` 36 px buttons and
+`--control` 34 px fields, 16 px input text. foodlab's own accent (green) so the two apps are
+told apart at a glance. Ratings are the emoji themselves, big enough to tap.
+
+## 8. Platforms
+
+- **Android phone (Chrome), installed as an app** from the site (Chrome menu → Add to home
+  screen / Install). That gives the home-screen icon, a full-screen app and **Share to
+  foodlab**. Evan's personal phone is and will stay Android; the iPhone is sideshow's (work) and
+  not a foodlab target.
+- **Windows desktops**, in the browser (installable from Edge/Chrome too).
+
+## 9. Architecture
+
+```
+Android (installed) ──┐                 ┌─ Mini PC ─────────────────────┐
+                      ├─ Cloudflare ───▶│ foodlab server (Node + Hono)  │
+Desktop browser ──────┘  Tunnel+Access  │  ├─ SQLite (node:sqlite)      │
+                                        │  └─ daily backup → NAS        │
+                                        └───────────────────────────────┘
+```
+
+| Layer | Choice | Why |
+|---|---|---|
+| Language | TypeScript everywhere | Same as sideshow; types, validation, parsing and search shared by client and server. |
+| Layout | npm workspaces: `packages/shared`, `packages/server`, `packages/web` | Same as sideshow. |
+| UI | React + Vite, installable PWA | Same as sideshow. |
+| Server | Node + Hono | Same as sideshow. |
+| DB | `node:sqlite`, plain SQL, append-only numbered migrations | Same as sideshow. Relational tables (foods, products, stores, product_stores, recipes, recipe_ingredients, tags, item_tags, log_entries): the relationships are the point. |
+| Sync | **Whole-record saves + a small outbox** (not sideshow's ops/reducer) | See below. |
+| Hosting | Mini PC, `C:\Apps\foodlab`, port 8082, `https://foodlab.evans.tools` via Cloudflare Tunnel + Access | Same pattern as sideshow (8081). |
+
+**Sync.** The app loads everything (`GET /api/state`; a personal food database is small) and
+keeps a copy for reading offline. Each change saves the **whole record** (`PUT /api/<kind>/<id>`),
+which is idempotent and last-write-wins, so it goes through a tiny **outbox**: the latest version
+of each changed record waits in localStorage until the server takes it, in the order made. That
+makes adding things with no signal (a store basement) work from the start, for less code than
+handling failures would take. sideshow's ops + reducer exist for shared running timers and exact
+timestamps; foodlab has neither. A save the server refuses (a bug, not a connection problem) is
+dropped with a message instead of blocking the rest.
+
+## 10. Milestones
+
+| # | Goal | Done when… |
+|---|---|---|
+| **M1** | What can I eat (lunch first) | Foods (is a, form of, staple), products (stores, ratings, eating fields), stores, recipes with parsed ingredient lines, meal and personal tags, the `+` search, Eat with Work lunch filters, lists and pages, Quick add, Share to foodlab, Staples with suggestions, rating history and hand-written log notes, offline outbox. Deployed at foodlab.evans.tools, installed on the phone. **Built 2026-10-23, not yet deployed.** |
+| **M2** | Memory | Log entries' derived facts on pages (times made, last made); per-recipe product override; recipe card view; Tags page (rename, merge, delete). |
+| **M3** | Places & dishes | Places (restaurants, stores with prepared food: address → Maps, phone, hours, Find Me Gluten Free link, been / want to try) and dishes with the eating fields, Tried / Want to try per place. Dishes join Eat. |
+| **M4** | Photos | On products, recipes and dishes (sideshow's file store). |
+| **M5** | Scaling & weights | §6. |
+| later | — | Techniques, variants, substitutions, inventory and shopping list, then §3. |
+
+## 11. Open questions
+
+(None blocking.) To watch once there's real data: whether staple suggestions need a tighter
+rule; whether log entries need actual quantities (a recipe-instance object).
+
+Decided:
+
+- 2026-10-23: **forms** (`formOfId`) beside **is a** (`parentId`); the form-vs-prep test (§4.2);
+  "bottled" lives on products, not as a food. **Stores are objects.** **Staples** are marked and
+  suggested; inventory stays later. The **relationship vocabulary** (§4.1). The `+` search as
+  the home page, a sidebar of lists, two personalities (§5). **Share to foodlab** on Android.
+  Writes go through an outbox from M1 (offline capture no longer a milestone).
+- 2026-10-22: **the phone is Android** (Evan's personal phone, always).
+- 2026-10-22: rating is 👎 / 👍 / ❤️, not stars.
+- 2026-10-22: **The Pantry Ledger** was an earlier name for this same app.
+- 2026-10-22: data model from the ChatGPT design sessions: foods vs products, recipes built on
+  foods, overlapping tags, never delete disliked products, recipe logs, yield vs servings,
+  assembly as a recipe method, exact quantities stored for later scaling. Its Python stack is
+  dropped for sideshow's. Its modeling questions are answered in §4a.
