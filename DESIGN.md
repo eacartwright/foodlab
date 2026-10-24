@@ -1,6 +1,6 @@
 # foodlab — Design
 
-*v0.4 · 2026-10-23 · living document, edit freely*
+*v0.5 · 2026-10-24 · living document, edit freely*
 
 ## 1. Purpose
 
@@ -72,7 +72,7 @@ Ham & cheese sandwich ─ingredient in─▶ American cheese, GF bread…     (s
 ```
 
 **Eatables** answer "what can I eat?": recipes and products now, dishes at restaurants later
-(M3). They share the eating fields (§4.5). Foods don't: a food is a concept, not a meal.
+(M4). They share the eating fields (§4.5). Foods don't: a food is a concept, not a meal.
 
 ### 4.1 Relationship vocabulary
 
@@ -186,7 +186,7 @@ option. So the field doesn't ask *whether*, it says **how sure**: certified, lab
 ingredients, or made in a shared facility. **Not GF** is for someone else's food (a partner's
 favorite): it's flagged "not GF" in lists and **never shows in Eat**. A recipe is GF by what
 goes in it, so it only has "Not GF". It's not on Quick add. "GF option" is gone: that's a
-restaurant idea (GFM, gluten-free modified), and belongs to dishes in M3.
+restaurant idea (GFM, gluten-free modified), and belongs to dishes in M4.
 
 ### 4.7 Staples
 
@@ -195,8 +195,8 @@ restaurant idea (GFM, gluten-free modified), and belongs to dishes in M3.
   ❤️** (or have made), counted through their forms too ("Garlic — in 6 recipes you like").
   One tap marks one.
 - **The standing list**: each staple with its preferred product and where that's sold, grouped
-  by store. That's the boilerplate shopping list, with no inventory needed. (A real shopping
-  list, with "need it now", is later.)
+  by store. That's the boilerplate shopping list, with no inventory needed. The real one,
+  with "need it now", is Groceries (§4.10); staples are always in its Usual (§5.8).
 
 ### 4.8 Log entry (the history of everything)
 
@@ -219,6 +219,30 @@ Shared by everything, two kinds:
   "good when I'm exhausted".
 
 "Contains lemon" is **not** a tag: search derives it from ingredients (§5.1).
+
+### 4.10 Grocery item
+
+Groceries is **one standing list of things I buy, and each one is either needed or not**. No
+due dates, no projects, nothing to complete. Getting milk doesn't finish milk: it goes back to
+being a thing I usually buy, one tap from being on the list again. Nothing is ever rewritten.
+(Why: Todoist turned the same list into a dated task, a pile of "completed" items and a 25/30
+counter, and the same ten things typed out again every week.)
+
+| Field | Notes |
+|---|---|
+| `name` | Required, as typed: "Milk", "the good bagels". |
+| `foodId` / `productId` | Optional links, filled in when the typed name matches a food or product (by `nameKey`), or picked later. A product gives the item its stores. |
+| `need` | yes / no. **On the list** or not. The only thing the everyday path changes. |
+| `note` | This time only: "2", "the big one". Cleared when it's got. |
+| `gotAt` | When it was last checked off. Feeds "most bought" and the trip's Undo. |
+| `count` | Times got. Orders the Usual list. |
+
+- An item is made **once**, the first time I type it, and is never made again: typing "milk"
+  next time finds it and sets `need`.
+- Checking it off sets `need` to no, `gotAt` to now, adds one to `count`. If it links a product,
+  it also writes a **`bought` log entry** on the product, so "last bought" exists for free.
+- Delete (a tombstone, as everywhere) is for something I'll never buy again, not for "got it".
+- Pantry inventory stays a non-goal (§3): `need` is "I'm out", not "I have 3".
 
 ## 4a. Model decisions
 
@@ -254,6 +278,7 @@ Desktop                                         Phone
 │          │  + Food  + Product  + Recipe   │   │ [ search…          ] │
 │ Search   │                                │   │ + Food + Prod + Rec  │
 │ Eat      │  Recipes · Products · Foods …  │   │ …results / recent    │
+│ Groceries│                                │   │                      │
 │ ──────── │                                │   │                (+)   │
 │ Foods    │                                │   └──────────────────────┘
 │ Products │                                │   ☰ opens the same menu as
@@ -308,7 +333,9 @@ and the ingredient lines. A new recipe opens in Edit.
 
 **+** (header on desktop, floating on the phone) opens Quick add: Food · Product · Recipe, the
 name focused, then only the everyday fields (product: food, rating, stores, meal tags). Enter
-saves and opens the new page; **Add another** keeps the form open.
+saves and opens the new page; **Add another** keeps the form open. On desktop (most adding
+happens at a 1920×1080 screen) it's a roomy dialog, about 820px wide; the phone layout gets its
+own pass later.
 
 **Share to foodlab (Android):** installed from Chrome, foodlab is a share target. Sharing a page
 (a recipe site, a product listing, a Find Me Gluten Free place) opens Quick add with its title
@@ -326,6 +353,31 @@ below with a Done box. **Copy** puts the open ones on the clipboard as a Markdow
 into a work session. They're their own records (`devnotes`), kept apart from the food, synced
 like everything else, never in search. They can go once the app settles.
 
+### 5.8 Groceries
+
+Its own sidebar entry, under Eat, and phone-first (it's used in the store, often with no
+signal: checking off goes through the outbox like any save).
+
+```
+┌ Groceries ──────────────── 5 ┐   the count is what's on the list, nothing else
+│ [ add…                     ] │   typing matches Usual first, then foods, products
+│ ○ Milk                       │
+│ ○ Eggs                  · 2  │   note
+│ ○ Butter        Wegmans      │   a product's store
+│ ✓ Bread  (got · Undo)        │   checked this trip, struck through
+│ ──── Usual ───────────────── │
+│ + Cheddar  + Bananas  + Rice │   one tap puts it back on the list
+└──────────────────────────────┘
+```
+
+- **The list**: what's needed, in the order added. Tap the circle to check it off.
+- **This trip**: checked items stay on screen struck through, with Undo, until I leave the page
+  for a few hours or tap **Done shopping**. Then they quietly join Usual. They never pile up.
+- **Usual**: everything I've bought that isn't needed, most-bought first, plus staples (§4.7)
+  not yet on it. One tap = needed. Typing in the add box filters it.
+- Adding from elsewhere: **+ Groceries** on a food, product or staple row puts it on the list
+  (making the item if it's new).
+
 ## 6. Later (designed for, not built)
 
 - **Scaling** in three layers: exact quantity → human measurement (3½ tbsp) → practical, using
@@ -335,7 +387,10 @@ like everything else, never in search. They can go once the app settles.
 - **Techniques** as their own pages ("dicing an onion"), linked from instructions.
 - **Variants** (my version, small batch). Until then, log entries and notes cover it.
 - **Substitutions** as links. Until then, food notes.
-- **Inventory and a shopping list**: "need it" on a staple, then counts if they earn their keep.
+- **Inventory**: counts on foods or products, if they ever earn their keep. The shopping list
+  is Groceries (M2), and needs no inventory.
+- **Groceries by store or aisle**: grouping the list by a product's store, or a store's aisle
+  order, once the list is in use and it's clear whether that's wanted.
 
 ## 7. Look & feel
 
@@ -368,7 +423,7 @@ Desktop browser ──────┘  Tunnel+Access  │  ├─ SQLite (node:s
 | Layout | npm workspaces: `packages/shared`, `packages/server`, `packages/web` | Same as sideshow. |
 | UI | React + Vite, installable PWA | Same as sideshow. |
 | Server | Node + Hono | Same as sideshow. |
-| DB | `node:sqlite`, plain SQL, append-only numbered migrations | Same as sideshow. Relational tables (foods, products, stores, product_stores, recipes, recipe_ingredients, tags, item_tags, log_entries): the relationships are the point. |
+| DB | `node:sqlite`, plain SQL, append-only numbered migrations | Same as sideshow. Relational tables (foods, products, stores, product_stores, recipes, recipe_ingredients, tags, item_tags, log_entries; grocery_items from M2): the relationships are the point. |
 | Sync | **Whole-record saves + a small outbox** (not sideshow's ops/reducer) | See below. |
 | Hosting | Mini PC, `C:\Apps\foodlab`, port 8082, `https://foodlab.evans.tools` via Cloudflare Tunnel + Access | Same pattern as sideshow (8081). |
 
@@ -386,11 +441,12 @@ dropped with a message instead of blocking the rest.
 | # | Goal | Done when… |
 |---|---|---|
 | **M1** | What can I eat (lunch first) | Foods (is a, form of, staple), products (stores, ratings, eating fields), stores, recipes with parsed ingredient lines, meal and personal tags, the `+` search, Eat with Work lunch filters, lists and pages, Quick add, Share to foodlab, Staples with suggestions, rating history and hand-written log notes, offline outbox. Deployed at foodlab.evans.tools, installed on the phone. **Built 2026-10-23, not yet deployed.** |
-| **M2** | Memory | Log entries' derived facts on pages (times made, last made); per-recipe product override; recipe card view; Tags page (rename, merge, delete). |
-| **M3** | Places & dishes | Places (restaurants, stores with prepared food: address → Maps, phone, hours, Find Me Gluten Free link, been / want to try) and dishes with the eating fields, Tried / Want to try per place. Dishes join Eat. |
-| **M4** | Photos | On products, recipes and dishes (sideshow's file store). |
-| **M5** | Scaling & weights | §6. |
-| later | — | Techniques, variants, substitutions, inventory and shopping list, then §3. |
+| **M2** | Groceries | A standing list that replaces Todoist (§4.10, §5.8): items made once and needed or not, check off with this trip's Undo, Usual (most bought + staples) one tap from the list, + Groceries on foods, products and staples, `bought` log entries for linked products. Works offline in the store. |
+| **M3** | Memory | Log entries' derived facts on pages (times made, last made, last bought); per-recipe product override; recipe card view; Tags page (rename, merge, delete). |
+| **M4** | Places & dishes | Places (restaurants, stores with prepared food: address → Maps, phone, hours, Find Me Gluten Free link, been / want to try) and dishes with the eating fields, Tried / Want to try per place. Dishes join Eat. |
+| **M5** | Photos | On products, recipes and dishes (sideshow's file store). |
+| **M6** | Scaling & weights | §6. |
+| later | — | Techniques, variants, substitutions, inventory, Groceries by store or aisle, then §3. |
 
 ## 11. Open questions
 
@@ -399,9 +455,12 @@ rule; whether log entries need actual quantities (a recipe-instance object).
 
 Decided:
 
+- 2026-10-24: **Groceries** is M2, ahead of Memory, because Todoist isn't working for it. It's
+  one standing list: each item is needed or not, never completed, never retyped (§4.10, §5.8).
+  Its own sidebar entry. Later milestones move down one (dishes are M4).
 - 2026-10-23 (first day of use): ratings offered ❤️ 👍 👎. **Gluten-free says how sure**
   (certified · labeled · no gluten ingredients · shared facility · not GF); Not GF never in Eat;
-  "GF option" left for M3 dishes (§4.6). **Brand + name shown as one**, brand first (§4.3).
+  "GF option" left for M4 dishes (§4.6). **Brand + name shown as one**, brand first (§4.3).
   **Duplicate** on foods, products, recipes (§5.4). **Dev notes** (§5.7). Sidebar foot: sync
   status left, 📝 and ⚙ right.
 

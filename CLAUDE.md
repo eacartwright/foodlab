@@ -103,5 +103,6 @@ tombstones (`deleted`), restorable with Undo or the page's Restore.
   notes (📝 beside ⚙). Not deployed yet. Show or sort a product by `productName` / `nameOf`,
   never `.name` alone.
 - **Next:** deploy this, install on the Android phone, check Share to foodlab, enter real lunches.
-- Then M2 (DESIGN.md §10): derived facts from the log on pages, per-recipe product override,
+- Then M2 (DESIGN.md §10): **Groceries**, a standing list to replace Todoist (§4.10, §5.8).
+- Then M3: derived facts from the log on pages, per-recipe product override,
   recipe cards, a Tags page.

@@ -1154,6 +1154,42 @@ ul.staples li > :nth-child(2) {
 .name-row .input:not(.brand-box) {
   min-width: 12em;
 }
+/* Desktop is where most adding happens: room to breathe. The phone keeps the tight layout. */
+@media (min-width: 861px) {
+  .backdrop:has(.quick-add) {
+    padding-top: 10vh;
+  }
+  .dialog.quick-add {
+    max-width: 820px;
+    padding: 22px 28px 26px;
+  }
+  .quick-add .dialog-head {
+    margin-bottom: 20px;
+  }
+  .quick-add > .stack {
+    gap: 22px;
+  }
+  .quick-add .fields.compact {
+    gap: 18px;
+  }
+  .quick-add .fields.compact .field {
+    grid-template-columns: 120px 1fr;
+    gap: 16px;
+    align-items: center;
+  }
+  .quick-add .name-row {
+    gap: 12px;
+  }
+  .quick-add .name-row .input.brand-box {
+    flex: 0 1 16em;
+  }
+  .quick-add .chips {
+    gap: 8px;
+  }
+  .quick-add .row-actions {
+    padding-top: 6px;
+  }
+}
 
 /* ---- dev notes ---- */
 ul.notes {

@@ -32,6 +32,14 @@ export function FoodPage({ id }: { id: string }) {
   const viaForms = view.recipesUsingForms(food.id);
   const preps = view.prepsOf(food.id);
   const best = view.preferredProduct(food.id);
+  // A new form or kind can't be this food or anything above it, and isn't one already.
+  const above = new Set([food.id, ...view.ancestors(food.id).map((f) => f.id)]);
+  const addable = (have: Food[]) => view.foods.filter((f) => !above.has(f.id) && !have.includes(f)).map((f) => ({ id: f.id, label: f.name }));
+  // Builds on the latest copy of the other food (it may have just been made).
+  const link = (otherId: string, patch: Partial<Food>) => {
+    const other = data().state.foods[otherId];
+    if (other) put("foods", { ...other, ...patch });
+  };
 
   return (
     <article className="page">
@@ -97,7 +105,7 @@ export function FoodPage({ id }: { id: string }) {
       </Section>
 
       <Section title="Forms" count={forms.length} actions={<button className="btn subtle" onClick={() => setAdding("form")}>+ Form</button>}>
-        {adding === "form" && <AddFood label="New form (e.g. Lemon juice)" onDone={() => setAdding(null)} make={(name) => ensureFood(name, { formOfId: food.id })} />}
+        {adding === "form" && <AddFood label="Add a form (e.g. Lemon juice)" options={addable(forms)} onDone={() => setAdding(null)} link={(f) => link(f, { formOfId: food.id })} />}
         {forms.length > 0 ? (
           <div className="rows">{forms.map((f) => <ItemRow key={f.id} view={view} kind="foods" item={f} showKind={false} />)}</div>
         ) : (
@@ -112,7 +120,7 @@ export function FoodPage({ id }: { id: string }) {
 
       {(kinds.length > 0 || adding === "kind") && (
         <Section title="Kinds" count={kinds.length} actions={<button className="btn subtle" onClick={() => setAdding("kind")}>+ Kind</button>}>
-          {adding === "kind" && <AddFood label="New kind (e.g. Roma tomato)" onDone={() => setAdding(null)} make={(name) => ensureFood(name, { parentId: food.id })} />}
+          {adding === "kind" && <AddFood label="Add a kind (e.g. Roma tomato)" options={addable(kinds)} onDone={() => setAdding(null)} link={(f) => link(f, { parentId: food.id })} />}
           <div className="rows">{kinds.map((f) => <ItemRow key={f.id} view={view} kind="foods" item={f} showKind={false} />)}</div>
         </Section>
       )}
@@ -169,31 +177,13 @@ export function FoodPage({ id }: { id: string }) {
   );
 }
 
-function AddFood({ label, make, onDone }: { label: string; make: (name: string) => string; onDone: () => void }) {
-  const [text, setText] = useState("");
+/** + Form / + Kind: pick a food I already have (it gets linked here) or make a new one. */
+function AddFood({ label, options, link, onDone }: { label: string; options: { id: string; label: string }[]; link: (id: string) => void; onDone: () => void }) {
   return (
     <div className="inline-add">
-      <input
-        className="input grow"
-        autoFocus
-        placeholder={label}
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" && text.trim()) {
-            make(text.trim());
-            setText("");
-          } else if (e.key === "Escape") onDone();
-        }}
-      />
-      <button
-        className="btn"
-        onClick={() => {
-          if (text.trim()) make(text.trim());
-          onDone();
-        }}
-      >
-        {text.trim() ? "Add" : "Done"}
+      <Picker value={null} options={options} placeholder={label} autoFocus keepOpen createLabel="New food" onChange={(id) => id && link(id)} onCreate={(n) => ensureFood(n)} />
+      <button className="btn" onClick={onDone}>
+        Done
       </button>
     </div>
   );
