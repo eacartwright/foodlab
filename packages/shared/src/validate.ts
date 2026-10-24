@@ -7,6 +7,8 @@ import {
   RATINGS,
   STATUSES,
   TRAVELS,
+  withoutBrand,
+  type DevNote,
   type Eating,
   type Food,
   type Kind,
@@ -118,12 +120,14 @@ export const validators: { [K in Kind]: (body: unknown, id: string, now: number)
   },
   products(body, rid, now): Product {
     const b = obj(body);
+    const brand = str(b.brand, "brand", 200).trim();
     return {
       ...base(b, rid, now),
       ...eating(b),
-      name: name(b.name),
+      // Shown as brand + name, so the name doesn't repeat the brand.
+      name: withoutBrand(name(b.name), brand),
       foodId: id(b.foodId, "foodId"),
-      brand: str(b.brand, "brand", 200).trim(),
+      brand,
       storeIds: ids(b.storeIds, "storeIds"),
       buyAgain: oneOf(b.buyAgain, BUY_AGAIN, "buyAgain"),
       shelfLife: str(b.shelfLife, "shelfLife", 200),
@@ -172,5 +176,11 @@ export const validators: { [K in Kind]: (body: unknown, id: string, now: number)
       rating: oneOf(b.rating, RATINGS, "rating"),
       text: str(b.text, "text", 20_000),
     };
+  },
+  devnotes(body, rid, now): DevNote {
+    const b = obj(body);
+    const text = str(b.text, "text", 20_000).trim();
+    if (!text) throw new Invalid("text: required");
+    return { ...base(b, rid, now), text, path: str(b.path, "path", 500), done: bool(b.done) };
   },
 };

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { DevNotesDialog } from "./components/DevNotes";
 import { EatPage } from "./components/EatPage";
 import { FoodPage } from "./components/FoodPage";
 import { FoodsList, ProductsList, RecipesList, StoresList } from "./components/ListPages";
@@ -86,6 +87,7 @@ export function App() {
   const quick = useQuickAdd();
   const [drawer, setDrawer] = useState(false);
   const [settings, setSettings] = useState(false);
+  const [devNotes, setDevNotes] = useState(false);
   const toast = useToast();
 
   // Share to foodlab lands on /share?title=…&text=…&url=…: open Quick add with it.
@@ -98,7 +100,7 @@ export function App() {
   }, []);
 
   // The phone's Back closes an open panel instead of leaving the page.
-  const overlayOpen = !!quick || drawer || settings;
+  const overlayOpen = !!quick || drawer || settings || devNotes;
   const pushed = useRef(false);
   useEffect(() => {
     if (overlayOpen && !pushed.current) {
@@ -115,6 +117,7 @@ export function App() {
         pushed.current = false;
         setDrawer(false);
         setSettings(false);
+        setDevNotes(false);
         if (quick) closeQuickAddFromBack();
       }
     };
@@ -157,6 +160,36 @@ export function App() {
     </nav>
   );
 
+  // Sync status left; dev notes and settings right.
+  const foot = (
+    <div className="sidebar-foot">
+      <Status />
+      <span className="spacer" />
+      <button
+        className="btn icon subtle"
+        aria-label="Dev notes"
+        title="Dev notes: an idea or bug for later"
+        onClick={() => {
+          setDrawer(false);
+          setDevNotes(true);
+        }}
+      >
+        📝
+      </button>
+      <button
+        className="btn icon subtle"
+        aria-label="Settings"
+        title="Settings"
+        onClick={() => {
+          setDrawer(false);
+          setSettings(true);
+        }}
+      >
+        ⚙
+      </button>
+    </div>
+  );
+
   return (
     <div className="app">
       <aside className="sidebar">
@@ -167,12 +200,7 @@ export function App() {
           + Add
         </button>
         {nav}
-        <div className="sidebar-foot">
-          <Status />
-          <button className="btn icon subtle" aria-label="Settings" onClick={() => setSettings(true)}>
-            ⚙
-          </button>
-        </div>
+        {foot}
       </aside>
 
       <header className="topbar">
@@ -191,18 +219,7 @@ export function App() {
           <div className="drawer" onClick={(e) => e.stopPropagation()}>
             <div className="brand">foodlab</div>
             {nav}
-            <div className="sidebar-foot">
-              <Status />
-              <button
-                className="btn subtle"
-                onClick={() => {
-                  setDrawer(false);
-                  setSettings(true);
-                }}
-              >
-                ⚙ Settings
-              </button>
-            </div>
+            {foot}
           </div>
         </div>
       )}
@@ -217,6 +234,7 @@ export function App() {
 
       {quick && <QuickAdd key={JSON.stringify(quick)} init={quick} />}
       {settings && <SettingsDialog onClose={() => setSettings(false)} />}
+      {devNotes && <DevNotesDialog onClose={() => setDevNotes(false)} />}
       {toast && (
         <div className="toast" role="status" key={toast.id}>
           <span>{toast.text}</span>

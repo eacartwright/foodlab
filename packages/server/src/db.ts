@@ -1,7 +1,7 @@
 import { DatabaseSync } from "node:sqlite";
 import { existsSync, mkdirSync } from "node:fs";
 import { dirname } from "node:path";
-import { emptyState, type Food, type Id, type LogEntry, type Product, type Recipe, type RecipeIngredient, type State, type Store, type Tag } from "@foodlab/shared";
+import { emptyState, type DevNote, type Food, type Id, type LogEntry, type Product, type Recipe, type RecipeIngredient, type State, type Store, type Tag } from "@foodlab/shared";
 
 // SQLite persistence: ordinary relational tables, one row per record, links in their own tables
 // (product_stores, recipe_ingredients, item_tags), so the file reads well in any SQLite browser
@@ -113,6 +113,24 @@ const MIGRATIONS: string[] = [
     ('meal-dinner', 'Dinner', 'meal', 0, 0, 1),
     ('meal-snack', 'Snack', 'meal', 0, 0, 1),
     ('meal-dessert', 'Dessert', 'meal', 0, 0, 1);
+  `,
+  // 2026-10-23: gluten-free says how sure (certified … not GF); "GF option" is for restaurant
+  // dishes, later. Product names lose a leading brand (shown as brand + name now). Dev notes.
+  `
+  UPDATE products SET gluten_free = 'labeled' WHERE gluten_free = 'yes';
+  UPDATE products SET gluten_free = 'unknown' WHERE gluten_free = 'option';
+  UPDATE recipes SET gluten_free = 'unknown' WHERE gluten_free IN ('yes', 'option');
+  UPDATE products SET name = ltrim(substr(name, length(brand) + 1), ' ,:-')
+    WHERE brand <> ''
+      AND lower(substr(name, 1, length(brand))) = lower(brand)
+      AND substr(name, length(brand) + 1, 1) IN (' ', ',', ':', '-')
+      AND ltrim(substr(name, length(brand) + 1), ' ,:-') <> '';
+  CREATE TABLE dev_notes (
+    id TEXT PRIMARY KEY,
+    text TEXT NOT NULL,
+    path TEXT NOT NULL DEFAULT '',  -- the page it was written on
+    done INTEGER NOT NULL DEFAULT 0,${BASE}
+  );
   `,
 ];
 
@@ -255,6 +273,9 @@ export function loadState(db: DB): State {
       text: r.text,
     } satisfies LogEntry;
   }
+  for (const r of db.prepare("SELECT * FROM dev_notes").all() as Row[]) {
+    s.devnotes[r.id] = { ...base(r), text: r.text, path: r.path, done: !!r.done } satisfies DevNote;
+  }
   return s;
 }
 
@@ -351,5 +372,8 @@ export const save = {
       rating: x.rating,
       text: x.text,
     });
+  },
+  devnotes(db: DB, x: DevNote) {
+    upsert(db, "dev_notes", { ...baseCols(x), text: x.text, path: x.path, done: x.done ? 1 : 0 });
   },
 };

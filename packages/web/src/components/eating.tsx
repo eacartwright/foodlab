@@ -35,12 +35,21 @@ export function EatingFields<T extends Product | Recipe>({ item, save }: { item:
         <Segmented value={item.status} options={STATUSES} labels={STATUS_LABEL} clearable={false} onChange={(v) => save({ status: v ?? "tried" } as Partial<T>)} />
       </Field>
       <Field label="Gluten-free">
-        <Segmented
-          value={item.glutenFree === "unknown" ? null : item.glutenFree}
-          options={GF.filter((g) => g !== "unknown")}
-          labels={{ ...GF_LABEL, yes: "Yes", option: "GF option", no: "No" }}
-          onChange={(v) => save({ glutenFree: v ?? "unknown" } as Partial<T>)}
-        />
+        {"brand" in item ? (
+          // A product: how I know it's safe, or that it's someone else's.
+          <Segmented
+            value={item.glutenFree === "unknown" ? null : item.glutenFree}
+            options={GF.filter((g) => g !== "unknown")}
+            labels={GF_LABEL}
+            onChange={(v) => save({ glutenFree: v ?? "unknown" } as Partial<T>)}
+          />
+        ) : (
+          // A recipe is gluten-free by what goes in it, unless it's for someone else.
+          <label className="check">
+            <input type="checkbox" checked={item.glutenFree === "no"} onChange={(e) => save({ glutenFree: e.target.checked ? "no" : "unknown" } as Partial<T>)} /> Not
+            gluten-free (someone else's)
+          </label>
+        )}
       </Field>
       <Field label="Tags">
         <TagEditor value={item.tagIds} onChange={(tagIds) => save({ tagIds } as Partial<T>)} />

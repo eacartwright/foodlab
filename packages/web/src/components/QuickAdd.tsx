@@ -1,5 +1,5 @@
-import { MEAL_TAGS, blank, newId, tidyName, type Id, type Rating } from "@foodlab/shared";
-import { useState, useSyncExternalStore } from "react";
+import { MEAL_TAGS, blank, newId, tidyName, withoutBrand, type Id, type Rating } from "@foodlab/shared";
+import { useId, useState, useSyncExternalStore } from "react";
 import { ensureFood, ensureStore } from "../actions";
 import { go, pathOf } from "../router";
 import { put, useData } from "../sync";
@@ -58,7 +58,9 @@ export function QuickAdd({ init }: { init: QuickAddInit }) {
     }
     return "products";
   });
+  const [brand, setBrand] = useState("");
   const [name, setName] = useState(init.name ?? "");
+  const brandList = useId();
   const [link, setLink] = useState(init.link ?? "");
   const [foodId, setFoodId] = useState<Id | null>(init.foodId ?? null);
   const [storeIds, setStoreIds] = useState<Id[]>(init.storeIds ?? []);
@@ -96,11 +98,14 @@ export function QuickAdd({ init }: { init: QuickAddInit }) {
       }
       put("foods", { ...blank.foods(id, tidyName(n)), staple, notes: links.join("\n") });
     } else if (kind === "products") {
-      put("products", { ...blank.products(id, n), foodId, storeIds, rating, tagIds, links, status });
+      // A name that starts with a brand I already have ("Bell & Evans Nuggets", often from Share) gets it split off.
+      const b = brand.trim() || view.brands().find((x) => withoutBrand(n, x) !== n) || "";
+      put("products", { ...blank.products(id, withoutBrand(n, b)), brand: b, foodId, storeIds, rating, tagIds, links, status });
     } else {
       put("recipes", { ...blank.recipes(id, n), rating, tagIds, links, status });
     }
     if (another) {
+      setBrand("");
       setName("");
       setLink("");
       setRating(null);
@@ -118,15 +123,36 @@ export function QuickAdd({ init }: { init: QuickAddInit }) {
     <Dialog title="Add" onClose={closeQuickAdd} className="quick-add">
       <div className="stack">
         <Segmented value={kind} options={KINDS} labels={LABELS} clearable={false} onChange={(k) => k && pickKind(k)} label="What" />
-        <input
-          className="input big"
-          autoFocus
-          placeholder={kind === "products" ? "e.g. Kraft Deli Deluxe American" : kind === "recipes" ? "e.g. Ham & cheese sandwich" : "e.g. Lemon juice"}
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && add()}
-          aria-label="Name"
-        />
+        <div className="inline name-row">
+          {kind === "products" && (
+            <>
+              <input
+                className="input big brand-box"
+                autoFocus={!init.name}
+                placeholder="Brand"
+                value={brand}
+                list={brandList}
+                onChange={(e) => setBrand(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && add()}
+                aria-label="Brand"
+              />
+              <datalist id={brandList}>
+                {view.brands().map((b) => (
+                  <option key={b} value={b} />
+                ))}
+              </datalist>
+            </>
+          )}
+          <input
+            className="input big"
+            autoFocus={kind !== "products" || !!init.name}
+            placeholder={kind === "products" ? "e.g. Deli Deluxe American" : kind === "recipes" ? "e.g. Ham & cheese sandwich" : "e.g. Lemon juice"}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && add()}
+            aria-label="Name"
+          />
+        </div>
         {kind === "foods" ? (
           <label className="check">
             <input type="checkbox" checked={staple} onChange={(e) => setStaple(e.target.checked)} /> A staple (I want to keep it in the house)

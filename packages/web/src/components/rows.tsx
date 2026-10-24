@@ -3,6 +3,7 @@ import {
   RATING_EMOJI,
   TRAVELS_LABEL,
   isWorkLunch,
+  nameOf,
   type Food,
   type Product,
   type Recipe,
@@ -37,7 +38,7 @@ export function subline(view: View, kind: SearchKind, item: Item, hideFood = fal
     const p = item as Product;
     const food = view.food(p.foodId);
     const stores = p.storeIds.map((s) => view.store(s)?.name).filter(Boolean);
-    return [food && !food.deleted && !hideFood ? food.name : null, p.brand, stores.length ? `at ${stores.join(", ")}` : null].filter(Boolean).join(" · ");
+    return [food && !food.deleted && !hideFood ? food.name : null, stores.length ? `at ${stores.join(", ")}` : null].filter(Boolean).join(" · ");
   }
   if (kind === "foods") {
     const f = item as Food;
@@ -96,13 +97,14 @@ export function ItemRow({
       )}
       <span className="row-main">
         <span className="row-name">
-          {item.name}
+          {nameOf(item)}
           {kind === "foods" && (item as Food).staple && (
             <span className="staple-mark" title="Staple">
               ★
             </span>
           )}
           {rated?.status === "want" && <span className="badge">want to try</span>}
+          {rated?.glutenFree === "no" && <NotGF />}
         </span>
         <span className="row-sub">{subline(view, kind, item, hideFood)}</span>
         {lunch && <span className="row-sub lunch">{lunch}</span>}
@@ -110,6 +112,15 @@ export function ItemRow({
       </span>
       {rated && <Rating value={rated.rating} />}
     </A>
+  );
+}
+
+/** On someone else's food: never in Eat, flagged everywhere else. */
+export function NotGF() {
+  return (
+    <span className="badge badge-warn" title="Not gluten-free">
+      not GF
+    </span>
   );
 }
 

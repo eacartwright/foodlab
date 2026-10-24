@@ -1,6 +1,6 @@
 # foodlab — Design
 
-*v0.3 · 2026-10-23 · living document, edit freely*
+*v0.4 · 2026-10-23 · living document, edit freely*
 
 ## 1. Purpose
 
@@ -119,9 +119,9 @@ first; the recipes that use it (and those using its forms); the preps used on it
 
 | Field | Notes |
 |---|---|
-| `name` | Required. "Kraft Deli Deluxe American Slices". |
+| `brand` | "Bell & Evans". Typed first, suggested from brands already used. |
+| `name` | Required. The rest of the name: "Gluten Free Chicken Breasts". |
 | `foodId` | **Product of**. Optional at capture ("unsorted"), easy to fill later. |
-| `brand` | |
 | `storeIds` | **Sold at**, any number of stores. |
 | `buyAgain` | yes · no · blank. Separate from rating: liked but too pricey, etc. |
 | `shelfLife` | Optional. |
@@ -129,6 +129,13 @@ first; the recipes that use it (and those using its forms); the preps used on it
 
 Ready-made meals I buy (a Wegmans prepared bowl, a frozen meal) are products, with or without
 a food.
+
+**Brand + name, shown as one** (2026-10-23): a product is shown everywhere as "<brand> <name>"
+("Bell & Evans Gluten Free Chicken Breasts"), so two brands of the same thing never look
+generic. The page title is two boxes, brand then name; Quick add has a Brand box before the
+name. The name never repeats the brand: saving strips a leading brand, and Quick add splits a
+known brand off a typed or shared name ("Bell & Evans Nuggets" → Bell & Evans + "Nuggets").
+Brand stays its own field so brand pages or filters can come later.
 
 ### 4.4 Store
 
@@ -164,14 +171,22 @@ like never loses anything. Plurals and case match the same food ("Lemons" → Le
 
 | Field | Values |
 |---|---|
-| `rating` | 👎 · 👍 · ❤️, blank = not rated. |
+| `rating` | ❤️ · 👍 · 👎 (offered best first), blank = not rated. |
 | `status` | `tried` · `want to try`. |
-| `glutenFree` | `yes` · `GF option` · `no` · `unknown` (default). |
+| `glutenFree` | Products: `certified` · `labeled` · `ingredients` (no gluten ingredients) · `facility` (shared facility) · `no`, blank by default. Recipes: only `no`. |
 | `notes` | |
 | `links` | URLs (recipe source, product page, Find Me Gluten Free). |
 | `travels` | `packs cold` · `needs microwave` · `eat as-is`. Shown when tagged Work lunch. |
 | `keepsDays` | Days it lasts in the fridge. |
 | `effort` | `grab` (buy it) · `quick` (< 15 min) · `prep` (cook ahead). |
+
+**Gluten-free** (2026-10-23): everything in foodlab is gluten-free, because I have celiac and
+never knowingly eat anything else; a product I find isn't GF gets marked, not kept as an
+option. So the field doesn't ask *whether*, it says **how sure**: certified, labeled, no gluten
+ingredients, or made in a shared facility. **Not GF** is for someone else's food (a partner's
+favorite): it's flagged "not GF" in lists and **never shows in Eat**. A recipe is GF by what
+goes in it, so it only has "Not GF". It's not on Quick add. "GF option" is gone: that's a
+restaurant idea (GFM, gluten-free modified), and belongs to dishes in M3.
 
 ### 4.7 Staples
 
@@ -226,6 +241,7 @@ Answers to the ChatGPT sessions' modeling questions. Each is revisitable once th
   text field would have to be torn apart later.
 - **Substitutions:** notes on the food until there are enough to deserve a link.
 - **Gluten-free stays manual:** deriving it from ingredients would be confidently wrong too often.
+  It records how sure, not whether (§4.6).
 - **Would I actually enter this?** Every field must pass that test to be on the everyday form.
   Anything that only "theoretically" would gets stored if supplied, never asked for.
 
@@ -264,20 +280,24 @@ typed: Add buttons, meal shortcuts into Eat, and recently changed things.
 ### 5.2 Eat (what can I eat?)
 
 Meal chips (Breakfast · Lunch · Work lunch · Dinner · Snack · Dessert) over one mixed list of
-recipes and products with that tag: ❤️, then 👍, then not rated; 👎 hidden unless asked.
-Filters: tried / want to try, gluten-free, and for **Work lunch**: travels, keeps ≥ N days,
+recipes and products with that tag: ❤️, then 👍, then not rated; 👎 hidden unless asked; Not GF
+never. Filters: tried / want to try, and for **Work lunch**: travels, keeps ≥ N days,
 effort. Each row shows what matters for the decision (rating, travels, keeps, effort).
 
 ### 5.3 Lists (the database personality)
 
 Foods, Products, Recipes, Stores: a filter box and rows with the useful columns (a product's
-food, brand, stores, rating; a food's parent, form-of, product and recipe counts, staple).
+brand + name, food, stores, rating; a food's parent, form-of, product and recipe counts, staple).
 Clicking a row opens its page.
 
 ### 5.4 Pages
 
 Every field edited in place and saved as I go. Links are links: Lemon juice → Santa Cruz → its
 stores → Wegmans → everything sold there. Every page has **Delete** (a tombstone, with Undo).
+Foods, products and recipes have **Duplicate**: a copy named "… (copy)", opened with the name
+selected to type over. It copies what describes the thing, not what I thought of it: no
+rating, buy again or history; a product's notes, links and gluten-free stay with the original
+(they're about that one product), a recipe's come along (a version of it shares its source).
 
 A **recipe** opens in **recipe view** (the casual personality): yield and time, ingredients as
 written with each food a link, instructions, notes and history. Tapping an ingredient shows a
@@ -297,6 +317,14 @@ as the name and its link filled in.
 ### 5.6 Staples
 
 Marked staples by store (the standing list, §4.7), then Suggested staples with **Mark staple**.
+
+### 5.7 Dev notes (while foodlab is being built)
+
+📝 at the bottom of the sidebar (and the phone's drawer), beside ⚙, opens **Dev notes**: one box
+for an idea, a bug or something odd, saved with the page it was written on, and the open notes
+below with a Done box. **Copy** puts the open ones on the clipboard as a Markdown list, to paste
+into a work session. They're their own records (`devnotes`), kept apart from the food, synced
+like everything else, never in search. They can go once the app settles.
 
 ## 6. Later (designed for, not built)
 
@@ -370,6 +398,12 @@ dropped with a message instead of blocking the rest.
 rule; whether log entries need actual quantities (a recipe-instance object).
 
 Decided:
+
+- 2026-10-23 (first day of use): ratings offered ❤️ 👍 👎. **Gluten-free says how sure**
+  (certified · labeled · no gluten ingredients · shared facility · not GF); Not GF never in Eat;
+  "GF option" left for M3 dishes (§4.6). **Brand + name shown as one**, brand first (§4.3).
+  **Duplicate** on foods, products, recipes (§5.4). **Dev notes** (§5.7). Sidebar foot: sync
+  status left, 📝 and ⚙ right.
 
 - 2026-10-23: **forms** (`formOfId`) beside **is a** (`parentId`); the form-vs-prep test (§4.2);
   "bottled" lives on products, not as a food. **Stores are objects.** **Staples** are marked and

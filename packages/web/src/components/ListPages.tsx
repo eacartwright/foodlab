@@ -1,10 +1,10 @@
-import { METHOD_LABEL, RATINGS, RATING_EMOJI, nameKey, type Rating } from "@foodlab/shared";
+import { METHOD_LABEL, RATINGS, RATING_EMOJI, nameKey, productName, type Rating } from "@foodlab/shared";
 import { useMemo, type ReactNode } from "react";
 import { A, pathOf, setQuery, useRoute } from "../router";
 import { useData } from "../sync";
 import { KIND_ICON } from "./controls";
 import { openQuickAdd } from "./QuickAdd";
-import { Rating as RatingMark } from "./rows";
+import { NotGF, Rating as RatingMark } from "./rows";
 
 // The database personality (DESIGN.md §5.3): every food, product, recipe or store, with a filter
 // and the columns that matter. Filters live in the address, so Back returns to the same list.
@@ -155,7 +155,7 @@ export function ProductsList() {
       view.products.filter((p) => {
         const food = view.food(p.foodId);
         return (
-          (match(p.name, f) || match(p.brand, f) || (food ? match(food.name, f) : false)) &&
+          (match(productName(p), f) || (food ? match(food.name, f) : false)) &&
           (!store || p.storeIds.includes(store)) &&
           ratingOk(p.rating, rating)
         );
@@ -187,7 +187,6 @@ export function ProductsList() {
           <th className="rate-col" aria-label="Rating" />
           <th>Product</th>
           <th className="hide-sm">Food</th>
-          <th className="hide-sm">Brand</th>
           <th className="hide-sm">Sold at</th>
         </tr>
       }
@@ -201,12 +200,12 @@ export function ProductsList() {
             </td>
             <td>
               <A href={pathOf("products", p.id)} className="strong">
-                {p.name}
+                {productName(p)}
               </A>
-              <div className="show-sm muted small">{[food?.name, p.brand].filter(Boolean).join(" · ")}</div>
+              {p.glutenFree === "no" && <NotGF />}
+              {food && <div className="show-sm muted small">{food.name}</div>}
             </td>
             <td className="hide-sm">{food && <A href={pathOf("foods", food.id)}>{food.name}</A>}</td>
-            <td className="hide-sm muted">{p.brand}</td>
             <td className="hide-sm muted">{p.storeIds.map((s) => view.store(s)?.name).filter(Boolean).join(", ")}</td>
           </tr>
         );
@@ -271,6 +270,7 @@ export function RecipesList() {
               {r.name}
             </A>
             {r.status === "want" && <span className="badge">want to try</span>}
+            {r.glutenFree === "no" && <NotGF />}
             <div className="muted small clip">{view.ingredientSummary(r)}</div>
           </td>
           <td className="hide-sm muted small clip">{r.ingredients.length || ""}</td>

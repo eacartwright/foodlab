@@ -25,7 +25,6 @@ export function EatPage() {
   const travels = list<Travels>(query.get("travels"), TRAVELS);
   const effort = list<Effort>(query.get("effort"), EFFORTS);
   const keeps = Number(query.get("keeps")) || null;
-  const gf = query.get("gf") === "1";
   const want = query.get("status");
   const showDown = query.get("down") === "1";
   const lunch = tag === WORK_LUNCH;
@@ -37,11 +36,10 @@ export function EatPage() {
         travels: lunch ? travels : [],
         effort: lunch ? effort : [],
         minKeepsDays: lunch ? keeps : null,
-        glutenFree: gf,
         status: want === "want" || want === "tried" ? want : null,
         showDown,
       }),
-    [view, tag, lunch, travels.join(), effort.join(), keeps, gf, want, showDown], // eslint-disable-line react-hooks/exhaustive-deps
+    [view, tag, lunch, travels.join(), effort.join(), keeps, want, showDown], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
   const setTag = (t: string) => {
@@ -54,7 +52,7 @@ export function EatPage() {
   };
   const toggle = (key: string, values: string[], v: string) =>
     setQuery({ [key]: (values.includes(v) ? values.filter((x) => x !== v) : [...values, v]).join(",") || null });
-  const filtered = travels.length || effort.length || keeps || gf || want;
+  const filtered = travels.length || effort.length || keeps || want;
 
   return (
     <div className="page">
@@ -95,9 +93,6 @@ export function EatPage() {
           </>
         )}
         <div className="chips">
-          <button className={`chip small ${gf ? "chip-on" : ""}`} onClick={() => setQuery({ gf: gf ? null : "1" })}>
-            Gluten-free
-          </button>
           <button className={`chip small ${want === "want" ? "chip-on" : ""}`} onClick={() => setQuery({ status: want === "want" ? null : "want" })}>
             Want to try
           </button>
@@ -108,7 +103,7 @@ export function EatPage() {
             Show 👎
           </button>
           {filtered && (
-            <button className="btn subtle" onClick={() => setQuery({ travels: null, effort: null, keeps: null, gf: null, status: null })}>
+            <button className="btn subtle" onClick={() => setQuery({ travels: null, effort: null, keeps: null, status: null })}>
               Clear filters
             </button>
           )}

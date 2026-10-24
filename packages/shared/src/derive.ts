@@ -1,6 +1,8 @@
 import { nameKey } from "./ingredients";
 import {
+  GF_LABEL,
   WORK_LUNCH,
+  nameOf,
   type Effort,
   type Food,
   type Id,
@@ -21,7 +23,7 @@ import {
 export type Eatable = { kind: "recipes"; item: Recipe } | { kind: "products"; item: Product };
 
 const live = <T extends { deleted: boolean }>(rec: Record<Id, T>) => Object.values(rec).filter((x) => !x.deleted);
-const byName = (a: { name: string }, b: { name: string }) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
+const byName = (a: { name: string }, b: { name: string }) => nameOf(a).localeCompare(nameOf(b), undefined, { sensitivity: "base" });
 
 /** ❤️ first, then 👍, then not rated, then 👎. */
 export const RATING_RANK: Record<string, number> = { love: 0, up: 1, none: 2, down: 3 };
@@ -248,7 +250,7 @@ export class View {
       if (f.staple) out.push("staple");
     } else if (kind === "products") {
       const p = x as Product;
-      out.push(p.brand, p.notes);
+      out.push(nameOf(p), p.brand, p.notes, GF_LABEL[p.glutenFree]);
       foodWords(p.foodId);
       tagWords(p.tagIds);
       for (const s of p.storeIds) if (this.store(s) && !this.store(s)!.deleted) out.push(this.store(s)!.name);
@@ -295,8 +297,8 @@ export class View {
           const ra = "rating" in a.item ? ratingRank(a.item.rating) : 2;
           const rb = "rating" in b.item ? ratingRank(b.item.rating) : 2;
           // Exact name matches first, then most terms, then rating, then name.
-          const ea = norm(a.item.name) === terms.join(" ") ? 0 : 1;
-          const eb = norm(b.item.name) === terms.join(" ") ? 0 : 1;
+          const ea = norm(nameOf(a.item)) === terms.join(" ") || norm(a.item.name) === terms.join(" ") ? 0 : 1;
+          const eb = norm(nameOf(b.item)) === terms.join(" ") || norm(b.item.name) === terms.join(" ") ? 0 : 1;
           return ea - eb || b.hits - a.hits || ra - rb || byName(a.item, b.item);
         });
       }
@@ -305,14 +307,21 @@ export class View {
     return empty;
   }
 
-  /** The Eat list (DESIGN.md §5.2). */
+  /** Every brand used, for suggestions. */
+  brands(): string[] {
+    const seen = new Map<string, string>();
+    for (const p of this.products) if (p.brand && !seen.has(p.brand.toLowerCase())) seen.set(p.brand.toLowerCase(), p.brand);
+    return [...seen.values()].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+  }
+
+  /** The Eat list (DESIGN.md §5.2). Never what isn't gluten-free: that's someone else's. */
   eat(f: EatFilter): Eatable[] {
     return this.eatables()
       .filter(({ item }) => {
+        if (item.glutenFree === "no") return false;
         if (f.tagId && !item.tagIds.includes(f.tagId)) return false;
         if (!f.showDown && item.rating === "down") return false;
         if (f.status && item.status !== f.status) return false;
-        if (f.glutenFree && item.glutenFree !== "yes" && item.glutenFree !== "option") return false;
         if (f.travels?.length && (!item.travels || !f.travels.includes(item.travels))) return false;
         if (f.minKeepsDays && (item.keepsDays ?? 0) < f.minKeepsDays) return false;
         if (f.effort?.length && (!item.effort || !f.effort.includes(item.effort))) return false;
@@ -338,7 +347,6 @@ export const isWorkLunch = (tagIds: Id[]) => tagIds.includes(WORK_LUNCH);
 export interface EatFilter {
   tagId?: Id | null;
   status?: Status | null;
-  glutenFree?: boolean;
   travels?: Travels[];
   minKeepsDays?: number | null;
   effort?: Effort[];

@@ -1,6 +1,6 @@
-import { BUY_AGAIN, type Product } from "@foodlab/shared";
-import { useState } from "react";
-import { ensureFood, ensureStore, remove } from "../actions";
+import { BUY_AGAIN, productName, withoutBrand, type Product } from "@foodlab/shared";
+import { useId, useState } from "react";
+import { duplicate, ensureFood, ensureStore, remove } from "../actions";
 import { A, go, pathOf } from "../router";
 import { data, put, useData } from "../sync";
 import { ConfirmDialog } from "./ConfirmDialog";
@@ -15,8 +15,13 @@ export function ProductPage({ id }: { id: string }) {
   const { view, state } = useData();
   const p = state.products[id];
   const [confirm, setConfirm] = useState(false);
+  const brands = useId();
   if (!p) return <NotFound what="product" />;
-  const save = (patch: Partial<Product>) => put("products", { ...(data().state.products[id] ?? p), ...patch });
+  const save = (patch: Partial<Product>) => {
+    const next = { ...(data().state.products[id] ?? p), ...patch };
+    // The brand is shown in front of the name, so the name shouldn't say it again.
+    put("products", { ...next, name: withoutBrand(next.name, next.brand) });
+  };
   const food = view.food(p.foodId);
   const others = food ? view.productsOf(food.id).filter((x) => x.id !== p.id) : [];
 
@@ -31,8 +36,15 @@ export function ProductPage({ id }: { id: string }) {
           </span>
         )}
       </div>
-      <div className="title-row">
+      {/* Brand, then name: reads as the whole name ("Bell & Evans" "Gluten Free Chicken Breasts"). */}
+      <div className="title-row product-title">
+        <DraftInput className="title-input brand-input" value={p.brand} placeholder="Brand" aria-label="Brand" list={brands} onCommit={(brand) => save({ brand })} />
         <DraftInput className="title-input" value={p.name} required aria-label="Name" onCommit={(name) => save({ name })} />
+        <datalist id={brands}>
+          {view.brands().map((b) => (
+            <option key={b} value={b} />
+          ))}
+        </datalist>
       </div>
 
       <div className="fields">
@@ -45,9 +57,6 @@ export function ProductPage({ id }: { id: string }) {
             onChange={(foodId) => save({ foodId })}
             onCreate={(n) => ensureFood(n)}
           />
-        </Field>
-        <Field label="Brand">
-          <DraftInput className="input" value={p.brand} onCommit={(brand) => save({ brand })} />
         </Field>
         <Field label="Sold at">
           <MultiPicker
@@ -81,6 +90,9 @@ export function ProductPage({ id }: { id: string }) {
       )}
 
       <div className="page-foot">
+        <button className="btn subtle" onClick={() => duplicate("products", p.id)} title="A copy with the same food, brand, stores and tags">
+          Duplicate
+        </button>
         <span className="spacer" />
         {!p.deleted && (
           <button className="btn danger" onClick={() => setConfirm(true)}>
@@ -90,7 +102,7 @@ export function ProductPage({ id }: { id: string }) {
       </div>
       {confirm && (
         <ConfirmDialog
-          title={`Delete “${p.name}”?`}
+          title={`Delete “${productName(p)}”?`}
           confirm="Delete"
           onCancel={() => setConfirm(false)}
           onConfirm={() => {

@@ -1,9 +1,11 @@
 import {
   blank,
+  nameOf,
   newId,
   parseLine,
   tidyName,
   today,
+  type DevNote,
   type Food,
   type Id,
   type Kind,
@@ -15,6 +17,7 @@ import {
   type RecipeIngredient,
   type Records,
 } from "@foodlab/shared";
+import { go, pathOf } from "./router";
 import { data, put } from "./sync";
 import { showToast } from "./toast";
 
@@ -83,9 +86,9 @@ export function setIngredientFood(recipe: Recipe, ingredientId: Id, foodId: Id |
 }
 
 /** Delete (a tombstone), with Undo. */
-export function remove<K extends Exclude<Kind, "log" | "tags">>(kind: K, record: Records[K]) {
+export function remove<K extends Exclude<Kind, "log" | "tags" | "devnotes">>(kind: K, record: Records[K]) {
   put(kind, { ...record, deleted: true });
-  showToast(`Deleted “${(record as { name: string }).name}”`, {
+  showToast(`Deleted “${nameOf(record)}”`, {
     label: "Undo",
     run: () => {
       const now = data().state[kind][record.id] as Records[K] | undefined;
@@ -114,4 +117,51 @@ export function addLog(itemKind: LogTarget, itemId: Id, kind: LogKind, text: str
 export function removeLog(e: LogEntry) {
   put("log", { ...e, deleted: true });
   showToast("Deleted the entry", { label: "Undo", run: () => put("log", { ...e, deleted: false }) });
+}
+
+/**
+ * A copy to start the next one from, opened with its name ready to change. It takes what
+ * describes the thing, not what I thought of it: no rating, buy again or history, and for a
+ * product no notes, links or gluten-free (those belong to that one product).
+ */
+export function duplicate(kind: "foods" | "products" | "recipes", id: Id) {
+  const now = Date.now();
+  const copy = { id: newId(), deleted: false, createdAt: now, updatedAt: now, rev: 0 };
+  const name = (n: string) => `${n} (copy)`;
+  if (kind === "foods") {
+    const f = data().state.foods[id]!;
+    put("foods", { ...f, ...copy, name: name(f.name), staple: false, notes: "" });
+  } else if (kind === "products") {
+    const p = data().state.products[id]!;
+    put("products", { ...blank.products(copy.id, name(p.name), now), ...pick(p, ["foodId", "brand", "storeIds", "tagIds", "travels", "keepsDays", "effort", "shelfLife"]) });
+  } else {
+    const r = data().state.recipes[id]!;
+    put("recipes", {
+      ...r,
+      ...copy,
+      name: name(r.name),
+      rating: null,
+      status: "tried",
+      ingredients: r.ingredients.map((i) => ({ ...i, id: newId() })),
+    });
+  }
+  go(pathOf(kind, copy.id) + (kind === "recipes" ? "?edit=1" : ""));
+  // Once the new page is up: its name selected, to type over.
+  setTimeout(() => {
+    const el = document.querySelector<HTMLInputElement>('.page input[aria-label="Name"]');
+    el?.focus();
+    el?.select();
+  }, 50);
+}
+
+const pick = <T, K extends keyof T>(x: T, keys: K[]) => Object.fromEntries(keys.map((k) => [k, x[k]])) as Pick<T, K>;
+
+/** Note an idea or bug, with the page it was written on. */
+export function addDevNote(text: string) {
+  put("devnotes", blank.devnotes(newId(), text, location.pathname + location.search));
+}
+
+export function removeDevNote(n: DevNote) {
+  put("devnotes", { ...n, deleted: true });
+  showToast("Deleted the note", { label: "Undo", run: () => put("devnotes", { ...(data().state.devnotes[n.id] ?? n), deleted: false }) });
 }

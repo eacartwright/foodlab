@@ -4,13 +4,14 @@ import {
   METHOD_LABEL,
   formatAmount,
   formatQuantity,
+  productName,
   today,
   type Id,
   type Recipe,
   type RecipeIngredient,
 } from "@foodlab/shared";
 import { useEffect, useState } from "react";
-import { addLog, ensureFood, ingredientsFromText, remove, setIngredientFood } from "../actions";
+import { addLog, duplicate, ensureFood, ingredientsFromText, remove, setIngredientFood } from "../actions";
 import { Markdown } from "../markdown";
 import { A, go, pathOf, setQuery, useRoute } from "../router";
 import { data, put, useData } from "../sync";
@@ -156,7 +157,7 @@ function IngredientCard({ r, i }: { r: Recipe; i: RecipeIngredient }) {
           </div>
           {best ? (
             <div>
-              Usually <A href={pathOf("products", best.id)}>{best.name}</A>
+              Usually <A href={pathOf("products", best.id)}>{productName(best)}</A>
               {best.storeIds.length > 0 && <span className="muted"> · {best.storeIds.map((s) => view.store(s)?.name).join(", ")}</span>}
             </div>
           ) : (
@@ -294,6 +295,9 @@ function RecipeEdit({ r }: { r: Recipe }) {
       <div className="page-foot">
         <button className="btn primary" onClick={done}>
           Done
+        </button>
+        <button className="btn subtle" onClick={() => duplicate("recipes", r.id)} title="A copy to make a version of it">
+          Duplicate
         </button>
         <span className="spacer" />
         {!r.deleted && (

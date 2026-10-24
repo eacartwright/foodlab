@@ -25,13 +25,13 @@ aria-label (a page's title behind the Quick add dialog): scope selectors to `.qu
 ## Architecture
 
 - `packages/shared` — `types.ts` (records, the eating fields, meal tags, `blank.*` for new
-  records), `validate.ts` (body → clean record, used by the server on every save),
+  records, `productName` = brand + name, `withoutBrand`), `validate.ts` (body → clean record, used by the server on every save),
   `ingredients.ts` (`parseLine`, `nameKey` for plural/case-proof matching, `formatAmount`),
   `derive.ts` (`View`: reverse links, preferred products, ancestors/descendants, staple
   suggestions, the `+` search, the Eat list). Pure; tests beside them.
 - `packages/server` — Node + Hono + `node:sqlite` (Node ≥ 22.13). `db.ts`: relational tables
   (foods, stores, products + `product_stores`, recipes + `recipe_ingredients`, tags +
-  `item_tags`, `log_entries`, `meta.rev`), `loadState` / `save.<kind>`. `store.ts`: the state
+  `item_tags`, `log_entries`, `dev_notes`, `meta.rev`), `loadState` / `save.<kind>`. `store.ts`: the state
   in memory; `put(kind, id, body)` validates, checks links (no unknown ids, no food loops,
   meal tags fixed), writes a `rating` log entry when a rating changes, bumps `rev`.
   `index.ts`: `GET /api/state` (all of it, ETag = rev), `PUT /api/<kind>/<id>` (whole
@@ -43,7 +43,8 @@ aria-label (a page's title behind the Quick add dialog): scope selectors to `.qu
   errors retry. `router.tsx`: plain paths, `go`, `setQuery`, `<A>`; the snapshot compares the
   raw `location.search` (comparing re-encoded params looped forever, 2026-10-23).
   `actions.ts`: `ensureFood/Store/Tag` (find by `nameKey` or make), `ingredientsFromText`
-  (unchanged lines keep their ingredient and hand-picked food), `remove` (tombstone + Undo).
+  (unchanged lines keep their ingredient and hand-picked food), `remove` (tombstone + Undo),
+  `duplicate`, `addDevNote`.
   Pages in `components/`; in-place inputs in `controls.tsx` (`DraftInput`, `DraftTextarea`,
   `Picker`, `MultiPicker`, `Segmented`, `RatingInput`, `TagEditor`).
 
@@ -96,6 +97,11 @@ tombstones (`deleted`), restorable with Undo or the page's Restore.
   install, tests, typecheck and `npm run dev` all fine. Pushed to
   github.com/eacartwright/foodlab (private, `main`). Deployed the same day: live at
   https://foodlab.evans.tools (Access login on the app, the five icon paths public).
-- **Next:** install on the Android phone, check Share to foodlab, and enter real lunches.
+- 2026-10-23, first day of use: ratings ❤️ 👍 👎; gluten-free says how sure (migration 2 maps
+  yes → labeled, GF option → blank; Not GF never in Eat); products shown as brand + name
+  (migration 2 strips a leading brand from names); Duplicate on foods/products/recipes; Dev
+  notes (📝 beside ⚙). Not deployed yet. Show or sort a product by `productName` / `nameOf`,
+  never `.name` alone.
+- **Next:** deploy this, install on the Android phone, check Share to foodlab, enter real lunches.
 - Then M2 (DESIGN.md §10): derived facts from the log on pages, per-recipe product override,
   recipe cards, a Tags page.

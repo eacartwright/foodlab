@@ -362,6 +362,10 @@ textarea::placeholder {
   color: var(--accent);
   vertical-align: 2px;
 }
+.badge-warn {
+  border-color: var(--warn);
+  color: var(--warn);
+}
 .term {
   display: inline-block;
   margin: 0 3px;
@@ -675,6 +679,28 @@ textarea::placeholder {
 }
 .title-input:hover {
   border-color: var(--border);
+}
+/* A product's title is two boxes, brand then name, that read as one name. */
+.product-title {
+  flex-wrap: wrap;
+  gap: 0 4px;
+}
+.product-title .title-input {
+  flex: 1 1 12em;
+}
+.product-title .brand-input {
+  flex: 0 1 auto;
+  field-sizing: content;
+  min-width: 3.5em;
+  max-width: 100%;
+}
+/* Chromium keeps room for a datalist arrow; suggestions still show while typing. */
+.brand-input::-webkit-calendar-picker-indicator {
+  display: none !important;
+}
+.brand-input:placeholder-shown {
+  border-color: var(--border);
+  border-style: dashed;
 }
 .lede {
   margin: -4px 0 14px;
@@ -1120,6 +1146,48 @@ ul.staples li > :nth-child(2) {
 }
 .quick-add .segmented {
   align-self: flex-start;
+}
+.name-row .input.brand-box {
+  flex: 0 1 9em;
+  min-width: 6em;
+}
+.name-row .input:not(.brand-box) {
+  min-width: 12em;
+}
+
+/* ---- dev notes ---- */
+ul.notes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+ul.notes li {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+}
+ul.notes input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin-top: 3px;
+  flex-shrink: 0;
+}
+.note-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.note-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+ul.notes li.done .note-text {
+  color: var(--muted);
+  text-decoration: line-through;
 }
 
 .toast {

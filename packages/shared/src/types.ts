@@ -3,7 +3,8 @@
 
 export type Id = string;
 
-export const RATINGS = ["down", "up", "love"] as const;
+/** In the order they're offered: best first. */
+export const RATINGS = ["love", "up", "down"] as const;
 export type Rating = (typeof RATINGS)[number];
 export const RATING_EMOJI: Record<Rating, string> = { down: "👎", up: "👍", love: "❤️" };
 export const RATING_LABEL: Record<Rating, string> = { down: "Didn't like it", up: "Good", love: "Love it" };
@@ -12,9 +13,20 @@ export const STATUSES = ["tried", "want"] as const;
 export type Status = (typeof STATUSES)[number];
 export const STATUS_LABEL: Record<Status, string> = { tried: "Tried", want: "Want to try" };
 
-export const GF = ["unknown", "yes", "option", "no"] as const;
+/**
+ * How sure I am it's gluten-free (DESIGN.md §4.6). Everything is, unless it's marked Not GF
+ * (someone else's food); the rest says how I know. "unknown" = not said.
+ */
+export const GF = ["unknown", "certified", "labeled", "ingredients", "facility", "no"] as const;
 export type GlutenFree = (typeof GF)[number];
-export const GF_LABEL: Record<GlutenFree, string> = { unknown: "GF?", yes: "Gluten-free", option: "GF option", no: "Not GF" };
+export const GF_LABEL: Record<GlutenFree, string> = {
+  unknown: "",
+  certified: "Certified GF",
+  labeled: "Labeled GF",
+  ingredients: "No gluten ingredients",
+  facility: "Shared facility",
+  no: "Not GF",
+};
 
 export const TRAVELS = ["cold", "microwave", "asis"] as const;
 export type Travels = (typeof TRAVELS)[number];
@@ -126,6 +138,13 @@ export interface LogEntry extends Base {
   text: string;
 }
 
+/** An idea or bug noted while using the app, for working on it later; `path` is the page it was written on. */
+export interface DevNote extends Base {
+  text: string;
+  path: string;
+  done: boolean;
+}
+
 export interface Records {
   foods: Food;
   products: Product;
@@ -133,15 +152,16 @@ export interface Records {
   recipes: Recipe;
   tags: Tag;
   log: LogEntry;
+  devnotes: DevNote;
 }
 export type Kind = keyof Records;
-export const KINDS: Kind[] = ["foods", "products", "stores", "recipes", "tags", "log"];
+export const KINDS: Kind[] = ["foods", "products", "stores", "recipes", "tags", "log", "devnotes"];
 export type AnyRecord = Records[Kind];
 
 /** Everything, keyed by id per kind. Deleted records are included (tombstones). */
 export type State = { [K in Kind]: Record<Id, Records[K]> } & { rev: number };
 
-export const emptyState = (): State => ({ rev: 0, foods: {}, products: {}, stores: {}, recipes: {}, tags: {}, log: {} });
+export const emptyState = (): State => ({ rev: 0, foods: {}, products: {}, stores: {}, recipes: {}, tags: {}, log: {}, devnotes: {} });
 
 /** The fixed meal tags (DESIGN.md §4.9), seeded with these ids. */
 export const MEAL_TAGS: { id: Id; name: string }[] = [
@@ -202,7 +222,28 @@ export const blank = {
     ingredients: [],
   }),
   tags: (id: Id, name: string, now = Date.now()): Tag => ({ ...EMPTY_BASE(id, now), name, kind: "personal" }),
+  devnotes: (id: Id, text: string, path: string, now = Date.now()): DevNote => ({ ...EMPTY_BASE(id, now), text, path, done: false }),
 };
+
+/** A product as it's shown: brand first ("Bell & Evans" + "Gluten Free Chicken Breasts"). */
+export function productName(p: { brand: string; name: string }): string {
+  const brand = p.brand.trim();
+  if (!brand || p.name.toLowerCase().startsWith(brand.toLowerCase())) return p.name;
+  return `${brand} ${p.name}`;
+}
+
+/** The name without the brand in front, so it isn't shown twice ("Bell & Evans Chicken" → "Chicken"). */
+export function withoutBrand(name: string, brand: string): string {
+  const b = brand.trim();
+  if (!b || !name.toLowerCase().startsWith(b.toLowerCase())) return name;
+  const rest = name.slice(b.length);
+  // Only at a word break, and never down to nothing ("Kraft" by Kraft stays).
+  if (!/^[\s,:–—-]/.test(rest)) return name;
+  return rest.replace(/^[\s,:–—-]+/, "") || name;
+}
+
+/** What a record is called on screen. */
+export const nameOf = (x: { name: string; brand?: string }): string => (x.brand !== undefined ? productName(x as { brand: string; name: string }) : x.name);
 
 /** Today as YYYY-MM-DD in local time. */
 export function today(d = new Date()): string {

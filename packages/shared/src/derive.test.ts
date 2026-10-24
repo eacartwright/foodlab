@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { View } from "./derive";
-import { blank, emptyState, MEAL_TAGS, WORK_LUNCH, type Food, type Product, type Recipe, type State } from "./types";
+import { blank, emptyState, MEAL_TAGS, productName, withoutBrand, WORK_LUNCH, type Food, type Product, type Recipe, type State } from "./types";
 
 // A small world: Lemon → Lemon juice (form) → Santa Cruz (product, Wegmans); Meat → Chicken thigh.
 function world(): State {
@@ -100,5 +100,26 @@ describe("View", () => {
     const list = v.stapleList();
     expect(list.map((g) => g.store?.name)).toEqual(["Market Basket", "Wegmans"]);
     expect(list[0]!.items[0]!.product?.id).toBe("kerry");
+  });
+});
+
+describe("products by brand", () => {
+  it("shows the brand first, once", () => {
+    expect(productName({ brand: "Bell & Evans", name: "Gluten Free Chicken Breasts" })).toBe("Bell & Evans Gluten Free Chicken Breasts");
+    expect(productName({ brand: "Kraft", name: "Kraft Singles" })).toBe("Kraft Singles");
+    expect(productName({ brand: "", name: "Eggs" })).toBe("Eggs");
+    expect(withoutBrand("Bell & Evans - Nuggets", "bell & evans")).toBe("Nuggets");
+    expect(withoutBrand("Krafty cheese", "Kraft")).toBe("Krafty cheese");
+  });
+
+  it("finds and sorts products by the whole name; Eat never shows what isn't gluten-free", () => {
+    const s = world();
+    s.products.be = { ...blank.products("be", "Gluten Free Chicken Breasts"), brand: "Bell & Evans", tagIds: [WORK_LUNCH] };
+    s.products.wheat = { ...blank.products("wheat", "Wheat wrap"), glutenFree: "no", tagIds: [WORK_LUNCH] };
+    const v = new View(s);
+    expect(v.search("bell evans gluten free").full.products.map((h) => h.item.id)).toEqual(["be"]);
+    expect(v.products[0]?.id).toBe("be");
+    expect(v.brands()).toEqual(["Bell & Evans"]);
+    expect(v.eat({ tagId: WORK_LUNCH }).map((e) => e.item.id)).not.toContain("wheat");
   });
 });

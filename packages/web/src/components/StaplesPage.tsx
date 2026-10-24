@@ -1,3 +1,4 @@
+import { productName } from "@foodlab/shared";
 import { useState } from "react";
 import { A, pathOf } from "../router";
 import { put, useData } from "../sync";
@@ -35,7 +36,7 @@ export function StaplesPage() {
                 </A>
                 {product ? (
                   <A href={pathOf("products", product.id)} className="muted">
-                    {product.name}
+                    {productName(product)}
                   </A>
                 ) : (
                   <span className="muted small">no favorite product yet</span>

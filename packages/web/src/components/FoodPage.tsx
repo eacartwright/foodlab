@@ -1,6 +1,6 @@
-import { type Food } from "@foodlab/shared";
+import { productName, type Food } from "@foodlab/shared";
 import { useState } from "react";
-import { ensureFood, remove } from "../actions";
+import { duplicate, ensureFood, remove } from "../actions";
 import { A, go, pathOf } from "../router";
 import { data, put, useData } from "../sync";
 import { DraftInput, DraftTextarea, Field, Picker, TagEditor } from "./controls";
@@ -56,7 +56,7 @@ export function FoodPage({ id }: { id: string }) {
       </div>
       {best && (
         <p className="lede">
-          Usually: <A href={pathOf("products", best.id)}>{best.name}</A>
+          Usually: <A href={pathOf("products", best.id)}>{productName(best)}</A>
           {best.storeIds.length > 0 && <span className="muted"> · {best.storeIds.map((s) => view.store(s)?.name).join(", ")}</span>}
         </p>
       )}
@@ -136,6 +136,9 @@ export function FoodPage({ id }: { id: string }) {
             + Kind of {food.name}
           </button>
         )}
+        <button className="btn subtle" onClick={() => duplicate("foods", food.id)} title="A copy with the same is a, form of and tags">
+          Duplicate
+        </button>
         <span className="spacer" />
         {!food.deleted && (
           <button className="btn danger" onClick={() => setConfirm(true)}>

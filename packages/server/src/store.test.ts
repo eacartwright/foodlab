@@ -70,10 +70,39 @@ describe("Store", () => {
     ]);
   });
 
+  it("keeps a product's name without its brand, and saves dev notes", () => {
+    store.put("products", "p", { ...blank.products("p", "Bell & Evans Gluten Free Chicken Breasts"), brand: "Bell & Evans" });
+    expect(store.state.products.p?.name).toBe("Gluten Free Chicken Breasts");
+    store.put("products", "k", { ...blank.products("k", "Kraft"), brand: "Kraft" });
+    expect(store.state.products.k?.name).toBe("Kraft");
+    store.put("devnotes", "n", blank.devnotes("n", " Duplicate button ", "/products/p"));
+    expect(loadState(db).devnotes.n).toMatchObject({ text: "Duplicate button", path: "/products/p", done: false });
+    expect(() => store.put("devnotes", "e", { text: " " })).toThrow(/required/);
+  });
+
   it("keeps createdAt and bumps rev each save", () => {
     const first = store.put("stores", "s", blank.stores("s", "MB", 1000), 5000);
     const second = store.put("stores", "s", { ...first.record, name: "Market Basket", createdAt: 99 }, 6000);
     expect(second.record.createdAt).toBe(1000); // when the device made it, not when it arrived
     expect(second.rev).toBe(first.rev + 1);
+  });
+});
+
+describe("migrations", () => {
+  it("v2: gluten-free says how sure, and names lose a leading brand", () => {
+    const file = join(dir, "old.db");
+    const old = openDb(file, 1);
+    const ins = old.prepare("INSERT INTO products (id, name, brand, gluten_free, created_at, updated_at, rev) VALUES (?, ?, ?, ?, 0, 0, 1)");
+    ins.run("a", "Bell & Evans Gluten Free Chicken Breasts", "Bell & Evans", "yes");
+    ins.run("b", "bell & evans", "Bell & Evans", "option");
+    ins.run("c", "Wheat bread", "", "no");
+    old.close();
+    const now = openDb(file);
+    const s = loadState(now);
+    expect([s.products.a?.name, s.products.a?.glutenFree]).toEqual(["Gluten Free Chicken Breasts", "labeled"]);
+    expect([s.products.b?.name, s.products.b?.glutenFree]).toEqual(["bell & evans", "unknown"]);
+    expect(s.products.c?.glutenFree).toBe("no");
+    expect(s.devnotes).toEqual({});
+    now.close();
   });
 });

@@ -1,4 +1,4 @@
-import { emptyState, View, type AnyRecord, type Id, type Kind, type LogEntry, type Records, type State } from "@foodlab/shared";
+import { emptyState, KINDS, nameOf, View, type AnyRecord, type Id, type Kind, type LogEntry, type Records, type State } from "@foodlab/shared";
 import { useSyncExternalStore } from "react";
 import { showToast } from "./toast";
 
@@ -52,7 +52,7 @@ function emit() {
 function current() {
   if (!snapshot) {
     const state: State = { ...server };
-    for (const k of ["foods", "products", "stores", "recipes", "tags", "log"] as const) state[k] = { ...server[k] } as never;
+    for (const k of KINDS) state[k] = { ...server[k] } as never;
     for (const p of outbox) (state[p.kind] as Record<Id, AnyRecord>)[p.id] = p.body;
     snapshot = { state, view: new View(state), status, pending: outbox.length, loaded };
   }
@@ -135,7 +135,7 @@ async function flush() {
       } else if (res.status >= 400 && res.status < 500) {
         // The server refused this record (a bug, not the connection). Drop it so the rest can go.
         const err = (await res.json().catch(() => null)) as { error?: string } | null;
-        const name = "name" in p.body ? `“${(p.body as { name: string }).name}”` : "a change";
+        const name = "name" in p.body ? `“${nameOf(p.body)}”` : "a change";
         showToast(`Couldn't save ${name}: ${err?.error ?? res.statusText}`, undefined, 12_000);
         outbox.shift();
       } else {
