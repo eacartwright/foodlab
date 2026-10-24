@@ -118,6 +118,12 @@ export class Store {
         if (!meal && t.kind === "meal") throw new Invalid("Meal tags are fixed");
         break;
       }
+      case "groceries": {
+        const g = rec as Records["groceries"];
+        need(s.foods, g.foodId, "food");
+        need(s.products, g.productId, "product");
+        break;
+      }
       case "log": {
         const e = rec as LogEntry;
         need(s[e.itemKind], e.itemId, "item");

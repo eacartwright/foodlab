@@ -3,6 +3,7 @@ import { useState } from "react";
 import { A, pathOf } from "../router";
 import { put, useData } from "../sync";
 import { showToast } from "../toast";
+import { GroceryButton } from "./GroceriesPage";
 import { Section } from "./rows";
 
 // Staples (DESIGN.md §4.7): what I keep in the house, grouped by where I buy it (the standing
@@ -41,6 +42,7 @@ export function StaplesPage() {
                 ) : (
                   <span className="muted small">no favorite product yet</span>
                 )}
+                <GroceryButton name={food.name} foodId={food.id} small />
                 <button className="btn icon subtle" title="Not a staple" aria-label={`${food.name} isn't a staple`} onClick={() => mark(food.id, false)}>
                   ✕
                 </button>

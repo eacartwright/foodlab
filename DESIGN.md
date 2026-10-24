@@ -233,14 +233,20 @@ counter, and the same ten things typed out again every week.)
 | `name` | Required, as typed: "Milk", "the good bagels". |
 | `foodId` / `productId` | Optional links, filled in when the typed name matches a food or product (by `nameKey`), or picked later. A product gives the item its stores. |
 | `need` | yes / no. **On the list** or not. The only thing the everyday path changes. |
-| `note` | This time only: "2", "the big one". Cleared when it's got. |
-| `gotAt` | When it was last checked off. Feeds "most bought" and the trip's Undo. |
+| `note` | This time only: "2", "the big one". Cleared when it goes back on the list. |
+| `neededAt` | When it last went on the list: the list's order. |
+| `gotAt` | When it was last checked off: this trip, and its Undo. |
 | `count` | Times got. Orders the Usual list. |
 
 - An item is made **once**, the first time I type it, and is never made again: typing "milk"
   next time finds it and sets `need`.
+- A food's item ("Butter") stands for any of its products until one is picked for it: Kerrygold's
+  page says it's on the list, and + Groceries there links the same item to Kerrygold rather
+  than making a second butter.
 - Checking it off sets `need` to no, `gotAt` to now, adds one to `count`. If it links a product,
   it also writes a **`bought` log entry** on the product, so "last bought" exists for free.
+  Undo takes both back.
+- **Not needed** (on the row) takes it off without counting it as bought.
 - Delete (a tombstone, as everywhere) is for something I'll never buy again, not for "got it".
 - Pantry inventory stays a non-goal (§3): `need` is "I'm out", not "I have 3".
 
@@ -371,10 +377,13 @@ signal: checking off goes through the outbox like any save).
 ```
 
 - **The list**: what's needed, in the order added. Tap the circle to check it off.
-- **This trip**: checked items stay on screen struck through, with Undo, until I leave the page
-  for a few hours or tap **Done shopping**. Then they quietly join Usual. They never pile up.
+- **This trip**: checked items stay on screen struck through, with Undo, for 3 hours or until
+  **Done shopping** (per device). Then they quietly join Usual. They never pile up.
+- Tapping an item opens its row: name, this time's note, food, product, Not needed, Delete.
 - **Usual**: everything I've bought that isn't needed, most-bought first, plus staples (§4.7)
-  not yet on it. One tap = needed. Typing in the add box filters it.
+  not yet on it. One tap = needed. Typing in the add box filters it, then offers foods and
+  products I haven't bought yet (not 👎 ones); Enter adds the text as typed, linked to the food
+  or product it names.
 - Adding from elsewhere: **+ Groceries** on a food, product or staple row puts it on the list
   (making the item if it's new).
 
@@ -441,7 +450,7 @@ dropped with a message instead of blocking the rest.
 | # | Goal | Done when… |
 |---|---|---|
 | **M1** | What can I eat (lunch first) | Foods (is a, form of, staple), products (stores, ratings, eating fields), stores, recipes with parsed ingredient lines, meal and personal tags, the `+` search, Eat with Work lunch filters, lists and pages, Quick add, Share to foodlab, Staples with suggestions, rating history and hand-written log notes, offline outbox. Deployed at foodlab.evans.tools, installed on the phone. **Built 2026-10-23, not yet deployed.** |
-| **M2** | Groceries | A standing list that replaces Todoist (§4.10, §5.8): items made once and needed or not, check off with this trip's Undo, Usual (most bought + staples) one tap from the list, + Groceries on foods, products and staples, `bought` log entries for linked products. Works offline in the store. |
+| **M2** | Groceries | A standing list that replaces Todoist (§4.10, §5.8): items made once and needed or not, check off with this trip's Undo, Usual (most bought + staples) one tap from the list, + Groceries on foods, products and staples, `bought` log entries for linked products. Works offline in the store. **Built 2026-10-24, not yet deployed.** |
 | **M3** | Memory | Log entries' derived facts on pages (times made, last made, last bought); per-recipe product override; recipe card view; Tags page (rename, merge, delete). |
 | **M4** | Places & dishes | Places (restaurants, stores with prepared food: address → Maps, phone, hours, Find Me Gluten Free link, been / want to try) and dishes with the eating fields, Tried / Want to try per place. Dishes join Eat. |
 | **M5** | Photos | On products, recipes and dishes (sideshow's file store). |

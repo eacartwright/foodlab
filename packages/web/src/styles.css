@@ -1101,6 +1101,76 @@ ul.staples li > :nth-child(2) {
   flex: 1;
 }
 
+/* ---- groceries (phone-first: tapped in the store) ---- */
+.groceries .stack,
+.groceries > .inline {
+  margin-bottom: 8px;
+}
+ul.grocery-list {
+  list-style: none;
+  margin: 8px 0 12px;
+  padding: 0;
+}
+ul.grocery-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  min-height: 48px;
+  border-bottom: 1px solid var(--border);
+}
+ul.grocery-list input[type="checkbox"] {
+  width: 24px;
+  height: 24px;
+  margin: 0 4px;
+  flex-shrink: 0;
+  accent-color: var(--primary);
+  cursor: pointer;
+}
+.grocery-main {
+  flex: 1;
+  min-width: 0;
+  min-height: 48px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  align-content: center;
+  gap: 0 8px;
+  padding: 4px 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.grocery-name {
+  font-size: 1.05rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.grocery-note {
+  color: var(--muted);
+}
+.grocery-stores {
+  margin-left: auto;
+}
+ul.grocery-list li.got .grocery-name {
+  flex: 1;
+  color: var(--muted);
+  font-weight: 400;
+  text-decoration: line-through;
+}
+.grocery-edit {
+  flex-basis: 100%;
+  padding: 4px 0 12px 42px;
+}
+@media (max-width: 860px) {
+  .grocery-edit {
+    padding-left: 0;
+  }
+}
+
 /* ---- dialogs (same as sideshow) ---- */
 .backdrop {
   position: fixed;

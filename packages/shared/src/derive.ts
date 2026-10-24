@@ -5,6 +5,7 @@ import {
   nameOf,
   type Effort,
   type Food,
+  type GroceryItem,
   type Id,
   type LogEntry,
   type Product,
@@ -37,6 +38,7 @@ export class View {
   readonly stores: Store[];
   readonly recipes: Recipe[];
   readonly tags: Tag[];
+  readonly groceries: GroceryItem[];
   private readonly foodByKey = new Map<string, Food>();
   private readonly productsByFood = new Map<Id, Product[]>();
   private readonly productsByStore = new Map<Id, Product[]>();
@@ -72,6 +74,7 @@ export class View {
     for (const r of this.recipes) {
       for (const id of new Set(r.ingredients.map((i) => i.foodId).filter((x): x is Id => !!x))) push(this.recipesByFood, id, r);
     }
+    this.groceries = live(state.groceries ?? {}).sort(byName);
     for (const e of live(state.log)) push(this.logByItem, e.itemId, e);
     for (const list of this.logByItem.values()) list.sort((a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt);
   }
@@ -227,6 +230,71 @@ export class View {
       .sort((a, b) => (!a.store ? 1 : !b.store ? -1 : byName(a.store, b.store)));
   }
 
+  // ---- groceries (DESIGN.md §4.10, §5.8) ----
+
+  /** The grocery item for this name, product or food, if I've ever had one. */
+  findGrocery(by: { name?: string; productId?: Id | null; foodId?: Id | null }): GroceryItem | undefined {
+    if (by.productId) {
+      const g = this.groceries.find((x) => x.productId === by.productId);
+      if (g) return g;
+    }
+    // A food's item ("Butter") stands for any of its products, until one is picked for it.
+    if (by.foodId) {
+      const g = this.groceries.find((x) => x.foodId === by.foodId && !x.productId);
+      if (g) return g;
+    }
+    const key = by.name ? nameKey(by.name) : "";
+    return key ? this.groceries.find((x) => nameKey(x.name) === key) : undefined;
+  }
+
+  /** On the list, in the order it went on. */
+  groceryList(): GroceryItem[] {
+    return this.groceries.filter((g) => g.need).sort((a, b) => (a.neededAt ?? 0) - (b.neededAt ?? 0));
+  }
+
+  /** Checked off since `since` (this trip), in the order got. */
+  groceryTrip(since: number): GroceryItem[] {
+    return this.groceries.filter((g) => !g.need && (g.gotAt ?? 0) >= since).sort((a, b) => (a.gotAt ?? 0) - (b.gotAt ?? 0));
+  }
+
+  /**
+   * Usual: what I buy that isn't on the list (or this trip), most bought first, then staples
+   * I haven't put on it yet.
+   */
+  groceryUsual(since: number): GroceryUsual[] {
+    const items = this.groceries
+      .filter((g) => !g.need && (g.gotAt ?? 0) < since)
+      .sort((a, b) => b.count - a.count || byName(a, b))
+      .map((item) => ({ name: item.name, item }));
+    const staples = this.staples()
+      .filter((f) => !this.findGrocery({ foodId: f.id, name: f.name }))
+      .map((food) => ({ name: food.name, food }));
+    return [...items, ...staples];
+  }
+
+  /** Where an item is sold: its product's stores, or the food's preferred product's. */
+  groceryStores(g: GroceryItem): Store[] {
+    const p = (g.productId && this.state.products[g.productId]) || (g.foodId ? this.preferredProduct(g.foodId) : undefined);
+    if (!p || p.deleted) return [];
+    return p.storeIds.map((s) => this.store(s)).filter((s): s is Store => !!s && !s.deleted);
+  }
+
+  /** As I type in the add box: Usual first, then foods and products I haven't bought yet. */
+  groceryMatches(text: string, since: number, limit = 12): GroceryUsual[] {
+    const t = norm(text);
+    if (!t) return [];
+    const hit = (name: string) => norm(name).includes(t);
+    const usual = this.groceryUsual(since).filter((u) => hit(u.name));
+    const taken = (by: Parameters<View["findGrocery"]>[0]) => !!this.findGrocery(by);
+    const foods = this.foods.filter((f) => hit(f.name) && !taken({ foodId: f.id, name: f.name })).map((food) => ({ name: food.name, food }));
+    const products = this.products
+      .filter((p) => p.rating !== "down" && hit(nameOf(p)) && !taken({ productId: p.id, name: nameOf(p) }))
+      .map((product) => ({ name: nameOf(product), product }));
+    const seen = new Set(usual.map((u) => nameKey(u.name)));
+    const rest = [...foods, ...products].filter((x) => !seen.has(nameKey(x.name)) && (seen.add(nameKey(x.name)), true));
+    return [...usual, ...rest].slice(0, limit);
+  }
+
   // ---- search (DESIGN.md §5.1) ----
 
   /** The words a thing can be found by, lowercased. */
@@ -341,6 +409,9 @@ export class View {
     return all.sort((a, b) => b.item.updatedAt - a.item.updatedAt).slice(0, n);
   }
 }
+
+/** One tap from the list: an item I've had before, or a staple / food / product to make one from. */
+export type GroceryUsual = { name: string; item?: GroceryItem; food?: Food; product?: Product };
 
 export const isWorkLunch = (tagIds: Id[]) => tagIds.includes(WORK_LUNCH);
 

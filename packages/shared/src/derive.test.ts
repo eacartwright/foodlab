@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { View } from "./derive";
-import { blank, emptyState, MEAL_TAGS, productName, withoutBrand, WORK_LUNCH, type Food, type Product, type Recipe, type State } from "./types";
+import { blank, emptyState, MEAL_TAGS, productName, withoutBrand, WORK_LUNCH, type Food, type GroceryItem, type Product, type Recipe, type State } from "./types";
 
 // A small world: Lemon → Lemon juice (form) → Santa Cruz (product, Wegmans); Meat → Chicken thigh.
 function world(): State {
@@ -121,5 +121,57 @@ describe("products by brand", () => {
     expect(v.products[0]?.id).toBe("be");
     expect(v.brands()).toEqual(["Bell & Evans"]);
     expect(v.eat({ tagId: WORK_LUNCH }).map((e) => e.item.id)).not.toContain("wheat");
+  });
+});
+
+describe("groceries", () => {
+  const T = 1_000_000;
+  function shop() {
+    const s = world();
+    const g = (id: string, name: string, extra: Partial<GroceryItem> = {}) => (s.groceries[id] = { ...blank.groceries(id, name, T), ...extra });
+    g("milk", "Milk", { need: false, gotAt: T - 10, count: 9 });
+    g("eggs", "Eggs", { neededAt: T + 2 });
+    g("bread", "Bread", { neededAt: T + 1 });
+    g("juice", "Lemon juice", { foodId: "juice", productId: "sc", need: false, gotAt: T + 50, count: 2 });
+    g("rice", "Rice", { need: false, gotAt: T - 20, count: 3 });
+    g("gone", "Gone", { need: false, deleted: true });
+    return new View(s);
+  }
+
+  it("lists what's needed in the order it went on, and this trip in the order got", () => {
+    const v = shop();
+    expect(v.groceryList().map((g) => g.id)).toEqual(["bread", "eggs"]);
+    expect(v.groceryTrip(T).map((g) => g.id)).toEqual(["juice"]);
+  });
+
+  it("Usual: the rest by times bought, then staples not on it yet", () => {
+    const v = shop();
+    expect(v.groceryUsual(T).map((u) => u.name)).toEqual(["Milk", "Rice", "Butter"]);
+    expect(v.groceryUsual(T)[2]!.food?.staple).toBe(true);
+  });
+
+  it("finds an item by product, food or name (plurals ignored), and where it's sold", () => {
+    const v = shop();
+    expect(v.findGrocery({ name: "lemon juice" })?.id).toBe("juice");
+    expect(v.findGrocery({ name: "x", productId: "sc" })?.id).toBe("juice");
+    expect(v.findGrocery({ name: "egg" })?.id).toBe("eggs");
+    expect(v.findGrocery({ name: "gone" })).toBeUndefined();
+    expect(v.groceryStores(v.state.groceries.juice!).map((s) => s.name)).toEqual(["Wegmans"]);
+  });
+
+  it("a food's item stands for its products until one is picked", () => {
+    const s = world();
+    s.groceries.b = { ...blank.groceries("b", "Butter"), foodId: "butter" };
+    const v = new View(s);
+    expect(v.findGrocery({ name: "Kerrygold Butter", foodId: "butter", productId: "kerry" })?.id).toBe("b");
+    expect(v.groceryStores(s.groceries.b!).map((x) => x.name)).toEqual(["Wegmans", "Market Basket"]); // its preferred product's
+  });
+
+  it("matches typing against Usual first, then foods and products not yet bought", () => {
+    const v = shop();
+    expect(v.groceryMatches("ri", T).map((u) => u.name)).toEqual(["Rice"]);
+    const lemon = v.groceryMatches("lemon", T);
+    expect(lemon.map((u) => u.name)).toEqual(["Lemon"]);
+    expect(lemon.some((u) => u.product?.id === "bx")).toBe(false); // 👎 isn't suggested
   });
 });

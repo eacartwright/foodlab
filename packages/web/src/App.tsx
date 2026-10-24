@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { DevNotesDialog } from "./components/DevNotes";
 import { EatPage } from "./components/EatPage";
 import { FoodPage } from "./components/FoodPage";
+import { GroceriesPage } from "./components/GroceriesPage";
 import { FoodsList, ProductsList, RecipesList, StoresList } from "./components/ListPages";
 import { ProductPage } from "./components/ProductPage";
 import { closeQuickAddFromBack, fromShare, openQuickAdd, QuickAdd, useQuickAdd } from "./components/QuickAdd";
@@ -17,6 +18,7 @@ import { dismissToast, useToast } from "./toast";
 const NAV = [
   { href: "/", label: "Search", icon: "⌕" },
   { href: "/eat", label: "What can I eat?", icon: "🍽" },
+  { href: "/groceries", label: "Groceries", icon: "🧺" },
   null,
   { href: "/foods", label: "Foods", icon: "🥕" },
   { href: "/products", label: "Products", icon: "🛒" },
@@ -40,6 +42,8 @@ function Page() {
   switch (path) {
     case "/eat":
       return <EatPage />;
+    case "/groceries":
+      return <GroceriesPage />;
     case "/foods":
       return <FoodsList />;
     case "/products":

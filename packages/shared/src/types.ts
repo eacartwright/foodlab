@@ -145,6 +145,27 @@ export interface DevNote extends Base {
   done: boolean;
 }
 
+/**
+ * Something I buy, on the grocery list or not (DESIGN.md §4.10). Made once, the first time
+ * it's typed; after that it's only ever needed again or got. Never completed, never retyped.
+ */
+export interface GroceryItem extends Base {
+  name: string;
+  foodId: Id | null;
+  /** A product gives the item its stores. */
+  productId: Id | null;
+  /** On the list. */
+  need: boolean;
+  /** This time only ("2", "the big one"); cleared when it's got. */
+  note: string;
+  /** When it last went on the list: the list's order. */
+  neededAt: number | null;
+  /** When it was last checked off: this trip, and its Undo. */
+  gotAt: number | null;
+  /** Times got: orders Usual. */
+  count: number;
+}
+
 export interface Records {
   foods: Food;
   products: Product;
@@ -153,15 +174,16 @@ export interface Records {
   tags: Tag;
   log: LogEntry;
   devnotes: DevNote;
+  groceries: GroceryItem;
 }
 export type Kind = keyof Records;
-export const KINDS: Kind[] = ["foods", "products", "stores", "recipes", "tags", "log", "devnotes"];
+export const KINDS: Kind[] = ["foods", "products", "stores", "recipes", "tags", "log", "devnotes", "groceries"];
 export type AnyRecord = Records[Kind];
 
 /** Everything, keyed by id per kind. Deleted records are included (tombstones). */
 export type State = { [K in Kind]: Record<Id, Records[K]> } & { rev: number };
 
-export const emptyState = (): State => ({ rev: 0, foods: {}, products: {}, stores: {}, recipes: {}, tags: {}, log: {}, devnotes: {} });
+export const emptyState = (): State => ({ rev: 0, foods: {}, products: {}, stores: {}, recipes: {}, tags: {}, log: {}, devnotes: {}, groceries: {} });
 
 /** The fixed meal tags (DESIGN.md §4.9), seeded with these ids. */
 export const MEAL_TAGS: { id: Id; name: string }[] = [
@@ -223,6 +245,17 @@ export const blank = {
   }),
   tags: (id: Id, name: string, now = Date.now()): Tag => ({ ...EMPTY_BASE(id, now), name, kind: "personal" }),
   devnotes: (id: Id, text: string, path: string, now = Date.now()): DevNote => ({ ...EMPTY_BASE(id, now), text, path, done: false }),
+  groceries: (id: Id, name: string, now = Date.now()): GroceryItem => ({
+    ...EMPTY_BASE(id, now),
+    name,
+    foodId: null,
+    productId: null,
+    need: true,
+    note: "",
+    neededAt: now,
+    gotAt: null,
+    count: 0,
+  }),
 };
 
 /** A product as it's shown: brand first ("Bell & Evans" + "Gluten Free Chicken Breasts"). */

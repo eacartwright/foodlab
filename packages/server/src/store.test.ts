@@ -88,6 +88,16 @@ describe("Store", () => {
   });
 });
 
+describe("groceries", () => {
+  it("saves an item with its links and reads it back the same; unknown links are refused", () => {
+    store.put("foods", "milk", blank.foods("milk", "Milk"));
+    store.put("groceries", "g", { ...blank.groceries("g", "Milk", 1000), foodId: "milk", note: "2", count: 4, gotAt: 900 });
+    expect(loadState(db).groceries.g).toEqual(store.state.groceries.g);
+    expect(store.state.groceries.g).toMatchObject({ need: true, neededAt: 1000, note: "2", count: 4 });
+    expect(() => store.put("groceries", "h", { ...blank.groceries("h", "X"), productId: "nope" })).toThrow(Invalid);
+  });
+});
+
 describe("migrations", () => {
   it("v2: gluten-free says how sure, and names lose a leading brand", () => {
     const file = join(dir, "old.db");
@@ -103,6 +113,7 @@ describe("migrations", () => {
     expect([s.products.b?.name, s.products.b?.glutenFree]).toEqual(["bell & evans", "unknown"]);
     expect(s.products.c?.glutenFree).toBe("no");
     expect(s.devnotes).toEqual({});
+    expect(s.groceries).toEqual({});
     now.close();
   });
 });

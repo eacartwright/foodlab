@@ -7,6 +7,7 @@ import { ConfirmDialog } from "./ConfirmDialog";
 import { DraftInput, DraftTextarea, Field, MultiPicker, Picker, Segmented } from "./controls";
 import { EatingFields, LogSection } from "./eating";
 import { Deleted, NotFound } from "./FoodPage";
+import { GroceryButton } from "./GroceriesPage";
 import { ItemRow, Section } from "./rows";
 
 // A product: a specific thing I buy, what I think of it, where it's sold.
@@ -40,6 +41,7 @@ export function ProductPage({ id }: { id: string }) {
       <div className="title-row product-title">
         <DraftInput className="title-input brand-input" value={p.brand} placeholder="Brand" aria-label="Brand" list={brands} onCommit={(brand) => save({ brand })} />
         <DraftInput className="title-input" value={p.name} required aria-label="Name" onCommit={(name) => save({ name })} />
+        <GroceryButton name={productName(p)} foodId={p.foodId} productId={p.id} />
         <datalist id={brands}>
           {view.brands().map((b) => (
             <option key={b} value={b} />

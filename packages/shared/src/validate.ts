@@ -11,6 +11,7 @@ import {
   type DevNote,
   type Eating,
   type Food,
+  type GroceryItem,
   type Kind,
   type LogEntry,
   type Product,
@@ -182,5 +183,20 @@ export const validators: { [K in Kind]: (body: unknown, id: string, now: number)
     const text = str(b.text, "text", 20_000).trim();
     if (!text) throw new Invalid("text: required");
     return { ...base(b, rid, now), text, path: str(b.path, "path", 500), done: bool(b.done) };
+  },
+  groceries(body, rid, now): GroceryItem {
+    const b = obj(body);
+    const stamp = (x: unknown, field: string) => num(x, field, 0, 1e15);
+    return {
+      ...base(b, rid, now),
+      name: name(b.name),
+      foodId: id(b.foodId, "foodId"),
+      productId: id(b.productId, "productId"),
+      need: bool(b.need),
+      note: str(b.note, "note", 300).trim(),
+      neededAt: stamp(b.neededAt, "neededAt"),
+      gotAt: stamp(b.gotAt, "gotAt"),
+      count: Math.round(num(b.count, "count") ?? 0),
+    };
   },
 };

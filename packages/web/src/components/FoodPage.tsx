@@ -7,6 +7,7 @@ import { DraftInput, DraftTextarea, Field, Picker, TagEditor } from "./controls"
 import { ConfirmDialog } from "./ConfirmDialog";
 import { ItemRow, Section } from "./rows";
 import { openQuickAdd } from "./QuickAdd";
+import { GroceryButton } from "./GroceriesPage";
 
 // A food: the database personality. What it is, its forms, its products best first, the
 // recipes it's in.
@@ -61,6 +62,7 @@ export function FoodPage({ id }: { id: string }) {
         <button className={`btn staple ${food.staple ? "on" : ""}`} aria-pressed={food.staple} onClick={() => save({ staple: !food.staple })} title="Something I want to keep in the house">
           {food.staple ? "★ Staple" : "☆ Staple"}
         </button>
+        <GroceryButton name={food.name} foodId={food.id} />
       </div>
       {best && (
         <p className="lede">

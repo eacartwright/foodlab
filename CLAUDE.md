@@ -31,7 +31,7 @@ aria-label (a page's title behind the Quick add dialog): scope selectors to `.qu
   suggestions, the `+` search, the Eat list). Pure; tests beside them.
 - `packages/server` — Node + Hono + `node:sqlite` (Node ≥ 22.13). `db.ts`: relational tables
   (foods, stores, products + `product_stores`, recipes + `recipe_ingredients`, tags +
-  `item_tags`, `log_entries`, `dev_notes`, `meta.rev`), `loadState` / `save.<kind>`. `store.ts`: the state
+  `item_tags`, `log_entries`, `dev_notes`, `grocery_items`, `meta.rev`), `loadState` / `save.<kind>`. `store.ts`: the state
   in memory; `put(kind, id, body)` validates, checks links (no unknown ids, no food loops,
   meal tags fixed), writes a `rating` log entry when a rating changes, bumps `rev`.
   `index.ts`: `GET /api/state` (all of it, ETag = rev), `PUT /api/<kind>/<id>` (whole
@@ -100,9 +100,13 @@ tombstones (`deleted`), restorable with Undo or the page's Restore.
 - 2026-10-23, first day of use: ratings ❤️ 👍 👎; gluten-free says how sure (migration 2 maps
   yes → labeled, GF option → blank; Not GF never in Eat); products shown as brand + name
   (migration 2 strips a leading brand from names); Duplicate on foods/products/recipes; Dev
-  notes (📝 beside ⚙). Not deployed yet. Show or sort a product by `productName` / `nameOf`,
+  notes (📝 beside ⚙). Pushed 2026-10-24 (`8f19617`, with + Form / + Kind picking existing
+  foods and a roomier desktop Quick add); deploy is Evan's `update.ps1` on the mini PC. Show or sort a product by `productName` / `nameOf`,
   never `.name` alone.
-- **Next:** deploy this, install on the Android phone, check Share to foodlab, enter real lunches.
-- Then M2 (DESIGN.md §10): **Groceries**, a standing list to replace Todoist (§4.10, §5.8).
+- 2026-10-24: **M2 Groceries built** (DESIGN.md §4.10, §5.8): `groceries` kind / `grocery_items`
+  (migration 3), `View.grocery*`, actions `needGrocery` / `gotGrocery` / `ungotGrocery` /
+  `addToGroceries`, `GroceriesPage.tsx` (+ `GroceryButton` on food, product, staple rows).
+  48 tests, typecheck, build, headless walkthrough (desktop + phone dark). Pushed, not deployed yet.
+- **Next:** deploy, install on the Android phone, check Share to foodlab, use Groceries in a store.
 - Then M3: derived facts from the log on pages, per-recipe product override,
   recipe cards, a Tags page.

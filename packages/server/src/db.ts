@@ -1,7 +1,7 @@
 import { DatabaseSync } from "node:sqlite";
 import { existsSync, mkdirSync } from "node:fs";
 import { dirname } from "node:path";
-import { emptyState, type DevNote, type Food, type Id, type LogEntry, type Product, type Recipe, type RecipeIngredient, type State, type Store, type Tag } from "@foodlab/shared";
+import { emptyState, type DevNote, type Food, type GroceryItem, type Id, type LogEntry, type Product, type Recipe, type RecipeIngredient, type State, type Store, type Tag } from "@foodlab/shared";
 
 // SQLite persistence: ordinary relational tables, one row per record, links in their own tables
 // (product_stores, recipe_ingredients, item_tags), so the file reads well in any SQLite browser
@@ -130,6 +130,20 @@ const MIGRATIONS: string[] = [
     text TEXT NOT NULL,
     path TEXT NOT NULL DEFAULT '',  -- the page it was written on
     done INTEGER NOT NULL DEFAULT 0,${BASE}
+  );
+  `,
+  // 2026-10-24: Groceries (M2): things I buy, needed or not, never completed.
+  `
+  CREATE TABLE grocery_items (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    food_id TEXT,
+    product_id TEXT,
+    need INTEGER NOT NULL DEFAULT 0,   -- on the list
+    note TEXT NOT NULL DEFAULT '',     -- this time only
+    needed_at INTEGER,                 -- when it went on the list (its order)
+    got_at INTEGER,                    -- last checked off
+    count INTEGER NOT NULL DEFAULT 0,  -- times got${BASE}
   );
   `,
 ];
@@ -276,6 +290,19 @@ export function loadState(db: DB): State {
   for (const r of db.prepare("SELECT * FROM dev_notes").all() as Row[]) {
     s.devnotes[r.id] = { ...base(r), text: r.text, path: r.path, done: !!r.done } satisfies DevNote;
   }
+  for (const r of db.prepare("SELECT * FROM grocery_items").all() as Row[]) {
+    s.groceries[r.id] = {
+      ...base(r),
+      name: r.name,
+      foodId: r.food_id,
+      productId: r.product_id,
+      need: !!r.need,
+      note: r.note,
+      neededAt: r.needed_at,
+      gotAt: r.got_at,
+      count: r.count,
+    } satisfies GroceryItem;
+  }
   return s;
 }
 
@@ -375,5 +402,18 @@ export const save = {
   },
   devnotes(db: DB, x: DevNote) {
     upsert(db, "dev_notes", { ...baseCols(x), text: x.text, path: x.path, done: x.done ? 1 : 0 });
+  },
+  groceries(db: DB, x: GroceryItem) {
+    upsert(db, "grocery_items", {
+      ...baseCols(x),
+      name: x.name,
+      food_id: x.foodId,
+      product_id: x.productId,
+      need: x.need ? 1 : 0,
+      note: x.note,
+      needed_at: x.neededAt,
+      got_at: x.gotAt,
+      count: x.count,
+    });
   },
 };
