@@ -170,6 +170,18 @@ export interface GroceryItem extends Base {
   count: number;
 }
 
+/** From `from` ("HH:MM", local) until the next slot, What can I eat? opens on this meal (DESIGN.md §5.2). */
+export interface MealSlot {
+  from: string;
+  tagId: Id;
+}
+
+/** App-wide settings: one record, id `SETTINGS_ID`. Per-device ones (Colors) stay on the device. */
+export interface Settings extends Base {
+  mealTimes: MealSlot[];
+}
+export const SETTINGS_ID = "app";
+
 export interface Records {
   foods: Food;
   products: Product;
@@ -179,15 +191,16 @@ export interface Records {
   log: LogEntry;
   devnotes: DevNote;
   groceries: GroceryItem;
+  settings: Settings;
 }
 export type Kind = keyof Records;
-export const KINDS: Kind[] = ["foods", "products", "stores", "recipes", "tags", "log", "devnotes", "groceries"];
+export const KINDS: Kind[] = ["foods", "products", "stores", "recipes", "tags", "log", "devnotes", "groceries", "settings"];
 export type AnyRecord = Records[Kind];
 
 /** Everything, keyed by id per kind. Deleted records are included (tombstones). */
 export type State = { [K in Kind]: Record<Id, Records[K]> } & { rev: number };
 
-export const emptyState = (): State => ({ rev: 0, foods: {}, products: {}, stores: {}, recipes: {}, tags: {}, log: {}, devnotes: {}, groceries: {} });
+export const emptyState = (): State => ({ rev: 0, foods: {}, products: {}, stores: {}, recipes: {}, tags: {}, log: {}, devnotes: {}, groceries: {}, settings: {} });
 
 /** The fixed meal tags (DESIGN.md §4.9), seeded with these ids. */
 export const MEAL_TAGS: { id: Id; name: string }[] = [
@@ -212,6 +225,13 @@ const EMPTY_EATING = (): Eating => ({
   keepsDays: null,
   effort: null,
 });
+
+export const DEFAULT_MEAL_TIMES: MealSlot[] = [
+  { from: "04:00", tagId: "meal-breakfast" },
+  { from: "10:30", tagId: "meal-lunch" },
+  { from: "16:00", tagId: "meal-dinner" },
+  { from: "23:00", tagId: "meal-snack" },
+];
 
 export const blank = {
   foods: (id: Id, name: string, now = Date.now()): Food => ({
@@ -250,6 +270,7 @@ export const blank = {
   }),
   tags: (id: Id, name: string, now = Date.now()): Tag => ({ ...EMPTY_BASE(id, now), name, kind: "personal" }),
   devnotes: (id: Id, text: string, path: string, now = Date.now()): DevNote => ({ ...EMPTY_BASE(id, now), text, path, done: false }),
+  settings: (now = Date.now()): Settings => ({ ...EMPTY_BASE(SETTINGS_ID, now), mealTimes: DEFAULT_MEAL_TIMES }),
   groceries: (id: Id, name: string, now = Date.now()): GroceryItem => ({
     ...EMPTY_BASE(id, now),
     name,

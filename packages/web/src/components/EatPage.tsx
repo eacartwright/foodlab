@@ -1,6 +1,5 @@
-import { EFFORTS, EFFORT_LABEL, MEAL_TAGS, TRAVELS, TRAVELS_LABEL, WORK_LUNCH, type Effort, type Travels } from "@foodlab/shared";
+import { EFFORTS, EFFORT_LABEL, MEAL_TAGS, mealNow, mealTimes, TRAVELS, TRAVELS_LABEL, WORK_LUNCH, type Effort, type Travels } from "@foodlab/shared";
 import { useMemo } from "react";
-import { mealNow } from "../mealTimes";
 import { A, setQuery, useRoute } from "../router";
 import { useData } from "../sync";
 import { openQuickAdd } from "./QuickAdd";
@@ -15,7 +14,7 @@ export function EatPage() {
   const { view } = useData();
   const { query } = useRoute();
   let tag = query.get("tag");
-  if (!tag || !MEAL_TAGS.some((t) => t.id === tag)) tag = mealNow();
+  if (!tag || !MEAL_TAGS.some((t) => t.id === tag)) tag = mealNow(mealTimes(view.state));
   const travels = list<Travels>(query.get("travels"), TRAVELS);
   const effort = list<Effort>(query.get("effort"), EFFORTS);
   const keeps = Number(query.get("keeps")) || null;

@@ -56,7 +56,7 @@ export function setIngredientFood(recipe: Recipe, ingredientId: Id, foodId: Id |
 }
 
 /** Delete (a tombstone), with Undo. */
-export function remove<K extends Exclude<Kind, "log" | "tags" | "devnotes">>(kind: K, record: Records[K]) {
+export function remove<K extends Exclude<Kind, "log" | "tags" | "devnotes" | "settings">>(kind: K, record: Records[K]) {
   put(kind, { ...record, deleted: true });
   showToast(`Deleted “${nameOf(record)}”`, {
     label: "Undo",

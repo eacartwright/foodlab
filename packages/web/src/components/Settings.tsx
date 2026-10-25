@@ -1,7 +1,6 @@
-import { MEAL_TAGS } from "@foodlab/shared";
+import { blank, DEFAULT_MEAL_TIMES, MEAL_TAGS, mealTimes, SETTINGS_ID, type MealSlot } from "@foodlab/shared";
 import { useState } from "react";
-import { DEFAULT_SLOTS, mealSlots, setMealSlots } from "../mealTimes";
-import { refresh, useData } from "../sync";
+import { data, put, refresh, useData } from "../sync";
 import { setThemePref, themePref, type ThemePref } from "../theme";
 import { Dialog } from "./Dialog";
 import { Field, Segmented } from "./controls";
@@ -9,12 +8,9 @@ import { Field, Segmented } from "./controls";
 export function SettingsDialog({ onClose }: { onClose: () => void }) {
   const { state, pending, status } = useData();
   const [theme, setTheme] = useState<ThemePref>(themePref());
-  const [slots, setSlots] = useState(mealSlots);
-  const changeSlot = (i: number, change: Partial<(typeof slots)[number]>) => {
-    const next = slots.map((s, j) => (j === i ? { ...s, ...change } : s));
-    setSlots(next);
-    setMealSlots(next);
-  };
+  const slots = mealTimes(state);
+  const saveSlots = (mealTimes: MealSlot[]) => put("settings", { ...(data().state.settings[SETTINGS_ID] ?? blank.settings()), mealTimes });
+  const changeSlot = (i: number, change: Partial<MealSlot>) => saveSlots(mealTimes(data().state).map((s, j) => (j === i ? { ...s, ...change } : s)));
   const count = (k: "foods" | "products" | "recipes" | "stores") => Object.values(state[k]).filter((x) => !x.deleted).length;
   return (
     <Dialog title="Settings" onClose={onClose}>
@@ -54,18 +50,11 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
               </div>
             ))}
           </div>
-          <p className="muted small">
-            What can I eat? opens on the meal whose time has come (each runs until the next). This device only.{" "}
-            <button
-              className="btn subtle"
-              onClick={() => {
-                setSlots(DEFAULT_SLOTS);
-                setMealSlots(DEFAULT_SLOTS);
-              }}
-            >
+          <div>
+            <button className="btn subtle" onClick={() => saveSlots(DEFAULT_MEAL_TIMES)}>
               Reset
             </button>
-          </p>
+          </div>
         </Field>
         <Field label="Data">
           <p className="small">

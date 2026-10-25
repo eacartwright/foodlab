@@ -31,7 +31,7 @@ aria-label (a page's title behind the Quick add dialog): scope selectors to `.qu
   suggestions, the `+` search, the Eat list). Pure; tests beside them.
 - `packages/server` — Node + Hono + `node:sqlite` (Node ≥ 22.13). `db.ts`: relational tables
   (foods, stores, products + `product_stores`, recipes + `recipe_ingredients`, tags +
-  `item_tags`, `log_entries`, `dev_notes`, `grocery_items`, `meta.rev`), `loadState` / `save.<kind>`. `store.ts`: the state
+  `item_tags`, `log_entries`, `dev_notes`, `grocery_items`, `settings` (one row, `app`: Meal times), `meta.rev`), `loadState` / `save.<kind>`. `store.ts`: the state
   in memory; `put(kind, id, body)` validates, checks links (no unknown ids, no food loops,
   meal tags fixed), writes a `rating` log entry when a rating changes, bumps `rev`.
   `index.ts`: `GET /api/state` (all of it, ETag = rev), `PUT /api/<kind>/<id>` (whole
@@ -121,7 +121,9 @@ tombstones (`deleted`), restorable with Undo or the page's Restore.
   10 left to delete); Dev Notes edit and an optional page link, mirrored to `data/dev-notes.md`;
   Eat opens on the meal for the time (Settings → Meal times, `mealTimes.ts`); `X-Foodlab-Build`
   → **↻ Update**. 56 tests, headless-checked from a scratch copy. Then ingredient lines stopped
-  making foods at all: no match = text, linked from the Food box (opens with the parsed name). 58 tests.
+  making foods at all: no match = text, linked from the Food box (opens with the parsed name).
+  Meal times went app-wide: `settings` kind (migration 6), `mealNow` / `mealTimes` in shared;
+  search highlights the same meal. 59 tests, browser-checked on a scratch copy.
 - `Z:` on Evan's laptop is the mini PC's `C:` (`\\ripley\C`), so `Z:\Apps\foodlab` is the
   **live clone**: never edit, build or `npm install` there, and never open its `data/foodlab.db`
   over the share (copy it with its `-wal` to scratch to look). Develop in the laptop's

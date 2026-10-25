@@ -1,7 +1,7 @@
 import { DatabaseSync } from "node:sqlite";
 import { existsSync, mkdirSync } from "node:fs";
 import { dirname } from "node:path";
-import { emptyState, type DevNote, type Food, type GroceryItem, type Id, type LogEntry, type Product, type Recipe, type RecipeIngredient, type State, type Store, type Tag } from "@foodlab/shared";
+import { emptyState, type DevNote, type Settings, type Food, type GroceryItem, type Id, type LogEntry, type Product, type Recipe, type RecipeIngredient, type State, type Store, type Tag } from "@foodlab/shared";
 
 // SQLite persistence: ordinary relational tables, one row per record, links in their own tables
 // (product_stores, recipe_ingredients, item_tags), so the file reads well in any SQLite browser
@@ -150,6 +150,13 @@ const MIGRATIONS: string[] = [
   `ALTER TABLE grocery_items ADD COLUMN in_trip INTEGER NOT NULL DEFAULT 0;`,
   // 2026-10-24: PLU codes on produce, so I learn them (and the list shows them in the store).
   `ALTER TABLE foods ADD COLUMN plu TEXT NOT NULL DEFAULT '';`,
+  // 2026-10-25: app-wide settings (Meal times was per device). One row, id 'app'.
+  `
+  CREATE TABLE settings (
+    id TEXT PRIMARY KEY,
+    meal_times TEXT NOT NULL DEFAULT '[]',  -- JSON [{ from: "HH:MM", tagId }]${BASE}
+  );
+  `,
 ];
 
 export type DB = DatabaseSync;
@@ -295,6 +302,9 @@ export function loadState(db: DB): State {
   for (const r of db.prepare("SELECT * FROM dev_notes").all() as Row[]) {
     s.devnotes[r.id] = { ...base(r), text: r.text, path: r.path, done: !!r.done } satisfies DevNote;
   }
+  for (const r of db.prepare("SELECT * FROM settings").all() as Row[]) {
+    s.settings[r.id] = { ...base(r), mealTimes: JSON.parse(r.meal_times) } satisfies Settings;
+  }
   for (const r of db.prepare("SELECT * FROM grocery_items").all() as Row[]) {
     s.groceries[r.id] = {
       ...base(r),
@@ -409,6 +419,9 @@ export const save = {
   },
   devnotes(db: DB, x: DevNote) {
     upsert(db, "dev_notes", { ...baseCols(x), text: x.text, path: x.path, done: x.done ? 1 : 0 });
+  },
+  settings(db: DB, x: Settings) {
+    upsert(db, "settings", { ...baseCols(x), meal_times: JSON.stringify(x.mealTimes) });
   },
   groceries(db: DB, x: GroceryItem) {
     upsert(db, "grocery_items", {

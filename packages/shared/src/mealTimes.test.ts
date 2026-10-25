@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_SLOTS, mealNow } from "./mealTimes";
+import { mealNow } from "./mealTimes";
+import { DEFAULT_MEAL_TIMES as DEFAULT_SLOTS } from "./types";
 
 describe("mealNow", () => {
   const at = (h: number, m = 0) => mealNow(DEFAULT_SLOTS, new Date(2026, 9, 25, h, m));

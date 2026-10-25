@@ -325,8 +325,9 @@ effort. Each row shows what matters for the decision (rating, travels, keeps, ef
 
 **Opens on the meal for the time of day** (2026-10-25): four slots in Settings → Meal times,
 each a start time and a meal, running until the next (defaults 4:00 Breakfast, 10:30
-Lunch, 16:00 Dinner, 23:00 Snack, the last past midnight). Per device. A picked chip stays in
-the address (`?tag=`); it no longer remembers the last one picked, which would beat the clock.
+Lunch, 16:00 Dinner, 23:00 Snack, the last past midnight). App-wide (2026-10-25; it was per
+device): the one `settings` record, id `app`, synced like the rest; Colors stays per device.
+The search page's meal shortcuts highlight the same meal. A picked chip stays in the address (`?tag=`); it no longer remembers the last one picked, which would beat the clock.
 
 ### 5.3 Lists (the database personality)
 

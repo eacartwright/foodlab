@@ -2,6 +2,8 @@ import {
   BUY_AGAIN,
   EFFORTS,
   GF,
+  MEAL_TAGS,
+  SETTINGS_ID,
   LOG_KINDS,
   METHODS,
   RATINGS,
@@ -17,6 +19,7 @@ import {
   type Product,
   type Recipe,
   type RecipeIngredient,
+  type Settings,
   type Records,
   type Store,
   type Tag,
@@ -206,5 +209,18 @@ export const validators: { [K in Kind]: (body: unknown, id: string, now: number)
       inTrip: bool(b.inTrip),
       count: Math.round(num(b.count, "count") ?? 0),
     };
+  },
+  settings(body, rid, now): Settings {
+    if (rid !== SETTINGS_ID) throw new Invalid(`settings: the id is "${SETTINGS_ID}"`);
+    const b = obj(body);
+    if (!Array.isArray(b.mealTimes) || b.mealTimes.length < 1 || b.mealTimes.length > 12) throw new Invalid("mealTimes: 1 to 12 slots");
+    const mealTimes = b.mealTimes.map((x, n) => {
+      const s = obj(x);
+      const from = str(s.from, `mealTimes[${n}].from`, 5);
+      if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(from)) throw new Invalid(`mealTimes[${n}].from: HH:MM`);
+      if (!MEAL_TAGS.some((t) => t.id === s.tagId)) throw new Invalid(`mealTimes[${n}].tagId: a meal`);
+      return { from, tagId: s.tagId as string };
+    });
+    return { ...base(b, rid, now), mealTimes };
   },
 };

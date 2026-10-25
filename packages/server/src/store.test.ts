@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { blank, Invalid, WORK_LUNCH } from "@foodlab/shared";
+import { blank, Invalid, SETTINGS_ID, WORK_LUNCH } from "@foodlab/shared";
 import { loadState, openDb, type DB } from "./db";
 import { Store } from "./store";
 
@@ -78,6 +78,15 @@ describe("Store", () => {
     store.put("devnotes", "n", blank.devnotes("n", " Duplicate button ", "/products/p"));
     expect(loadState(db).devnotes.n).toMatchObject({ text: "Duplicate button", path: "/products/p", done: false });
     expect(() => store.put("devnotes", "e", { text: " " })).toThrow(/required/);
+  });
+
+  it("saves app-wide meal times, and only real meals at real times", () => {
+    const times = [{ from: "05:00", tagId: "meal-breakfast" }, { from: "11:00", tagId: "meal-lunch" }];
+    store.put("settings", SETTINGS_ID, { ...blank.settings(), mealTimes: times });
+    expect(loadState(db).settings[SETTINGS_ID]?.mealTimes).toEqual(times);
+    expect(() => store.put("settings", SETTINGS_ID, { mealTimes: [{ from: "25:00", tagId: "meal-lunch" }] })).toThrow(Invalid);
+    expect(() => store.put("settings", SETTINGS_ID, { mealTimes: [{ from: "11:00", tagId: "brunch" }] })).toThrow(Invalid);
+    expect(() => store.put("settings", "other", blank.settings())).toThrow(Invalid);
   });
 
   it("keeps createdAt and bumps rev each save", () => {
