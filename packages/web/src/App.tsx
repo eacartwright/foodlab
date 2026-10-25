@@ -171,8 +171,8 @@ export function App() {
       <span className="spacer" />
       <button
         className="btn icon subtle"
-        aria-label="Dev notes"
-        title="Dev notes: an idea or bug for later"
+        aria-label="Dev Notes"
+        title="Dev Notes"
         onClick={() => {
           setDrawer(false);
           setDevNotes(true);

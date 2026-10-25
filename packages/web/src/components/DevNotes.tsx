@@ -46,7 +46,7 @@ export function DevNotesDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <Dialog
-      title="Dev notes"
+      title="Dev Notes"
       onClose={onClose}
       className="dev-notes"
       actions={
@@ -63,7 +63,6 @@ export function DevNotesDialog({ onClose }: { onClose: () => void }) {
             className="input grow"
             rows={2}
             autoFocus
-            placeholder="An idea, a bug, something odd… (Enter adds, Shift+Enter for a new line)"
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => {
@@ -78,7 +77,6 @@ export function DevNotesDialog({ onClose }: { onClose: () => void }) {
             Add
           </button>
         </div>
-        {open.length === 0 && <p className="empty-line">Nothing open.</p>}
         <ul className="notes">
           {open.map((n) => (
             <NoteRow key={n.id} n={n} onNavigate={onClose} />

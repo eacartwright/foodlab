@@ -113,7 +113,7 @@ tombstones (`deleted`), restorable with Undo or the page's Restore.
 - 2026-10-25: **PLU** on foods (migration 5; shown under Produce / Fruit / Vegetable, on the
   grocery list, searchable). `scripts/import-products.ts` imports a reviewed Markdown file
   (Evan's Obsidian product list: 255 foods, 637 products) through the API; runbook has the steps.
-  Tested on a scratch DB; not run on the real one yet.
+  Run on the real one by Evan, 2026-10-25: the product list now lives in foodlab, not Obsidian.
 - 2026-10-25: lists: every column sorts (`?sort=`); Foods and Products have a **List / Tree**
   switch (`View.foodTree`, `useTreeState` in `ListPages.tsx`; view and folds per device); the
   Products list shows a food's path ("Pickles › Baby pickles", `View.foodPath`) and sorts and

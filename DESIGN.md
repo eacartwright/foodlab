@@ -377,7 +377,7 @@ Marked staples by store (the standing list, §4.7), then Suggested staples with 
 
 ### 5.7 Dev notes (while foodlab is being built)
 
-📝 at the bottom of the sidebar (and the phone's drawer), beside ⚙, opens **Dev notes**: one box
+📝 at the bottom of the sidebar (and the phone's drawer), beside ⚙, opens **Dev Notes**: one box
 for an idea, a bug or something odd, saved with the page it was written on, and the open notes
 below with a Done box. **Copy** puts the open ones on the clipboard as a Markdown list, to paste
 into a work session. They're their own records (`devnotes`), kept apart from the food, synced
