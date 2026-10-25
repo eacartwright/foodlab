@@ -51,7 +51,8 @@ of a standing shopping list.
 ## 3. Non-goals (for now, not forever)
 
 Nutrition and allergen calculation, barcode scanning, pantry inventory (how many eggs I have),
-meal planning, price tracking, recipe scraping and OCR, AI generation or substitution engines,
+meal planning, price tracking, OCR, AI generation or substitution engines (reading a shared
+recipe is planned, §5.5),
 multiple users, native apps. Any can come later once the core is in daily use; nothing in the
 model blocks them (inventory would hang off foods and products, like staples do).
 
@@ -380,6 +381,12 @@ own pass later.
 (a recipe site, a product listing, a Find Me Gluten Free place) opens Quick add with its title
 as the name and its link filled in.
 
+**Reading a shared recipe** (planned for M3, 2026-10-25). Sharing a recipe page has the server
+fetch it and read the recipe data most recipe sites embed (schema.org `Recipe`): name, yield,
+times, ingredient lines, instructions. Free, no AI. Only when a page has none does it ask the
+Claude API, with the key kept on the mini PC (pennies a recipe). Either way the result fills a
+new recipe I review before it saves; ingredient lines then link foods the usual way (§4.5).
+
 ### 5.6 Staples
 
 Marked staples by store (the standing list, §4.7), then Suggested staples with **Mark staple**.
@@ -497,9 +504,9 @@ Leaving the app counts as leaving the box. Lines no longer make foods at all (§
 |---|---|---|
 | **M1** | What can I eat (lunch first) | Foods (is a, form of, staple), products (stores, ratings, eating fields), stores, recipes with parsed ingredient lines, meal and personal tags, the `+` search, Eat with Work lunch filters, lists and pages, Quick add, Share to foodlab, Staples with suggestions, rating history and hand-written log notes, offline outbox. Deployed at foodlab.evans.tools, installed on the phone. **Built 2026-10-23, not yet deployed.** |
 | **M2** | Groceries | A standing list that replaces Todoist (§4.10, §5.8): items made once and needed or not, check off with this trip's Undo, Usual (most bought + staples) one tap from the list, + Groceries on foods, products and staples, `bought` log entries for linked products. Works offline in the store. **Built 2026-10-24, not yet deployed.** |
-| **M3** | Memory | Log entries' derived facts on pages (times made, last made, last bought); per-recipe product override; recipe card view; Tags page (rename, merge, delete). |
+| **M3** | Memory | Log entries' derived facts on pages (times made, last made, last bought); per-recipe product override; recipe card view; reading a shared recipe (§5.5); Tags page (rename, merge, delete). |
 | **M4** | Places & dishes | Places (restaurants, stores with prepared food: address → Maps, phone, hours, Find Me Gluten Free link, been / want to try) and dishes with the eating fields, Tried / Want to try per place. Dishes join Eat. |
-| **M5** | Photos | On products, recipes and dishes (sideshow's file store). |
+| **M5** | Photos | On products, recipes and dishes (sideshow's file store), and photos or files on dev notes. |
 | **M6** | Scaling & weights | §6. |
 | later | — | Techniques, variants, substitutions, inventory, Groceries by store or aisle, then §3. |
 
