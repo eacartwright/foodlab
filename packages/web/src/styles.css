@@ -908,6 +908,41 @@ table.parsed th {
   padding: 6px 10px;
   border-bottom: 1.5px solid var(--border-strong);
 }
+/* A sortable header: looks like the header text, the whole cell is the button. */
+.sort-th {
+  all: unset;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  min-height: 28px;
+  white-space: nowrap;
+  cursor: pointer;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: inherit;
+}
+.num .sort-th {
+  justify-content: flex-end;
+}
+.rate-col .sort-th {
+  justify-content: center;
+}
+.sort-th:hover,
+th[aria-sort] .sort-th {
+  color: var(--text);
+}
+.sort-th:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+.sort-mark {
+  font-size: 0.65rem;
+  color: var(--primary);
+}
 table.db td {
   padding: 8px 10px;
   border-bottom: 1px solid var(--border);

@@ -84,6 +84,50 @@ function RatingFilter() {
 }
 const ratingOk = (rating: Rating | null, f: string | null) => !f || (f === "none" ? !rating : rating === f);
 
+// ---- sorting: ?sort=<column>, "-" in front for the other way; blanks always last ----
+
+type SortValue = string | number | null | undefined;
+/** Per column: its value, and whether the first click sorts high-to-low (counts, ratings). */
+type SortCols<T> = Record<string, { value: (x: T) => SortValue; desc?: boolean }>;
+const RATING_RANK: Record<Rating, number> = { love: 3, up: 2, down: 1 };
+const rank = (r: Rating | null) => (r ? RATING_RANK[r] : null);
+const blank = (v: SortValue) => v === null || v === undefined || v === "" || v === 0;
+
+function useSort<T>(rows: T[], cols: SortCols<T>) {
+  const { query } = useRoute();
+  const raw = query.get("sort") ?? "";
+  const key = raw.replace(/^-/, "");
+  const col = cols[key];
+  // The address says which way: "-" = the opposite of the column's first click.
+  const desc = col ? (col.desc ?? false) !== raw.startsWith("-") : false;
+  const sorted = useMemo(() => {
+    if (!col) return rows;
+    const keyed = rows.map((x) => ({ x, v: col.value(x) }));
+    keyed.sort((a, b) => {
+      if (blank(a.v) || blank(b.v)) return Number(blank(a.v)) - Number(blank(b.v));
+      const c = typeof a.v === "number" && typeof b.v === "number" ? a.v - b.v : String(a.v).localeCompare(String(b.v), undefined, { numeric: true, sensitivity: "base" });
+      return desc ? -c : c;
+    });
+    return keyed.map((k) => k.x);
+  }, [rows, col, desc]);
+  /** A header that sorts by its column; again flips it, a third time goes back to A–Z by name. */
+  const th = (k: string, label: ReactNode, className = "", ariaLabel?: string) => {
+    const on = key === k && !!col;
+    const next = !on ? k : raw.startsWith("-") ? null : `-${k}`;
+    return (
+      <th className={className} aria-sort={on ? (desc ? "descending" : "ascending") : undefined}>
+        <button className="sort-th" onClick={() => setQuery({ sort: next })} aria-label={ariaLabel ? `Sort by ${ariaLabel}` : undefined} title={ariaLabel}>
+          {label}
+          <span className="sort-mark" aria-hidden>
+            {on ? (desc ? "▼" : "▲") : ""}
+          </span>
+        </button>
+      </th>
+    );
+  };
+  return { sorted, th };
+}
+
 export function FoodsList() {
   const { view } = useData();
   const { query } = useRoute();
@@ -96,6 +140,12 @@ export function FoodsList() {
       ),
     [view, f, staples],
   );
+  const { sorted, th } = useSort(rows, {
+    name: { value: (x) => x.name },
+    up: { value: (x) => (view.food(x.parentId) ?? view.food(x.formOfId))?.name },
+    products: { value: (x) => view.productsOf(x.id).length, desc: true },
+    recipes: { value: (x) => view.recipesUsing(x.id).length, desc: true },
+  });
   return (
     <ListShell
       title="Foods"
@@ -110,14 +160,14 @@ export function FoodsList() {
       }
       head={
         <tr>
-          <th>Food</th>
-          <th className="hide-sm">Is a / form of</th>
-          <th className="num">Products</th>
-          <th className="num">Recipes</th>
+          {th("name", "Food")}
+          {th("up", "Is a / form of", "hide-sm")}
+          {th("products", "Products", "num")}
+          {th("recipes", "Recipes", "num")}
         </tr>
       }
     >
-      {rows.map((x) => {
+      {sorted.map((x) => {
         const up = view.food(x.parentId) ?? view.food(x.formOfId);
         return (
           <tr key={x.id}>
@@ -162,6 +212,12 @@ export function ProductsList() {
       }),
     [view, f, store, rating],
   );
+  const { sorted, th } = useSort(rows, {
+    rating: { value: (p) => rank(p.rating), desc: true },
+    name: { value: (p) => productName(p) },
+    food: { value: (p) => view.food(p.foodId)?.name },
+    stores: { value: (p) => p.storeIds.map((s) => view.store(s)?.name).filter(Boolean).join(", ") },
+  });
   return (
     <ListShell
       title="Products"
@@ -184,14 +240,14 @@ export function ProductsList() {
       }
       head={
         <tr>
-          <th className="rate-col" aria-label="Rating" />
-          <th>Product</th>
-          <th className="hide-sm">Food</th>
-          <th className="hide-sm">Sold at</th>
+          {th("rating", "❤️", "rate-col", "Rating")}
+          {th("name", "Product")}
+          {th("food", "Food", "hide-sm")}
+          {th("stores", "Sold at", "hide-sm")}
         </tr>
       }
     >
-      {rows.map((p) => {
+      {sorted.map((p) => {
         const food = view.food(p.foodId);
         return (
           <tr key={p.id}>
@@ -230,6 +286,13 @@ export function RecipesList() {
       ),
     [view, f, tag, rating],
   );
+  const { sorted, th } = useSort(rows, {
+    rating: { value: (r) => rank(r.rating), desc: true },
+    name: { value: (r) => r.name },
+    ingredients: { value: (r) => r.ingredients.length, desc: true },
+    method: { value: (r) => (r.method ? METHOD_LABEL[r.method] : null) },
+    min: { value: (r) => (r.prepMin ?? 0) + (r.cookMin ?? 0) },
+  });
   return (
     <ListShell
       title="Recipes"
@@ -252,15 +315,15 @@ export function RecipesList() {
       }
       head={
         <tr>
-          <th className="rate-col" aria-label="Rating" />
-          <th>Recipe</th>
-          <th className="hide-sm">Ingredients</th>
-          <th className="hide-sm">Method</th>
-          <th className="hide-sm num">Min</th>
+          {th("rating", "❤️", "rate-col", "Rating")}
+          {th("name", "Recipe")}
+          {th("ingredients", "Ingredients", "hide-sm")}
+          {th("method", "Method", "hide-sm")}
+          {th("min", "Min", "hide-sm num", "Minutes")}
         </tr>
       }
     >
-      {rows.map((r) => (
+      {sorted.map((r) => (
         <tr key={r.id}>
           <td className="rate-col">
             <RatingMark value={r.rating} />
@@ -286,7 +349,13 @@ export function StoresList() {
   const { view } = useData();
   const { query } = useRoute();
   const f = query.get("f") ?? "";
-  const rows = view.stores.filter((s) => match(s.name, f));
+  const rows = useMemo(() => view.stores.filter((s) => match(s.name, f)), [view, f]);
+  const liked = (id: string) => view.productsAt(id).filter((p) => p.rating === "love" || p.rating === "up").length;
+  const { sorted, th } = useSort(rows, {
+    name: { value: (s) => s.name },
+    products: { value: (s) => view.productsAt(s.id).length, desc: true },
+    liked: { value: (s) => liked(s.id), desc: true },
+  });
   return (
     <ListShell
       title="Stores"
@@ -295,13 +364,13 @@ export function StoresList() {
       empty="No stores yet. Add one from a product's Sold at."
       head={
         <tr>
-          <th>Store</th>
-          <th className="num">Products</th>
-          <th className="num">❤️ / 👍</th>
+          {th("name", "Store")}
+          {th("products", "Products", "num")}
+          {th("liked", "❤️ / 👍", "num", "Liked products")}
         </tr>
       }
     >
-      {rows.map((s) => {
+      {sorted.map((s) => {
         const ps = view.productsAt(s.id);
         return (
           <tr key={s.id}>
@@ -311,7 +380,7 @@ export function StoresList() {
               </A>
             </td>
             <td className="num">{ps.length || ""}</td>
-            <td className="num">{ps.filter((p) => p.rating === "love" || p.rating === "up").length || ""}</td>
+            <td className="num">{liked(s.id) || ""}</td>
           </tr>
         );
       })}

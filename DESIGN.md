@@ -321,7 +321,10 @@ effort. Each row shows what matters for the decision (rating, travels, keeps, ef
 
 Foods, Products, Recipes, Stores: a filter box and rows with the useful columns (a product's
 brand + name, food, stores, rating; a food's parent, form-of, product and recipe counts, staple).
-Clicking a row opens its page.
+Clicking a row opens its page. **Every column sorts** (2026-10-25): click a header, again to
+flip, a third time back to A–Z by name. Text starts A–Z, counts and ratings start highest
+(❤️ first); blanks always last. The sort lives in the address (`?sort=food`, `-` for the other
+way), like the filters.
 
 ### 5.4 Pages
 
