@@ -132,7 +132,7 @@ describe("groceries", () => {
     g("milk", "Milk", { need: false, gotAt: T - 10, count: 9 });
     g("eggs", "Eggs", { neededAt: T + 2 });
     g("bread", "Bread", { neededAt: T + 1 });
-    g("juice", "Lemon juice", { foodId: "juice", productId: "sc", need: false, gotAt: T + 50, count: 2 });
+    g("juice", "Lemon juice", { foodId: "juice", productId: "sc", need: false, gotAt: T + 50, inTrip: true, count: 2 });
     g("rice", "Rice", { need: false, gotAt: T - 20, count: 3 });
     g("gone", "Gone", { need: false, deleted: true });
     return new View(s);
@@ -142,6 +142,15 @@ describe("groceries", () => {
     const v = shop();
     expect(v.groceryList().map((g) => g.id)).toEqual(["bread", "eggs"]);
     expect(v.groceryTrip(T).map((g) => g.id)).toEqual(["juice"]);
+  });
+
+  it("Done shopping (on any device) ends the trip: the item joins Usual", () => {
+    const v = shop();
+    const s = { ...v.state, groceries: { ...v.state.groceries, juice: { ...v.state.groceries.juice!, inTrip: false } } };
+    const after = new View(s);
+    expect(after.groceryTrip(T)).toEqual([]);
+    expect(after.groceryUsual(T).map((u) => u.name)).toContain("Lemon juice");
+    expect(v.groceryTrip(T + 100)).toEqual([]); // and on its own, a few hours on
   });
 
   it("Usual: the rest by times bought, then staples not on it yet", () => {

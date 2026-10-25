@@ -107,6 +107,9 @@ tombstones (`deleted`), restorable with Undo or the page's Restore.
   (migration 3), `View.grocery*`, actions `needGrocery` / `gotGrocery` / `ungotGrocery` /
   `addToGroceries`, `GroceriesPage.tsx` (+ `GroceryButton` on food, product, staple rows).
   48 tests, typecheck, build, headless walkthrough (desktop + phone dark). Pushed, not deployed yet.
+- 2026-10-24, first trip with Groceries: Done shopping now syncs (`inTrip` on the item,
+  migration 4; it used to be per-device localStorage, so the desktop kept the struck-through
+  items), and the struck-through rows lost their Undo (tap the box again).
 - **Next:** deploy, install on the Android phone, check Share to foodlab, use Groceries in a store.
 - Then M3: derived facts from the log on pages, per-recipe product override,
   recipe cards, a Tags page.

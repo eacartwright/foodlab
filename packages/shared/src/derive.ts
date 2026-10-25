@@ -252,9 +252,9 @@ export class View {
     return this.groceries.filter((g) => g.need).sort((a, b) => (a.neededAt ?? 0) - (b.neededAt ?? 0));
   }
 
-  /** Checked off since `since` (this trip), in the order got. */
+  /** Checked off this trip (not Done shopping yet, and since `since`), in the order got. */
   groceryTrip(since: number): GroceryItem[] {
-    return this.groceries.filter((g) => !g.need && (g.gotAt ?? 0) >= since).sort((a, b) => (a.gotAt ?? 0) - (b.gotAt ?? 0));
+    return this.groceries.filter((g) => inTrip(g, since)).sort((a, b) => (a.gotAt ?? 0) - (b.gotAt ?? 0));
   }
 
   /**
@@ -263,7 +263,7 @@ export class View {
    */
   groceryUsual(since: number): GroceryUsual[] {
     const items = this.groceries
-      .filter((g) => !g.need && (g.gotAt ?? 0) < since)
+      .filter((g) => !g.need && !inTrip(g, since))
       .sort((a, b) => b.count - a.count || byName(a, b))
       .map((item) => ({ name: item.name, item }));
     const staples = this.staples()
@@ -411,6 +411,8 @@ export class View {
 }
 
 /** One tap from the list: an item I've had before, or a staple / food / product to make one from. */
+const inTrip = (g: GroceryItem, since: number) => !g.need && g.inTrip && (g.gotAt ?? 0) >= since;
+
 export type GroceryUsual = { name: string; item?: GroceryItem; food?: Food; product?: Product };
 
 export const isWorkLunch = (tagIds: Id[]) => tagIds.includes(WORK_LUNCH);

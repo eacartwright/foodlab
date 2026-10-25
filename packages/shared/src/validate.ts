@@ -196,6 +196,7 @@ export const validators: { [K in Kind]: (body: unknown, id: string, now: number)
       note: str(b.note, "note", 300).trim(),
       neededAt: stamp(b.neededAt, "neededAt"),
       gotAt: stamp(b.gotAt, "gotAt"),
+      inTrip: bool(b.inTrip),
       count: Math.round(num(b.count, "count") ?? 0),
     };
   },

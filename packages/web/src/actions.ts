@@ -234,7 +234,7 @@ export function addToGroceries(what: { name: string; foodId?: Id | null; product
 export function gotGrocery(item: GroceryItem) {
   const g = latest(item);
   const now = Date.now();
-  put("groceries", { ...g, need: false, gotAt: now, count: g.count + 1 });
+  put("groceries", { ...g, need: false, gotAt: now, inTrip: true, count: g.count + 1 });
   if (g.productId && data().state.products[g.productId]) {
     const e: LogEntry = { ...boughtEntry(g.productId, g.note), createdAt: now, updatedAt: now };
     put("log", e);
@@ -258,7 +258,7 @@ const boughtEntry = (productId: Id, note: string): LogEntry => ({
 /** Undo a check-off this trip: back on the list where it was, and the `bought` entry gone. */
 export function ungotGrocery(item: GroceryItem) {
   const g = latest(item);
-  put("groceries", { ...g, need: true, count: Math.max(0, g.count - 1) });
+  put("groceries", { ...g, need: true, inTrip: false, count: Math.max(0, g.count - 1) });
   // The entry the check-off wrote has the same timestamp.
   for (const e of Object.values(data().state.log)) {
     if (!e.deleted && e.kind === "bought" && e.itemId === g.productId && e.createdAt === g.gotAt) put("log", { ...e, deleted: true });
@@ -269,24 +269,15 @@ export function saveGrocery(item: GroceryItem, patch: Partial<GroceryItem>) {
   put("groceries", { ...latest(item), ...patch });
 }
 
-// This trip ends at Done shopping or after a few hours away (per device; DESIGN.md §5.8).
-const TRIP_KEY = "foodlab:tripDone";
+// This trip ends at Done shopping, on any device, or on its own a few hours after a check-off
+// (DESIGN.md §5.8).
 const TRIP_HOURS = 3;
 
 export function tripStart(now = Date.now()): number {
-  let done = 0;
-  try {
-    done = Number(localStorage.getItem(TRIP_KEY)) || 0;
-  } catch {
-    // Blocked storage: the few-hours rule still ends the trip.
-  }
-  return Math.max(done, now - TRIP_HOURS * 3600_000);
+  return now - TRIP_HOURS * 3600_000;
 }
 
+/** Done shopping: this trip's check-offs join Usual, on every device (it syncs). */
 export function doneShopping() {
-  try {
-    localStorage.setItem(TRIP_KEY, String(Date.now()));
-  } catch {
-    // Nothing to keep it in; it ends on its own in a few hours.
-  }
+  for (const g of data().view.groceryTrip(tripStart())) put("groceries", { ...latest(g), inTrip: false });
 }

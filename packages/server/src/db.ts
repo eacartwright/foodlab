@@ -146,6 +146,8 @@ const MIGRATIONS: string[] = [
     count INTEGER NOT NULL DEFAULT 0,  -- times got${BASE}
   );
   `,
+  // 2026-10-24: Done shopping ends the trip on every device, not just the one it was tapped on.
+  `ALTER TABLE grocery_items ADD COLUMN in_trip INTEGER NOT NULL DEFAULT 0;`,
 ];
 
 export type DB = DatabaseSync;
@@ -300,6 +302,7 @@ export function loadState(db: DB): State {
       note: r.note,
       neededAt: r.needed_at,
       gotAt: r.got_at,
+      inTrip: !!r.in_trip,
       count: r.count,
     } satisfies GroceryItem;
   }
@@ -413,6 +416,7 @@ export const save = {
       note: x.note,
       needed_at: x.neededAt,
       got_at: x.gotAt,
+      in_trip: x.inTrip ? 1 : 0,
       count: x.count,
     });
   },

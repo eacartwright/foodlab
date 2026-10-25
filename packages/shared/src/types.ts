@@ -162,6 +162,8 @@ export interface GroceryItem extends Base {
   neededAt: number | null;
   /** When it was last checked off: this trip, and its Undo. */
   gotAt: number | null;
+  /** Checked off and still on screen this trip, until Done shopping (on any device) or 3 hours. */
+  inTrip: boolean;
   /** Times got: orders Usual. */
   count: number;
 }
@@ -254,6 +256,7 @@ export const blank = {
     note: "",
     neededAt: now,
     gotAt: null,
+    inTrip: false,
     count: 0,
   }),
 };

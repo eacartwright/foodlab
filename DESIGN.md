@@ -235,7 +235,8 @@ counter, and the same ten things typed out again every week.)
 | `need` | yes / no. **On the list** or not. The only thing the everyday path changes. |
 | `note` | This time only: "2", "the big one". Cleared when it goes back on the list. |
 | `neededAt` | When it last went on the list: the list's order. |
-| `gotAt` | When it was last checked off: this trip, and its Undo. |
+| `gotAt` | When it was last checked off: this trip, and undoing it. |
+| `inTrip` | Checked off and still on screen this trip. Done shopping clears it, so it ends the trip on every device. |
 | `count` | Times got. Orders the Usual list. |
 
 - An item is made **once**, the first time I type it, and is never made again: typing "milk"
@@ -370,15 +371,16 @@ signal: checking off goes through the outbox like any save).
 │ ○ Milk                       │
 │ ○ Eggs                  · 2  │   note
 │ ○ Butter        Wegmans      │   a product's store
-│ ✓ Bread  (got · Undo)        │   checked this trip, struck through
+│ ✓ Bread                      │   checked this trip, struck through; tap again to undo
 │ ──── Usual ───────────────── │
 │ + Cheddar  + Bananas  + Rice │   one tap puts it back on the list
 └──────────────────────────────┘
 ```
 
 - **The list**: what's needed, in the order added. Tap the circle to check it off.
-- **This trip**: checked items stay on screen struck through, with Undo, for 3 hours or until
-  **Done shopping** (per device). Then they quietly join Usual. They never pile up.
+- **This trip**: checked items stay on screen struck through for 3 hours or until **Done
+  shopping**, which syncs, so the trip ends on the phone and the desktop alike. Tapping the
+  checked box again undoes it (no separate Undo). Then they quietly join Usual. They never pile up.
 - Tapping an item opens its row: name, this time's note, food, product, Not needed, Delete.
 - **Usual**: everything I've bought that isn't needed, most-bought first, plus staples (§4.7)
   not yet on it. One tap = needed. Typing in the add box filters it, then offers foods and

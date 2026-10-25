@@ -15,7 +15,6 @@ export function GroceriesPage() {
   const { view } = useData();
   const [text, setText] = useState("");
   const [editing, setEditing] = useState<string | null>(null);
-  const [, setEnded] = useState(0);
   const since = tripStart();
   const list = view.groceryList();
   const trip = view.groceryTrip(since);
@@ -62,22 +61,13 @@ export function GroceriesPage() {
         ))}
         {trip.map((g) => (
           <li key={g.id} className="got">
-            <input type="checkbox" checked aria-label={`Not got: ${g.name}`} onChange={() => ungotGrocery(g)} />
+            <input type="checkbox" checked aria-label={`Not got: ${g.name}`} title="Not got: back on the list" onChange={() => ungotGrocery(g)} />
             <span className="grocery-name">{g.name}</span>
-            <button className="btn subtle" onClick={() => ungotGrocery(g)}>
-              Undo
-            </button>
           </li>
         ))}
       </ul>
       {trip.length > 0 && (
-        <button
-          className="btn"
-          onClick={() => {
-            doneShopping();
-            setEnded(Date.now());
-          }}
-        >
+        <button className="btn" onClick={doneShopping}>
           Done shopping
         </button>
       )}
