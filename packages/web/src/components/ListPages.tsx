@@ -1,8 +1,9 @@
-import { METHOD_LABEL, RATINGS, RATING_EMOJI, nameKey, productName, type Rating } from "@foodlab/shared";
-import { useMemo, type ReactNode } from "react";
-import { A, pathOf, setQuery, useRoute } from "../router";
+import { METHOD_LABEL, RATINGS, RATING_EMOJI, nameKey, productName, type Food, type FoodNode, type Product, type Rating } from "@foodlab/shared";
+import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
+import { ensureStore } from "../actions";
+import { A, go, pathOf, setQuery, useRoute } from "../router";
 import { useData } from "../sync";
-import { KIND_ICON } from "./controls";
+import { KIND_ICON, Segmented } from "./controls";
 import { openQuickAdd } from "./QuickAdd";
 import { NotGF, Rating as RatingMark } from "./rows";
 
@@ -140,12 +141,28 @@ export function FoodsList() {
       ),
     [view, f, staples],
   );
-  const { sorted, th } = useSort(rows, {
+  const { tree, folded, fold, toggle } = useTreeState("foods");
+  const nodes = useMemo(() => view.foodTree(), [view]);
+  const totals = useMemo(() => {
+    const m = new Map<string, number>();
+    const walk = (ns: FoodNode[]) => ns.forEach((n) => (m.set(n.food.id, n.total), walk(n.kids)));
+    walk(nodes);
+    return m;
+  }, [nodes]);
+  // In the tree, Products counts the food and its kinds (Mustard: all the mustards).
+  const { sorted, th } = useSort(tree ? view.foods : rows, {
     name: { value: (x) => x.name },
     up: { value: (x) => (view.food(x.parentId) ?? view.food(x.formOfId))?.name },
-    products: { value: (x) => view.productsOf(x.id).length, desc: true },
+    products: { value: (x) => (tree ? totals.get(x.id) : view.productsOf(x.id).length), desc: true },
     recipes: { value: (x) => view.recipesUsing(x.id).length, desc: true },
   });
+  const filtering = !!f.trim() || staples;
+  const withKids = () => {
+    const out: string[] = [];
+    const walk = (ns: FoodNode[]) => ns.forEach((n) => n.kids.length && (out.push(n.food.id), walk(n.kids)));
+    walk(nodes);
+    return out;
+  };
   return (
     <ListShell
       title="Foods"
@@ -154,20 +171,33 @@ export function FoodsList() {
       add={() => openQuickAdd({ kind: "foods" })}
       empty="No foods yet. They're made for you as you add products and recipe ingredients."
       filters={
-        <label className="check">
-          <input type="checkbox" checked={staples} onChange={(e) => setQuery({ staple: e.target.checked ? "1" : null })} /> Staples
-        </label>
+        <>
+          <TreeSwitch kind="foods" tree={tree} />
+          <label className="check">
+            <input type="checkbox" checked={staples} onChange={(e) => setQuery({ staple: e.target.checked ? "1" : null })} /> Staples
+          </label>
+          {tree && !filtering && <FoldAll onExpand={() => fold(new Set())} onCollapse={() => fold(new Set(withKids()))} />}
+        </>
       }
       head={
         <tr>
           {th("name", "Food")}
-          {th("up", "Is a / form of", "hide-sm")}
+          {!tree && th("up", "Is a / form of", "hide-sm")}
           {th("products", "Products", "num")}
           {th("recipes", "Recipes", "num")}
         </tr>
       }
     >
-      {sorted.map((x) => {
+      {tree ? (
+        <FoodTreeRows
+          nodes={nodes}
+          order={new Map(sorted.map((x, i) => [x.id, i]))}
+          shown={filtering ? new Set(rows.map((x) => x.id)) : null}
+          folded={folded}
+          onFold={toggle}
+        />
+      ) : (
+        sorted.map((x) => {
         const up = view.food(x.parentId) ?? view.food(x.formOfId);
         return (
           <tr key={x.id}>
@@ -189,9 +219,154 @@ export function FoodsList() {
             <td className="num">{view.recipesUsing(x.id).length || ""}</td>
           </tr>
         );
-      })}
+        })
+      )}
     </ListShell>
   );
+}
+
+// ---- List or Tree (Foods, Products): per device, which way and which branches are folded ----
+
+type TreeKind = "foods" | "products";
+const viewKey = (k: TreeKind) => `foodlab:${k}View`;
+const foldKey = (k: TreeKind) => `foodlab:${k}Folded`;
+
+/** The address says List or Tree, else what this device used last; folds are kept per device. */
+function useTreeState(kind: TreeKind) {
+  const { query } = useRoute();
+  const tree = (query.get("view") ?? stored(viewKey(kind))) === "tree";
+  const [folded, setFolded] = useState<Set<string>>(() => new Set(readFolded(foldKey(kind))));
+  const fold = (next: Set<string>) => {
+    setFolded(next);
+    keep(foldKey(kind), JSON.stringify([...next]));
+  };
+  const toggle = (id: string) => {
+    const next = new Set(folded);
+    if (!next.delete(id)) next.add(id);
+    fold(next);
+  };
+  return { tree, folded, fold, toggle };
+}
+
+function TreeSwitch({ kind, tree }: { kind: TreeKind; tree: boolean }) {
+  return (
+    <Segmented
+      value={tree ? "tree" : "list"}
+      options={["list", "tree"] as const}
+      labels={{ list: "List", tree: "Tree" }}
+      clearable={false}
+      label="Show as"
+      onChange={(v) => {
+        keep(viewKey(kind), v ?? "list");
+        setQuery({ view: v ?? "list" });
+      }}
+    />
+  );
+}
+
+function FoldAll({ onExpand, onCollapse }: { onExpand: () => void; onCollapse: () => void }) {
+  return (
+    <span className="tree-all">
+      <button className="btn subtle" onClick={onExpand}>
+        Expand all
+      </button>
+      <button className="btn subtle" onClick={onCollapse}>
+        Collapse all
+      </button>
+    </span>
+  );
+}
+
+/** A fold button, or the same space when there's nothing to fold. */
+function TreeToggle({ name, open, can, disabled, onClick }: { name: string; open: boolean; can: boolean; disabled?: boolean; onClick: () => void }) {
+  if (!can) return <span className="tree-toggle" aria-hidden />;
+  return (
+    <button className="tree-toggle" aria-expanded={open} aria-label={`${open ? "Collapse" : "Expand"} ${name}`} disabled={disabled} onClick={onClick}>
+      {open ? "▾" : "▸"}
+    </button>
+  );
+}
+
+function stored(key: string): string | null {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+function keep(key: string, value: string) {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    // Blocked storage: it just isn't remembered.
+  }
+}
+function readFolded(key: string): string[] {
+  try {
+    const v: unknown = JSON.parse(stored(key) ?? "[]");
+    return Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * The tree's rows: siblings in the list's sort order, folded branches hidden. While filtering,
+ * `shown` holds the matches: they show with what they sit under (dimmed), everything open.
+ */
+function FoodTreeRows({
+  nodes,
+  order,
+  shown,
+  folded,
+  onFold,
+}: {
+  nodes: FoodNode[];
+  order: Map<string, number>;
+  shown: Set<string> | null;
+  folded: Set<string>;
+  onFold: (id: string) => void;
+}) {
+  const { view } = useData();
+  const has = new Map<string, boolean>();
+  const visible = (n: FoodNode): boolean => {
+    if (!shown) return true;
+    let v = has.get(n.food.id);
+    if (v === undefined) has.set(n.food.id, (v = shown.has(n.food.id) || n.kids.some(visible)));
+    return v;
+  };
+  const out: ReactNode[] = [];
+  const walk = (ns: FoodNode[], depth: number) => {
+    const sorted = [...ns].sort((a, b) => (order.get(a.food.id) ?? 0) - (order.get(b.food.id) ?? 0));
+    for (const n of sorted) {
+      if (!visible(n)) continue;
+      const x = n.food;
+      const open = !!shown || !folded.has(x.id);
+      const own = view.productsOf(x.id).length;
+      out.push(
+        <tr key={x.id} className={shown && !shown.has(x.id) ? "context" : undefined}>
+          <td>
+            <span className="tree-cell" style={{ "--depth": depth } as CSSProperties}>
+              <TreeToggle name={x.name} open={open} can={n.kids.length > 0} disabled={!!shown} onClick={() => onFold(x.id)} />
+              <A href={pathOf("foods", x.id)} className="strong">
+                {x.name}
+              </A>
+              {n.form && <span className="muted small">form</span>}
+              {x.staple && <span className="staple-mark">★</span>}
+            </span>
+          </td>
+          <td className="num" title={n.total > own ? `${own} of its own, ${n.total} with its kinds` : undefined}>
+            {own || ""}
+            {n.total > own && <span className="muted small"> ({n.total})</span>}
+          </td>
+          <td className="num">{view.recipesUsing(x.id).length || ""}</td>
+        </tr>,
+      );
+      if (open) walk(n.kids, depth + 1);
+    }
+  };
+  walk(nodes, 0);
+  return <>{out}</>;
 }
 
 export function ProductsList() {
@@ -203,9 +378,9 @@ export function ProductsList() {
   const rows = useMemo(
     () =>
       view.products.filter((p) => {
-        const food = view.food(p.foodId);
+        // "pickles" finds every pickle product, whatever kind of pickle its food is.
         return (
-          (match(productName(p), f) || (food ? match(food.name, f) : false)) &&
+          (match(productName(p), f) || view.foodPath(p.foodId).some((x) => match(x.name, f))) &&
           (!store || p.storeIds.includes(store)) &&
           ratingOk(p.rating, rating)
         );
@@ -215,9 +390,14 @@ export function ProductsList() {
   const { sorted, th } = useSort(rows, {
     rating: { value: (p) => rank(p.rating), desc: true },
     name: { value: (p) => productName(p) },
-    food: { value: (p) => view.food(p.foodId)?.name },
+    // By the whole path, so kinds of the same food sort together (all the pickles, then …).
+    food: { value: (p) => pathText(view.foodPath(p.foodId)) },
     stores: { value: (p) => p.storeIds.map((s) => view.store(s)?.name).filter(Boolean).join(", ") },
   });
+  // Tree: foods as folding headings, each product under its food (DESIGN.md §5.3).
+  const { tree, folded, fold, toggle } = useTreeState("products");
+  const nodes = useMemo(() => view.foodTree(), [view]);
+  const filtering = !!f.trim() || !!store || !!rating;
   return (
     <ListShell
       title="Products"
@@ -227,6 +407,7 @@ export function ProductsList() {
       empty="No products match."
       filters={
         <>
+          <TreeSwitch kind="products" tree={tree} />
           <select className="select" value={store ?? ""} onChange={(e) => setQuery({ store: e.target.value || null })} aria-label="Store">
             <option value="">Any store</option>
             {view.stores.map((s) => (
@@ -236,19 +417,28 @@ export function ProductsList() {
             ))}
           </select>
           <RatingFilter />
+          {tree && !filtering && (
+            <FoldAll
+              onExpand={() => fold(new Set())}
+              onCollapse={() => fold(new Set([UNSORTED, ...view.foods.filter((x) => (totalsOf(nodes).get(x.id) ?? 0) > 0).map((x) => x.id)]))}
+            />
+          )}
         </>
       }
       head={
         <tr>
           {th("rating", "❤️", "rate-col", "Rating")}
           {th("name", "Product")}
-          {th("food", "Food", "hide-sm")}
+          {!tree && th("food", "Food", "hide-sm")}
           {th("stores", "Sold at", "hide-sm")}
         </tr>
       }
     >
-      {sorted.map((p) => {
-        const food = view.food(p.foodId);
+      {tree ? (
+        <ProductTreeRows nodes={nodes} products={sorted} openAll={filtering} folded={folded} onFold={toggle} />
+      ) : (
+        sorted.map((p) => {
+        const path = view.foodPath(p.foodId);
         return (
           <tr key={p.id}>
             <td className="rate-col">
@@ -259,14 +449,138 @@ export function ProductsList() {
                 {productName(p)}
               </A>
               {p.glutenFree === "no" && <NotGF />}
-              {food && <div className="show-sm muted small">{food.name}</div>}
+              {path.length > 0 && <div className="show-sm muted small">{pathText(shortPath(path))}</div>}
             </td>
-            <td className="hide-sm">{food && <A href={pathOf("foods", food.id)}>{food.name}</A>}</td>
+            <td className="hide-sm">
+              <FoodPath path={path} />
+            </td>
             <td className="hide-sm muted">{p.storeIds.map((s) => view.store(s)?.name).filter(Boolean).join(", ")}</td>
           </tr>
         );
-      })}
+        })
+      )}
     </ListShell>
+  );
+}
+
+const UNSORTED = "unsorted";
+const totalsOf = (nodes: FoodNode[]) => {
+  const m = new Map<string, number>();
+  const walk = (ns: FoodNode[]) => ns.forEach((n) => (m.set(n.food.id, n.total), walk(n.kids)));
+  walk(nodes);
+  return m;
+};
+
+/**
+ * Products as a tree: each food a folding heading with how many products are under it, its kinds
+ * first, then its own products (in the list's sort order). Foods with nothing showing are left
+ * out; products without a food go last, under Unsorted. `openAll` while filtering.
+ */
+function ProductTreeRows({
+  nodes,
+  products,
+  openAll,
+  folded,
+  onFold,
+}: {
+  nodes: FoodNode[];
+  products: Product[];
+  openAll: boolean;
+  folded: Set<string>;
+  onFold: (id: string) => void;
+}) {
+  const { view } = useData();
+  const byFood = new Map<string, Product[]>();
+  for (const p of products) {
+    const f = view.food(p.foodId);
+    const key = f && !f.deleted ? f.id : UNSORTED;
+    byFood.set(key, [...(byFood.get(key) ?? []), p]);
+  }
+  const counts = new Map<string, number>();
+  const count = (n: FoodNode): number => {
+    let c = counts.get(n.food.id);
+    if (c === undefined) counts.set(n.food.id, (c = (byFood.get(n.food.id)?.length ?? 0) + n.kids.reduce((s, k) => s + count(k), 0)));
+    return c;
+  };
+  const out: ReactNode[] = [];
+  const heading = (id: string, name: ReactNode, label: string, n: number, depth: number, open: boolean) =>
+    out.push(
+      <tr key={`h:${id}`} className="group-row">
+        <td colSpan={3}>
+          <span className="tree-cell" style={{ "--depth": depth } as CSSProperties}>
+            <TreeToggle name={label} open={open} can disabled={openAll} onClick={() => onFold(id)} />
+            {name}
+            <span className="muted small">{n}</span>
+          </span>
+        </td>
+      </tr>,
+    );
+  const items = (ps: Product[], depth: number) => {
+    for (const p of ps)
+      out.push(
+        <tr key={p.id}>
+          <td className="rate-col">
+            <RatingMark value={p.rating} />
+          </td>
+          <td>
+            <span className="tree-cell" style={{ "--depth": depth } as CSSProperties}>
+              <A href={pathOf("products", p.id)} className="strong">
+                {productName(p)}
+              </A>
+              {p.glutenFree === "no" && <NotGF />}
+            </span>
+          </td>
+          <td className="hide-sm muted">{p.storeIds.map((s) => view.store(s)?.name).filter(Boolean).join(", ")}</td>
+        </tr>,
+      );
+  };
+  const walk = (ns: FoodNode[], depth: number) => {
+    for (const n of ns) {
+      const c = count(n);
+      if (!c) continue;
+      const open = openAll || !folded.has(n.food.id);
+      heading(
+        n.food.id,
+        <A href={pathOf("foods", n.food.id)} className="strong">
+          {n.food.name}
+        </A>,
+        n.food.name,
+        c,
+        depth,
+        open,
+      );
+      if (!open) continue;
+      walk(n.kids, depth + 1);
+      items(byFood.get(n.food.id) ?? [], depth + 1);
+    }
+  };
+  walk(nodes, 0);
+  const loose = byFood.get(UNSORTED);
+  if (loose) {
+    const open = openAll || !folded.has(UNSORTED);
+    heading(UNSORTED, <span className="strong">Unsorted</span>, "Unsorted", loose.length, 0, open);
+    if (open) items(loose, 1);
+  }
+  return <>{out}</>;
+}
+
+const pathText =(path: { name: string }[]) => path.map((x) => x.name).join(" › ");
+// Shown without the top (the aisle-like "Canned and jarred goods") once there are three levels;
+// sorting still uses the whole path.
+const shortPath = <T,>(path: T[]) => (path.length > 2 ? path.slice(1) : path);
+
+/** "Pickles › Baby pickles": what it's under muted, the food itself in link color. */
+function FoodPath({ path }: { path: Food[] }) {
+  const shown = shortPath(path);
+  return (
+    <span className="food-path" title={path.length > shown.length ? pathText(path) : undefined}>
+      {shown.map((x, i) => (
+        <span key={x.id} className={i < shown.length - 1 ? "muted" : undefined}>
+          <A href={pathOf("foods", x.id)}>{x.name}</A>
+          {i < shown.length - 1 && " › "}
+        </span>
+      ))}
+    </span>
   );
 }
 
@@ -356,12 +670,48 @@ export function StoresList() {
     products: { value: (s) => view.productsAt(s.id).length, desc: true },
     liked: { value: (s) => liked(s.id), desc: true },
   });
+  // A store is just a name, so + Add asks for it right here instead of in Quick add.
+  const [adding, setAdding] = useState(false);
+  const [name, setName] = useState("");
+  const create = () => {
+    if (!name.trim()) return;
+    const id = ensureStore(name); // an existing store by that name opens instead
+    setName("");
+    setAdding(false);
+    go(pathOf("stores", id));
+  };
   return (
     <ListShell
       title="Stores"
       icon={KIND_ICON.stores}
       count={rows.length}
-      empty="No stores yet. Add one from a product's Sold at."
+      add={() => setAdding(true)}
+      filters={
+        adding && (
+          <span className="inline">
+            <input
+              className="input"
+              placeholder="Store name"
+              aria-label="New store"
+              autoFocus
+              value={name}
+              enterKeyHint="done"
+              onChange={(e) => setName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") create();
+                else if (e.key === "Escape") setAdding(false);
+              }}
+            />
+            <button className="btn primary" disabled={!name.trim()} onClick={create}>
+              Add
+            </button>
+            <button className="btn subtle" onClick={() => setAdding(false)}>
+              Cancel
+            </button>
+          </span>
+        )
+      }
+      empty="No stores yet: + Add one, or from a product's Sold at."
       head={
         <tr>
           {th("name", "Store")}

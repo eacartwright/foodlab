@@ -114,6 +114,10 @@ tombstones (`deleted`), restorable with Undo or the page's Restore.
   grocery list, searchable). `scripts/import-products.ts` imports a reviewed Markdown file
   (Evan's Obsidian product list: 255 foods, 637 products) through the API; runbook has the steps.
   Tested on a scratch DB; not run on the real one yet.
+- 2026-10-25: lists: every column sorts (`?sort=`); Foods and Products have a **List / Tree**
+  switch (`View.foodTree`, `useTreeState` in `ListPages.tsx`; view and folds per device); the
+  Products list shows a food's path ("Pickles › Baby pickles", `View.foodPath`) and sorts and
+  filters by it; Stores has its own + Add. 52 tests, headless-checked on the imported list.
 - **Next:** deploy, install on the Android phone, check Share to foodlab, use Groceries in a store.
 - Then M3: derived facts from the log on pages, per-recipe product override,
   recipe cards, a Tags page.

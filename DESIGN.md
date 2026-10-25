@@ -326,6 +326,25 @@ flip, a third time back to A–Z by name. Text starts A–Z, counts and ratings 
 (❤️ first); blanks always last. The sort lives in the address (`?sort=food`, `-` for the other
 way), like the filters.
 
+**A product's food with what it's under** (2026-10-25): the Products list shows "Pickles ›
+Baby pickles" (the top level dropped once there are three, full path on hover). Sorting by
+Food uses the whole path, so every pickle product sits together whatever its kind, and the
+filter matches any level ("pickles" finds them all). Stores get **+ Add** on their list (just a
+name; an existing one opens instead), not a Quick add kind.
+
+**Foods as a tree** (2026-10-25): a List / Tree switch on Foods (remembered per device, and in
+the address as `?view=tree`). The tree is the "is a" links, indented: Condiments › Mustard ›
+Yellow mustard. A form with no "is a" sits under what it's a form of, marked *form* (Lemon juice
+under Lemon). Products shows the food's own count and, in brackets, the count with its kinds
+(Mustard (8)). Branches fold, per device, with Expand all / Collapse all. Sorting orders
+siblings. Filtering shows the matches with what they sit under (dimmed), everything open.
+
+**Products as a tree** (2026-10-25): the same List / Tree switch on Products. The foods are
+folding headings (plain text, with how many products are under each); products sit under their
+food, a food's kinds before its own products; foods with nothing showing are left out, and
+products without a food go last under Unsorted. Filters (text, store, rating) open everything
+and show only what matches, under its foods. Sorting orders the products within each food.
+
 ### 5.4 Pages
 
 Every field edited in place and saved as I go. Links are links: Lemon juice → Santa Cruz → its

@@ -145,6 +145,23 @@ describe("groceries", () => {
     expect(v.groceryTrip(T).map((g) => g.id)).toEqual(["juice"]);
   });
 
+  it("the food tree: kinds under what they are, forms under their food, products counted up", () => {
+    const tree = new View(world()).foodTree();
+    expect(tree.map((n) => n.food.name)).toEqual(["Butter", "Fruit", "Garlic", "Meat", "Potato"]);
+    const fruit = tree.find((n) => n.food.id === "fruit")!;
+    const lemon = fruit.kids[0]!;
+    expect([lemon.food.name, lemon.form]).toEqual(["Lemon", false]);
+    expect(lemon.kids.map((k) => [k.food.name, k.form])).toEqual([["Lemon juice", true]]);
+    expect([fruit.total, lemon.total, tree[0]!.total]).toEqual([2, 2, 1]); // lemon juice's two; Kerrygold
+  });
+
+  it("a food's path, top first, through is-a then form-of", () => {
+    const v = new View(world());
+    expect(v.foodPath("juice").map((f) => f.name)).toEqual(["Fruit", "Lemon", "Lemon juice"]);
+    expect(v.foodPath("thigh").map((f) => f.name)).toEqual(["Meat", "Chicken thigh"]);
+    expect(v.foodPath(null)).toEqual([]);
+  });
+
   it("PLUs belong to Produce, Fruit and Vegetable and what's under them", () => {
     const v = new View(world());
     expect(v.isProduce("lemon")).toBe(true);

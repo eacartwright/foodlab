@@ -149,6 +149,53 @@ export class View {
     return out;
   }
 
+  /**
+   * Every food as a tree for browsing (DESIGN.md §5.3): kinds under what they are; a form under
+   * what it's a form of when it isn't a kind of anything (Lemon juice under Lemon). Siblings by
+   * name. `total` counts the products of the food and everything under it.
+   */
+  foodTree(): FoodNode[] {
+    const kids = new Map<Id | null, Food[]>();
+    const form = new Set<Id>();
+    for (const f of this.foods) {
+      const [up, isForm] = this.placed(f);
+      if (isForm) form.add(f.id);
+      kids.set(up, [...(kids.get(up) ?? []), f]);
+    }
+    const seen = new Set<Id>();
+    const build = (f: Food): FoodNode => {
+      seen.add(f.id);
+      const under = (kids.get(f.id) ?? []).filter((k) => !seen.has(k.id)).map(build);
+      return { food: f, form: form.has(f.id), kids: under, total: this.productsOf(f.id).length + under.reduce((n, k) => n + k.total, 0) };
+    };
+    const roots = (kids.get(null) ?? []).map(build);
+    // A loop the server should have refused still shows up, at the top.
+    for (const f of this.foods) if (!seen.has(f.id)) roots.push(build(f));
+    return roots;
+  }
+
+  /** Where a food hangs in the tree: what it is, else what it's a form of (then `true`), else the top. */
+  private placed(f: Food): [Id | null, boolean] {
+    const live = (id: Id | null) => !!id && !!this.food(id) && !this.food(id)!.deleted;
+    if (live(f.parentId)) return [f.parentId, false];
+    if (live(f.formOfId)) return [f.formOfId, true];
+    return [null, false];
+  }
+
+  /**
+   * The food and what it hangs under, top first, as in the tree: Canned and jarred goods ›
+   * Pickles › Baby pickles. Sorting products by it keeps every pickle together.
+   */
+  foodPath(foodId: Id | null): Food[] {
+    const out: Food[] = [];
+    const seen = new Set<Id>();
+    for (let f = this.food(foodId); f && !seen.has(f.id); f = this.food(this.placed(f)[0])) {
+      seen.add(f.id);
+      out.unshift(f);
+    }
+    return out;
+  }
+
   /** Everything below a food through children, forms, or both. */
   descendants(foodId: Id, via: "children" | "forms" | "both" = "both"): Food[] {
     const out: Food[] = [];
@@ -425,7 +472,8 @@ const inTrip = (g: GroceryItem, since: number) => !g.need && g.inTrip && (g.gotA
 
 const PRODUCE = new Set(["produce", "fruit", "vegetable"]);
 
-export type GroceryUsual = { name: string; item?: GroceryItem; food?: Food; product?: Product };
+export type FoodNode = { food: Food; form: boolean; kids: FoodNode[]; total: number };
+export type GroceryUsual ={ name: string; item?: GroceryItem; food?: Food; product?: Product };
 
 export const isWorkLunch = (tagIds: Id[]) => tagIds.includes(WORK_LUNCH);
 

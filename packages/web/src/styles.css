@@ -943,6 +943,80 @@ th[aria-sort] .sort-th {
   font-size: 0.65rem;
   color: var(--primary);
 }
+/* A product's food with what it's under: the parents quiet, the food itself in link color. */
+.food-path .muted a {
+  color: var(--muted);
+}
+.food-path .muted a:hover {
+  color: var(--text);
+}
+/* Foods as a tree: indent by depth, a fold button (or its blank space) before each name. */
+.tree-cell {
+  --indent: 18px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 24px;
+  padding-left: calc(var(--depth, 0) * var(--indent));
+}
+@media (max-width: 860px) {
+  /* Narrow: shallower steps, and headers may wrap so the table fits. */
+  .tree-cell {
+    --indent: 12px;
+  }
+  .sort-th {
+    white-space: normal;
+  }
+  table.db th,
+  table.db td {
+    padding-left: 6px;
+    padding-right: 6px;
+  }
+}
+.tree-cell > a {
+  min-width: 0;
+}
+.tree-toggle {
+  all: unset;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  flex: none;
+  border-radius: 6px;
+  color: var(--muted);
+  cursor: pointer;
+}
+button.tree-toggle:hover {
+  color: var(--text);
+  background: var(--surface);
+}
+button.tree-toggle:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+.tree-toggle:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 1px;
+}
+/* Products as a tree: the food headings in plain text, so the products (links) stand out. */
+table.db tr.group-row a,
+table.db tr.group-row .strong {
+  color: var(--text);
+}
+table.db tr.group-row a:hover {
+  color: var(--primary);
+}
+table.db tr.context a {
+  color: var(--muted);
+  font-weight: 500;
+}
+.tree-all {
+  display: inline-flex;
+  gap: 4px;
+}
 table.db td {
   padding: 8px 10px;
   border-bottom: 1px solid var(--border);
