@@ -1,6 +1,7 @@
 import { MEAL_TAGS, SEARCH_KINDS, type SearchGroups } from "@foodlab/shared";
 import { useMemo } from "react";
 import { A, setQuery, useRoute } from "../router";
+import { mealNow } from "../mealTimes";
 import { useData } from "../sync";
 import { KIND_ICON } from "./controls";
 import { openQuickAdd } from "./QuickAdd";
@@ -16,6 +17,7 @@ export function SearchPage() {
   const { query } = useRoute();
   const q = query.get("q") ?? "";
   const results = useMemo(() => view.search(q), [view, q]);
+  const now = mealNow();
   const partial = SEARCH_KINDS.reduce((n, k) => n + results.partial[k].length, 0);
 
   return (
@@ -49,7 +51,7 @@ export function SearchPage() {
           <Section title="What can I eat?">
             <div className="chips">
               {MEAL_TAGS.map((t) => (
-                <A key={t.id} className={`chip ${t.id === "meal-work-lunch" ? "chip-on" : ""}`} href={`/eat?tag=${t.id}`}>
+                <A key={t.id} className={`chip ${t.id === now ? "chip-on" : ""}`} href={`/eat?tag=${t.id}`}>
                   {t.name}
                 </A>
               ))}

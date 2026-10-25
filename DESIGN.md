@@ -313,7 +313,8 @@ Plurals match ("potatoes" = "potato").
 
 Results are grouped Recipes · Products · Foods · Stores, ❤️ first. With several terms, things
 matching only some of them follow under **Partial matches**, most terms first. With nothing
-typed: Add buttons, meal shortcuts into Eat, and recently changed things.
+typed: Add buttons, meal shortcuts into Eat (the one for the time of day
+highlighted, §5.2), and recently changed things.
 
 ### 5.2 Eat (what can I eat?)
 
