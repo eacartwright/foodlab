@@ -41,7 +41,11 @@ let outbox: Pending[] = read<Pending[]>(OUTBOX_KEY, []);
 let status: SyncStatus = server.rev ? "synced" : "loading";
 let loaded = server.rev > 0;
 let seq = outbox.reduce((n, p) => Math.max(n, p.seq), 0);
-let snapshot: { state: State; view: View; status: SyncStatus; pending: number; loaded: boolean } | null = null;
+let snapshot: { state: State; view: View; status: SyncStatus; pending: number; loaded: boolean; update: boolean } | null = null;
+// This page's build, named like the server names it (its hashed script); none in dev.
+const BUILD = document.querySelector('script[type="module"][src^="/assets/"]')?.getAttribute("src") ?? "";
+/** The server has a newer build than the one running here (DESIGN.md §9). */
+let update = false;
 const listeners = new Set<() => void>();
 
 function emit() {
@@ -54,7 +58,7 @@ function current() {
     const state: State = { ...server };
     for (const k of KINDS) state[k] = { ...server[k] } as never;
     for (const p of outbox) (state[p.kind] as Record<Id, AnyRecord>)[p.id] = p.body;
-    snapshot = { state, view: new View(state), status, pending: outbox.length, loaded };
+    snapshot = { state, view: new View(state), status, pending: outbox.length, loaded, update };
   }
   return snapshot;
 }
@@ -94,6 +98,14 @@ export function put<K extends Kind>(kind: K, record: Records[K]) {
   void flush();
 }
 
+function noteBuild(res: Response) {
+  const b = res.headers.get("x-foodlab-build");
+  if (BUILD && b && (b !== BUILD) !== update) {
+    update = b !== BUILD;
+    emit();
+  }
+}
+
 let flushing = false;
 let retry: ReturnType<typeof setTimeout> | undefined;
 
@@ -124,6 +136,7 @@ async function flush() {
         setStatus("signedout");
         return;
       }
+      noteBuild(res);
       if (res.ok) {
         const r = (await res.json()) as { rev: number; record: AnyRecord; log: LogEntry[] };
         (server[p.kind] as Record<Id, AnyRecord>)[p.id] = r.record;
@@ -159,6 +172,7 @@ export async function refresh() {
   try {
     const res = await fetch("/api/state", { headers: etag && loaded ? { "if-none-match": etag } : {}, redirect: "manual" });
     if (res.type === "opaqueredirect" || res.status === 401 || res.status === 403) return setStatus("signedout");
+    noteBuild(res);
     if (res.status === 304) return;
     if (!res.ok) return setStatus("offline");
     const next = (await res.json()) as State;
@@ -179,15 +193,18 @@ export async function refresh() {
 export function start() {
   void refresh();
   if (outbox.length) void flush();
-  const wake = () => {
+  const wake = async () => {
     if (document.visibilityState === "visible") {
-      void refresh();
       void flush();
+      await refresh();
+      // Back from the background with a new build waiting: take it now, before anything is
+      // typed (drafts were saved on the way out). Otherwise it waits for ↻ Update.
+      if (update && !outbox.length && (!document.activeElement || document.activeElement === document.body)) location.reload();
     }
   };
-  document.addEventListener("visibilitychange", wake);
-  window.addEventListener("online", wake);
-  window.addEventListener("focus", wake);
+  document.addEventListener("visibilitychange", () => void wake());
+  window.addEventListener("online", () => void wake());
+  window.addEventListener("focus", () => void wake());
   setInterval(() => document.visibilityState === "visible" && void refresh(), 60_000);
 }
 

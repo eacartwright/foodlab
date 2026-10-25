@@ -26,7 +26,7 @@ aria-label (a page's title behind the Quick add dialog): scope selectors to `.qu
 
 - `packages/shared` — `types.ts` (records, the eating fields, meal tags, `blank.*` for new
   records, `productName` = brand + name, `withoutBrand`), `validate.ts` (body → clean record, used by the server on every save),
-  `ingredients.ts` (`parseLine`, `nameKey` for plural/case-proof matching, `formatAmount`),
+  `ingredients.ts` (`parseLine`, `ingredientsFromText`: links existing foods only, never makes one, `nameKey` for plural/case-proof matching, `formatAmount`),
   `derive.ts` (`View`: reverse links, preferred products, ancestors/descendants, staple
   suggestions, the `+` search, the Eat list). Pure; tests beside them.
 - `packages/server` — Node + Hono + `node:sqlite` (Node ≥ 22.13). `db.ts`: relational tables
@@ -42,8 +42,7 @@ aria-label (a page's title behind the Quick add dialog): scope selectors to `.qu
   for an older version clearing a newer one); 4xx drops the record with a toast, network
   errors retry. `router.tsx`: plain paths, `go`, `setQuery`, `<A>`; the snapshot compares the
   raw `location.search` (comparing re-encoded params looped forever, 2026-10-23).
-  `actions.ts`: `ensureFood/Store/Tag` (find by `nameKey` or make), `ingredientsFromText`
-  (unchanged lines keep their ingredient and hand-picked food), `remove` (tombstone + Undo),
+  `actions.ts`: `ensureFood/Store/Tag` (find by `nameKey` or make), `setIngredientFood`, `remove` (tombstone + Undo),
   `duplicate`, `addDevNote`.
   Pages in `components/`; in-place inputs in `controls.tsx` (`DraftInput`, `DraftTextarea`,
   `Picker`, `MultiPicker`, `Segmented`, `RatingInput`, `TagEditor`).
@@ -118,6 +117,15 @@ tombstones (`deleted`), restorable with Undo or the page's Restore.
   switch (`View.foodTree`, `useTreeState` in `ListPages.tsx`; view and folds per device); the
   Products list shows a food's path ("Pickles › Baby pickles", `View.foodPath`) and sorts and
   filters by it; Stores has its own + Add. 52 tests, headless-checked on the imported list.
+- 2026-10-25, Evan's dev notes: ingredient lines save on leaving the box (pauses made junk foods,
+  10 left to delete); Dev Notes edit and an optional page link, mirrored to `data/dev-notes.md`;
+  Eat opens on the meal for the time (Settings → Meal times, `mealTimes.ts`); `X-Foodlab-Build`
+  → **↻ Update**. 56 tests, headless-checked from a scratch copy. Then ingredient lines stopped
+  making foods at all: no match = text, linked from the Food box (opens with the parsed name). 58 tests.
+- `Z:` on Evan's laptop is the mini PC's `C:` (`\\ripley\C`), so `Z:\Apps\foodlab` is the
+  **live clone**: never edit, build or `npm install` there, and never open its `data/foodlab.db`
+  over the share (copy it with its `-wal` to scratch to look). Develop in the laptop's
+  `C:\Dev\foodlab`; read the live dev notes at `Z:\Apps\foodlab\data\dev-notes.md`.
 - **Next:** deploy, install on the Android phone, check Share to foodlab, use Groceries in a store.
 - Then M3: derived facts from the log on pages, per-recipe product override,
   recipe cards, a Tags page.

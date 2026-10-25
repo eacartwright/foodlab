@@ -61,7 +61,13 @@ function Page() {
 }
 
 function Status() {
-  const { status, pending } = useData();
+  const { status, pending, update } = useData();
+  if (update && status === "synced" && !pending)
+    return (
+      <button className="sync sync-update" onClick={() => location.reload()} title="A new version of foodlab is on the server">
+        ↻ Update
+      </button>
+    );
   if (status === "signedout")
     return (
       <button className="sync sync-warn" onClick={signIn}>

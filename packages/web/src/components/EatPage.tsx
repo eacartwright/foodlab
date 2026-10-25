@@ -1,27 +1,21 @@
 import { EFFORTS, EFFORT_LABEL, MEAL_TAGS, TRAVELS, TRAVELS_LABEL, WORK_LUNCH, type Effort, type Travels } from "@foodlab/shared";
 import { useMemo } from "react";
+import { mealNow } from "../mealTimes";
 import { A, setQuery, useRoute } from "../router";
 import { useData } from "../sync";
 import { openQuickAdd } from "./QuickAdd";
 import { ItemRow } from "./rows";
 
-// What can I eat? (DESIGN.md §5.2): recipes and products for a meal, best first.
+// What can I eat? (DESIGN.md §5.2): recipes and products for a meal, best first. It opens on
+// the meal for the time of day (Settings → Meal times); a picked meal stays in the address.
 
-const LAST_TAG = "foodlab:eat-tag";
 const list = <T extends string>(s: string | null, ok: readonly T[]) => (s ? (s.split(",").filter((x) => ok.includes(x as T)) as T[]) : []);
 
 export function EatPage() {
   const { view } = useData();
   const { query } = useRoute();
   let tag = query.get("tag");
-  if (!tag) {
-    try {
-      tag = localStorage.getItem(LAST_TAG);
-    } catch {
-      // Storage blocked.
-    }
-  }
-  if (!tag || !MEAL_TAGS.some((t) => t.id === tag)) tag = WORK_LUNCH;
+  if (!tag || !MEAL_TAGS.some((t) => t.id === tag)) tag = mealNow();
   const travels = list<Travels>(query.get("travels"), TRAVELS);
   const effort = list<Effort>(query.get("effort"), EFFORTS);
   const keeps = Number(query.get("keeps")) || null;
@@ -42,14 +36,7 @@ export function EatPage() {
     [view, tag, lunch, travels.join(), effort.join(), keeps, want, showDown], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
-  const setTag = (t: string) => {
-    try {
-      localStorage.setItem(LAST_TAG, t);
-    } catch {
-      // Not remembered.
-    }
-    setQuery({ tag: t });
-  };
+  const setTag = (t: string) => setQuery({ tag: t });
   const toggle = (key: string, values: string[], v: string) =>
     setQuery({ [key]: (values.includes(v) ? values.filter((x) => x !== v) : [...values, v]).join(",") || null });
   const filtered = travels.length || effort.length || keeps || want;

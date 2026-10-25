@@ -4,6 +4,8 @@ import {
   METHOD_LABEL,
   formatAmount,
   formatQuantity,
+  ingredientsFromText,
+  parseLine,
   productName,
   today,
   type Id,
@@ -11,7 +13,7 @@ import {
   type RecipeIngredient,
 } from "@foodlab/shared";
 import { useEffect, useState } from "react";
-import { addLog, duplicate, ensureFood, ingredientsFromText, remove, setIngredientFood } from "../actions";
+import { addLog, duplicate, ensureFood, remove, setIngredientFood } from "../actions";
 import { Markdown } from "../markdown";
 import { A, go, pathOf, setQuery, useRoute } from "../router";
 import { data, put, useData } from "../sync";
@@ -226,9 +228,10 @@ function RecipeEdit({ r }: { r: Recipe }) {
           <DraftTextarea
             className="input mono-ish"
             rows={5}
+            commitOnPause={false}
             value={r.ingredients.map((i) => i.line).join("\n")}
             placeholder={"One per line:\n2 slices American cheese\n1 lemon, zested\n1½ cups cooked rice (optional)"}
-            onCommit={(text) => save({ ingredients: ingredientsFromText(text, r.ingredients) })}
+            onCommit={(text) => save({ ingredients: ingredientsFromText(text, (data().state.recipes[r.id] ?? r).ingredients, (n) => data().view.findFood(n)?.id) })}
           />
           {r.ingredients.length > 0 && (
             <table className="parsed">
@@ -248,6 +251,7 @@ function RecipeEdit({ r }: { r: Recipe }) {
                         value={i.foodId}
                         options={view.foods.map((f) => ({ id: f.id, label: f.name }))}
                         placeholder="No food"
+                        startText={parseLine(i.line).food}
                         createLabel="New food"
                         onChange={(foodId) => setIngredientFood(r, i.id, foodId)}
                         onCreate={(n) => ensureFood(n)}

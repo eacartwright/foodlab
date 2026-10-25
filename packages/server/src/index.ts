@@ -1,24 +1,39 @@
 import { serve } from "@hono/node-server";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { Hono } from "hono";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Invalid, KINDS, type Kind } from "@foodlab/shared";
 import { startBackups } from "./backup";
 import { openDb } from "./db";
+import { writeDevNotes } from "./devNotesFile";
 import { Store } from "./store";
 
 const PORT = Number(process.env.PORT ?? 8788);
 const DB_FILE = process.env.FOODLAB_DB ?? fileURLToPath(new URL("../../../data/foodlab.db", import.meta.url));
 const BACKUP_DIR = process.env.FOODLAB_BACKUP_DIR ?? join(dirname(DB_FILE), "backups");
 const WEB_DIST = fileURLToPath(new URL("../../web/dist", import.meta.url));
+const DEV_NOTES_FILE = join(dirname(DB_FILE), "dev-notes.md");
 
 const db = openDb(DB_FILE);
 const store = new Store(db);
 const backups = startBackups(db, BACKUP_DIR);
+writeDevNotes(DEV_NOTES_FILE, store.state);
+
+// The build being served, named by its hashed script ("/assets/index-Bx3k.js"). The app compares
+// it with its own and offers Update when they differ (an installed app can run for days).
+const BUILD = existsSync(join(WEB_DIST, "index.html"))
+  ? (/src="(\/assets\/[^"]+\.js)"/.exec(readFileSync(join(WEB_DIST, "index.html"), "utf8"))?.[1] ?? "")
+  : "";
 
 export const app = new Hono();
+
+if (BUILD)
+  app.use("/api/*", async (c, next) => {
+    await next();
+    c.header("X-Foodlab-Build", BUILD);
+  });
 
 app.get("/api/health", (c) => c.json({ ok: true, rev: store.rev, lastBackup: backups.latest() }));
 
@@ -41,7 +56,9 @@ app.put("/api/:kind/:id", async (c) => {
   const body = await c.req.json().catch(() => undefined);
   if (body === undefined) return c.json({ error: "Expected JSON" }, 400);
   try {
-    return c.json(store.put(kind, c.req.param("id"), body));
+    const saved = store.put(kind, c.req.param("id"), body);
+    if (kind === "devnotes") writeDevNotes(DEV_NOTES_FILE, store.state);
+    return c.json(saved);
   } catch (err) {
     if (err instanceof Invalid) return c.json({ error: err.message }, 400);
     console.error(err);

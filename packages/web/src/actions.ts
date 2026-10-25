@@ -4,7 +4,6 @@ import {
   newId,
   nameKey,
   productName,
-  parseLine,
   tidyName,
   today,
   type DevNote,
@@ -18,7 +17,6 @@ import {
   type LogTarget,
   type Rating,
   type Recipe,
-  type RecipeIngredient,
   type Records,
 } from "@foodlab/shared";
 import { go, pathOf } from "./router";
@@ -50,38 +48,6 @@ export function ensureTag(name: string): Id {
   const t = blank.tags(newId(), name.trim().replace(/\s+/g, " ").toLowerCase());
   put("tags", t);
   return t.id;
-}
-
-/**
- * Ingredient lines as typed → the recipe's ingredients. A line typed exactly as before keeps
- * its ingredient (and any food picked for it by hand); a new or changed line is parsed and its
- * food found or made.
- */
-export function ingredientsFromText(text: string, before: RecipeIngredient[]): RecipeIngredient[] {
-  const old = new Map<string, RecipeIngredient[]>();
-  for (const i of before) old.set(i.line, [...(old.get(i.line) ?? []), i]);
-  const out: RecipeIngredient[] = [];
-  for (const raw of text.split("\n")) {
-    const line = raw.trim();
-    if (!line) continue;
-    const same = old.get(line)?.shift();
-    if (same) {
-      out.push(same);
-      continue;
-    }
-    const p = parseLine(line);
-    out.push({
-      id: newId(),
-      line,
-      foodId: p.food ? ensureFood(p.food) : null,
-      quantity: p.quantity,
-      unit: p.unit,
-      prep: p.prep,
-      optional: p.optional,
-      note: p.note,
-    });
-  }
-  return out;
 }
 
 export function setIngredientFood(recipe: Recipe, ingredientId: Id, foodId: Id | null) {
@@ -160,9 +126,14 @@ export function duplicate(kind: "foods" | "products" | "recipes", id: Id) {
 
 const pick = <T, K extends keyof T>(x: T, keys: K[]) => Object.fromEntries(keys.map((k) => [k, x[k]])) as Pick<T, K>;
 
-/** Note an idea or bug, with the page it was written on. */
-export function addDevNote(text: string) {
-  put("devnotes", blank.devnotes(newId(), text, location.pathname + location.search));
+/** Note an idea or bug, with the page it was written on if asked. */
+export function addDevNote(text: string, withPage: boolean) {
+  put("devnotes", blank.devnotes(newId(), text, withPage ? location.pathname + location.search : ""));
+}
+
+/** New text for a note; emptying it leaves the note as it was (✕ deletes). */
+export function editDevNote(n: DevNote, text: string) {
+  if (text.trim()) put("devnotes", { ...(data().state.devnotes[n.id] ?? n), text: text.trim() });
 }
 
 export function removeDevNote(n: DevNote) {

@@ -1,3 +1,6 @@
+import { newId } from "./id";
+import type { Id, RecipeIngredient } from "./types";
+
 // Ingredient lines (DESIGN.md §4.5): "1½ cups cooked rice, rinsed (optional)" → quantity, unit,
 // food name, prep. The line is always kept as typed, so a parse that's off loses nothing.
 
@@ -160,6 +163,35 @@ export function parseLine(input: string): ParsedLine {
   out.food = s.trim().replace(/[.;:]+$/, "");
   out.note = notes.filter(Boolean).join("; ");
   return out;
+}
+
+/**
+ * Ingredient lines as typed → the recipe's ingredients. A line typed exactly as before keeps
+ * its ingredient. A changed line keeps the food of the old line it replaced (same food name, so
+ * "2 slices cheese" → "3 slices cheese" keeps a hand-picked American cheese). Otherwise the food
+ * is only ever an existing one (`findFood`); a line with no match stays text, never a new food.
+ */
+export function ingredientsFromText(text: string, before: RecipeIngredient[], findFood: (name: string) => Id | null | undefined): RecipeIngredient[] {
+  const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
+  const unused = [...before];
+  const take = (i: RecipeIngredient | undefined) => i && unused.splice(unused.indexOf(i), 1)[0];
+  const same = lines.map((line) => take(unused.find((i) => i.line === line)));
+  return lines.map((line, n) => {
+    if (same[n]) return same[n];
+    const p = parseLine(line);
+    const key = nameKey(p.food);
+    const was = key ? take(unused.find((i) => i.foodId && nameKey(parseLine(i.line).food) === key)) : undefined;
+    return {
+      id: was?.id ?? newId(),
+      line,
+      foodId: was?.foodId ?? (p.food ? (findFood(p.food) ?? null) : null),
+      quantity: p.quantity,
+      unit: p.unit,
+      prep: p.prep,
+      optional: p.optional,
+      note: p.note,
+    };
+  });
 }
 
 /**

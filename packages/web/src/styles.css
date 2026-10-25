@@ -264,7 +264,8 @@ textarea.input {
 .input.unset {
   border-style: dashed;
 }
-.input.grow {
+.input.grow,
+.select.grow {
   flex: 1;
 }
 .input::placeholder,
@@ -613,6 +614,11 @@ textarea::placeholder {
 }
 .sync-warn .sync-dot {
   background: var(--warn);
+}
+.sync-update {
+  color: var(--primary);
+  font-weight: 600;
+  cursor: pointer;
 }
 .topbar {
   display: none;
@@ -1368,6 +1374,13 @@ ul.grocery-list li.got .grocery-name {
   .quick-add .row-actions {
     padding-top: 6px;
   }
+}
+
+.meal-times {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 320px;
 }
 
 /* ---- dev notes ---- */

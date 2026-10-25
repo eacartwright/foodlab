@@ -165,8 +165,12 @@ recipe wants Cooper Sharp, not the food's usual pick). I type lines; they're par
 salt, to taste                    → — · — · salt · prep "to taste"
 ```
 
-The food is matched by name (or created) and the line is kept as typed, so a parse I don't
-like never loses anything. Plurals and case match the same food ("Lemons" → Lemon).
+The food is matched by name and the line is kept as typed, so a parse I don't like never
+loses anything. Plurals and case match the same food ("Lemons" → Lemon). A line whose food
+doesn't exist yet stays **text**, linked to nothing: typing never makes a food (2026-10-25,
+after half-typed lines made junk ones). Linking it is the Food box beside the line, opened with
+the parsed name typed in: pick a food, or **New food** on purpose. Changing a line's amount or
+prep keeps the food it was linked to.
 
 ### 4.6 Eating fields (recipes, products; dishes later)
 
@@ -317,6 +321,11 @@ recipes and products with that tag: ❤️, then 👍, then not rated; 👎 hidd
 never. Filters: tried / want to try, and for **Work lunch**: travels, keeps ≥ N days,
 effort. Each row shows what matters for the decision (rating, travels, keeps, effort).
 
+**Opens on the meal for the time of day** (2026-10-25): four slots in Settings → Meal times,
+each a start time and a meal, running until the next (defaults 4:00 Breakfast, 10:30 Work
+lunch, 16:00 Dinner, 23:00 Snack, the last past midnight). Per device. A picked chip stays in
+the address (`?tag=`); it no longer remembers the last one picked, which would beat the clock.
+
 ### 5.3 Lists (the database personality)
 
 Foods, Products, Recipes, Stores: a filter box and rows with the useful columns (a product's
@@ -378,9 +387,11 @@ Marked staples by store (the standing list, §4.7), then Suggested staples with 
 ### 5.7 Dev notes (while foodlab is being built)
 
 📝 at the bottom of the sidebar (and the phone's drawer), beside ⚙, opens **Dev Notes**: one box
-for an idea, a bug or something odd, saved with the page it was written on, and the open notes
-below with a Done box. **Copy** puts the open ones on the clipboard as a Markdown list, to paste
-into a work session. They're their own records (`devnotes`), kept apart from the food, synced
+for an idea, a bug or something odd, and the open notes below with a Done box and ✎ to edit
+the text. **Link it to this page** (off to start, remembered per device; 2026-10-25) saves the
+page it was written on, which is often beside the point. **Copy** puts the open ones on the
+clipboard as a Markdown list, to paste into a work session. The server also rewrites
+`data/dev-notes.md` on every change, so Claude can read them on the mini PC without the database. They're their own records (`devnotes`), kept apart from the food, synced
 like everything else, never in search. They can go once the app settles.
 
 ### 5.8 Groceries
@@ -469,6 +480,16 @@ makes adding things with no signal (a store basement) work from the start, for l
 handling failures would take. sideshow's ops + reducer exist for shared running timers and exact
 timestamps; foodlab has neither. A save the server refuses (a bug, not a connection problem) is
 dropped with a message instead of blocking the rest.
+
+**New builds** (2026-10-25). An installed app can stay open for days on an old build (there's
+no service worker; Android just resumes the page). Every `/api` reply carries
+`X-Foodlab-Build`, the hashed script `index.html` loads; when it differs from the page's own,
+**Saved** becomes **↻ Update** (a reload). Coming back to the app with one waiting, nothing
+unsaved and nothing focused reloads by itself.
+
+**Ingredient lines save when the box is left**, not on a pause in typing like other text
+(2026-10-25): pauses mid-word made foods called "GF b", "GF bran flakes (" and so on.
+Leaving the app counts as leaving the box. Lines no longer make foods at all (§4.5).
 
 ## 10. Milestones
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatAmount, formatQuantity, nameKey, parseLine } from "./ingredients";
+import { formatAmount, formatQuantity, ingredientsFromText, nameKey, parseLine } from "./ingredients";
 
 describe("parseLine", () => {
   const cases: [string, Partial<ReturnType<typeof parseLine>>][] = [
@@ -61,5 +61,25 @@ describe("formatAmount", () => {
     expect(formatAmount(2, "pinch")).toBe("2 pinches");
     expect(formatAmount(1, "clove")).toBe("1 clove");
     expect(formatAmount(null, "")).toBe("");
+  });
+});
+
+describe("ingredientsFromText", () => {
+  const foods: Record<string, string> = { lemon: "lemon-id", "american cheese": "cheese-id" };
+  const find = (name: string) => foods[nameKey(name)];
+  const lines = (text: string, before = []) => ingredientsFromText(text, before, find);
+
+  it("links existing foods and leaves the rest as text, making none", () => {
+    const [a, b] = lines("1 lemon, zested\n1 cup GF bran flakes (Wegm");
+    expect(a!.foodId).toBe("lemon-id");
+    expect(b!.foodId).toBeNull();
+    expect(b!.line).toBe("1 cup GF bran flakes (Wegm");
+  });
+
+  it("keeps an unchanged line, and a hand-picked food when only the amount changes", () => {
+    const before = [{ ...lines("2 slices cheese")[0]!, foodId: "cheese-id" }, lines("1 lemon")[0]!];
+    const after = ingredientsFromText("1 lemon\n3 slices cheese", before, find);
+    expect(after[0]).toBe(before[1]);
+    expect(after[1]).toMatchObject({ id: before[0]!.id, foodId: "cheese-id", quantity: 3 });
   });
 });

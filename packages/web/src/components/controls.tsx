@@ -78,8 +78,14 @@ export function NumberInput({
 export function DraftTextarea({
   value,
   onCommit,
+  commitOnPause = true,
   ...rest
-}: { value: string; onCommit: (v: string) => void } & Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, "value" | "onChange">) {
+}: {
+  value: string;
+  onCommit: (v: string) => void;
+  /** Also save after a pause in typing. Off where a save acts on half-typed text (ingredient lines make foods). */
+  commitOnPause?: boolean;
+} & Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, "value" | "onChange">) {
   const [draft, setDraft] = useState(value);
   const [base, setBase] = useState(value);
   if (value !== base) {
@@ -94,7 +100,15 @@ export function DraftTextarea({
     const l = latest.current;
     if (l.draft !== l.value) l.onCommit(l.draft);
   };
-  useEffect(() => () => commit(), []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    // Switching apps on the phone doesn't blur the field.
+    const hide = () => document.visibilityState === "hidden" && commit();
+    document.addEventListener("visibilitychange", hide);
+    return () => {
+      document.removeEventListener("visibilitychange", hide);
+      commit();
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const ref = useRef<HTMLTextAreaElement>(null);
   useEffect(() => {
     const el = ref.current;
@@ -110,7 +124,7 @@ export function DraftTextarea({
       onChange={(e) => {
         setDraft(e.target.value);
         clearTimeout(timer.current);
-        timer.current = setTimeout(commit, 1200);
+        if (commitOnPause) timer.current = setTimeout(commit, 1200);
       }}
       onBlur={commit}
     />
@@ -154,6 +168,7 @@ export function Picker({
   clearable = true,
   autoFocus,
   keepOpen,
+  startText = "",
   id,
 }: {
   value: Id | null;
@@ -166,6 +181,8 @@ export function Picker({
   autoFocus?: boolean;
   /** For adding several (MultiPicker): clear the text after a pick and stay focused. */
   keepOpen?: boolean;
+  /** Typed in already when an empty picker opens (an ingredient line's food name), selected to type over. */
+  startText?: string;
   id?: string;
 }) {
   const selected = options.find((o) => o.id === value);
@@ -202,10 +219,15 @@ export function Picker({
         aria-autocomplete="list"
         placeholder={open ? "Type to find…" : placeholder}
         value={open ? text : (selected?.label ?? "")}
-        onFocus={() => {
+        onFocus={(e) => {
+          const start = selected ? "" : startText;
           setOpen(true);
-          setText("");
+          setText(start);
           setActive(0);
+          if (start) {
+            const el = e.currentTarget;
+            requestAnimationFrame(() => el.select());
+          }
         }}
         onBlur={() => setOpen(false)}
         onChange={(e) => {
