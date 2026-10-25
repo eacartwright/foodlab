@@ -46,16 +46,19 @@ export function FoodPage({ id }: { id: string }) {
     <article className="page">
       {food.deleted && <Deleted onRestore={() => save({ deleted: false })} />}
       <div className="page-kind">
-        🥕 Food
-        {path.length > 0 && (
-          <span className="crumbs">
-            {path.map((f) => (
-              <span key={f.id}>
-                <A href={pathOf("foods", f.id)}>{f.name}</A> ›{" "}
-              </span>
-            ))}
-          </span>
-        )}
+        <span>
+          🥕 Food
+          {path.length > 0 && (
+            <span className="crumbs">
+              {" "}
+              {path.map((f) => (
+                <span key={f.id}>
+                  <A href={pathOf("foods", f.id)}>{f.name}</A> ›{" "}
+                </span>
+              ))}
+            </span>
+          )}
+        </span>
       </div>
       <div className="title-row">
         <DraftInput className="title-input" value={food.name} required aria-label="Name" onCommit={(name) => save({ name })} />

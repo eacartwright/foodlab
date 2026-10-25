@@ -30,12 +30,16 @@ export function ProductPage({ id }: { id: string }) {
     <article className="page">
       {p.deleted && <Deleted onRestore={() => save({ deleted: false })} />}
       <div className="page-kind">
-        🛒 Product
-        {food && (
-          <span className="crumbs">
-            of <A href={pathOf("foods", food.id)}>{food.name}</A>
-          </span>
-        )}
+        {/* One run of text, so "Product of Frozen potatoes" is spaced like words. */}
+        <span>
+          🛒 Product
+          {food && (
+            <span className="crumbs">
+              {" "}
+              of <A href={pathOf("foods", food.id)}>{food.name}</A>
+            </span>
+          )}
+        </span>
       </div>
       {/* Brand, then name: reads as the whole name ("Bell & Evans" "Gluten Free Chicken Breasts"). */}
       <div className="title-row product-title">
