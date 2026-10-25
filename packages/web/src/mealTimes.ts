@@ -13,7 +13,7 @@ const KEY = "foodlab:meal-times";
 
 export const DEFAULT_SLOTS: MealSlot[] = [
   { from: "04:00", tagId: "meal-breakfast" },
-  { from: "10:30", tagId: "meal-work-lunch" },
+  { from: "10:30", tagId: "meal-lunch" },
   { from: "16:00", tagId: "meal-dinner" },
   { from: "23:00", tagId: "meal-snack" },
 ];

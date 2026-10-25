@@ -6,7 +6,7 @@ describe("mealNow", () => {
   it("picks the slot that has started", () => {
     expect(at(4)).toBe("meal-breakfast");
     expect(at(10, 29)).toBe("meal-breakfast");
-    expect(at(10, 30)).toBe("meal-work-lunch");
+    expect(at(10, 30)).toBe("meal-lunch");
     expect(at(18)).toBe("meal-dinner");
     expect(at(23, 30)).toBe("meal-snack");
   });
@@ -15,6 +15,6 @@ describe("mealNow", () => {
     expect(at(3, 59)).toBe("meal-snack");
   });
   it("doesn't mind the order they're in", () => {
-    expect(mealNow([...DEFAULT_SLOTS].reverse(), new Date(2026, 9, 25, 12))).toBe("meal-work-lunch");
+    expect(mealNow([...DEFAULT_SLOTS].reverse(), new Date(2026, 9, 25, 12))).toBe("meal-lunch");
   });
 });
