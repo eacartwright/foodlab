@@ -120,6 +120,16 @@ export class View {
     return [...n.entries()].sort((a, b) => b[1] - a[1]).map(([p]) => p);
   }
 
+  /** Produce, Fruit or Vegetable, or a kind of one (is a, not form of: lemon juice has no PLU). */
+  isProduce(foodId: Id): boolean {
+    const seen = new Set<Id>();
+    for (let f = this.food(foodId); f && !seen.has(f.id); f = this.food(f.parentId)) {
+      if (PRODUCE.has(nameKey(f.name))) return true;
+      seen.add(f.id);
+    }
+    return false;
+  }
+
   /** Parents (is a) and what it's a form of, all the way up. Lemon juice → Lemon → Citrus → Fruit. */
   ancestors(foodId: Id): Food[] {
     const out: Food[] = [];
@@ -313,7 +323,7 @@ export class View {
     };
     if (kind === "foods") {
       const f = x as Food;
-      out.push(f.notes, ...this.ancestors(f.id).map((a) => a.name));
+      out.push(f.notes, f.plu, ...this.ancestors(f.id).map((a) => a.name));
       tagWords(f.tagIds);
       if (f.staple) out.push("staple");
     } else if (kind === "products") {
@@ -412,6 +422,8 @@ export class View {
 
 /** One tap from the list: an item I've had before, or a staple / food / product to make one from. */
 const inTrip = (g: GroceryItem, since: number) => !g.need && g.inTrip && (g.gotAt ?? 0) >= since;
+
+const PRODUCE = new Set(["produce", "fruit", "vegetable"]);
 
 export type GroceryUsual = { name: string; item?: GroceryItem; food?: Food; product?: Product };
 

@@ -148,6 +148,8 @@ const MIGRATIONS: string[] = [
   `,
   // 2026-10-24: Done shopping ends the trip on every device, not just the one it was tapped on.
   `ALTER TABLE grocery_items ADD COLUMN in_trip INTEGER NOT NULL DEFAULT 0;`,
+  // 2026-10-24: PLU codes on produce, so I learn them (and the list shows them in the store).
+  `ALTER TABLE foods ADD COLUMN plu TEXT NOT NULL DEFAULT '';`,
 ];
 
 export type DB = DatabaseSync;
@@ -244,6 +246,7 @@ export function loadState(db: DB): State {
       shelfLife: r.shelf_life,
       notes: r.notes,
       tagIds: tagsOf.get(`foods:${r.id}`) ?? [],
+      plu: r.plu,
     } satisfies Food;
   }
   for (const r of db.prepare("SELECT * FROM stores").all() as Row[]) {
@@ -350,6 +353,7 @@ export const save = {
       staple: x.staple ? 1 : 0,
       shelf_life: x.shelfLife,
       notes: x.notes,
+      plu: x.plu,
     });
     setTags(db, "foods", x.id, x.tagIds);
   },

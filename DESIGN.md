@@ -102,6 +102,7 @@ by rating), **potential staple** (§4.7), **times made / last made** (log entrie
 | `formOfId` | **Form of**, optional: a derived food (Lemon juice → Lemon). |
 | `staple` | Something I want to keep in the house. Not inventory. |
 | `shelfLife` | Optional text ("3 weeks opened, fridge"). Belongs on a form or product, not on Lemon. |
+| `plu` | The produce sticker code ("4053" = lemon), 4 or 5 digits. Asked for only on Produce, Fruit, Vegetable and their kinds (is a, not form of); searchable, and shown beside the item on the grocery list, so I learn them. |
 | `notes` | What I know about it generally (melts well, mild), substitutions, storage. |
 | `tags` | |
 
@@ -464,8 +465,19 @@ dropped with a message instead of blocking the rest.
 (None blocking.) To watch once there's real data: whether staple suggestions need a tighter
 rule; whether log entries need actual quantities (a recipe-instance object).
 
+- **Found in** (2026-10-25, to try): where in a store a product is ("Refrigerated" vs the
+  shelf, the dairy section), without going store-specific (aisle 15 at Westwood Wegmans). Could
+  group the grocery list by section. The import put "Refrigerated" in those products' notes
+  until then.
+- **Storage** (2026-10-25, to try): a fixed field on products, blank · Refrigerated · Frozen
+  (shelf-stable when blank). Simpler than Found in and maybe enough for it. Wait and see whether
+  notes and the food tree (Frozen foods) already cover it once the import is in use.
+
 Decided:
 
+- 2026-10-25: **PLU on foods** (§4.2). The Obsidian "Food Products" list imported through a
+  reviewed Markdown file (`scripts/import-products.ts`, runbook): ⭐ → ❤️, ~~struck~~ → 👎,
+  *italic* → want to try; its headings became the food tree, Produce split into Fruit and Vegetable.
 - 2026-10-24: **Groceries** is M2, ahead of Memory, because Todoist isn't working for it. It's
   one standing list: each item is needed or not, never completed, never retyped (§4.10, §5.8).
   Its own sidebar entry. Later milestones move down one (dishes are M4).

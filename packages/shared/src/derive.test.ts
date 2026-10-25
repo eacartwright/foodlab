@@ -8,7 +8,7 @@ function world(): State {
   for (const t of MEAL_TAGS) s.tags[t.id] = { ...blank.tags(t.id, t.name), kind: "meal" };
   const food = (id: string, name: string, extra: Partial<Food> = {}) => (s.foods[id] = { ...blank.foods(id, name), ...extra });
   food("fruit", "Fruit");
-  food("lemon", "Lemon", { parentId: "fruit" });
+  food("lemon", "Lemon", { parentId: "fruit", plu: "4053" });
   food("juice", "Lemon juice", { formOfId: "lemon" });
   food("meat", "Meat");
   food("thigh", "Chicken thigh", { parentId: "meat" });
@@ -76,6 +76,7 @@ describe("View", () => {
   it("finds products by store and plural", () => {
     expect(v.search("wegmans").full.products.map((h) => h.item.id)).toEqual(["sc", "kerry", "bowl"]);
     expect(v.search("potatoes").full.foods.map((h) => h.item.id)).toEqual(["potato"]);
+    expect(v.search("4053").full.foods.map((h) => h.item.id)).toEqual(["lemon"]); // by PLU
     expect(v.search("ham").full.recipes).toEqual([]);
   });
 
@@ -142,6 +143,14 @@ describe("groceries", () => {
     const v = shop();
     expect(v.groceryList().map((g) => g.id)).toEqual(["bread", "eggs"]);
     expect(v.groceryTrip(T).map((g) => g.id)).toEqual(["juice"]);
+  });
+
+  it("PLUs belong to Produce, Fruit and Vegetable and what's under them", () => {
+    const v = new View(world());
+    expect(v.isProduce("lemon")).toBe(true);
+    expect(v.isProduce("juice")).toBe(false); // only a form of Lemon
+    expect(v.isProduce("fruit")).toBe(true);
+    expect(v.isProduce("butter")).toBe(false);
   });
 
   it("Done shopping (on any device) ends the trip: the item joins Usual", () => {

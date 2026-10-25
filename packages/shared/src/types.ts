@@ -79,6 +79,8 @@ export interface Food extends Base {
   shelfLife: string;
   notes: string;
   tagIds: Id[];
+  /** Produce code from the sticker ("4053" = lemon); only asked for under Produce, Fruit or Vegetable. */
+  plu: string;
 }
 
 export interface Product extends Base, Eating {
@@ -221,6 +223,7 @@ export const blank = {
     shelfLife: "",
     notes: "",
     tagIds: [],
+    plu: "",
   }),
   products: (id: Id, name: string, now = Date.now()): Product => ({
     ...EMPTY_BASE(id, now),

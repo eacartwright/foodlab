@@ -59,3 +59,18 @@ setup); this file has only what's different. Legend: **[Evan]** = needs Evan.
   delete `data\foodlab.db-wal` and `-shm`, `Start-ScheduledTask foodlab`.
 - **Signed out:** the status badge says **Signed out · Sign in**; changes wait on the device
   until then.
+
+## Importing foods and products from Markdown
+
+`scripts/import-products.ts` reads a reviewed "foodlab import" file (the header of the file says
+how it reads) and writes through the local API, so it runs **on the mini PC** against the real
+data. It only adds: existing foods and products are matched by name and get blanks filled.
+
+```powershell
+cd C:\Apps\foodlab
+node --import tsx scripts\import-products.ts "<file.md>"           # dry run: counts, matches
+node --import tsx scripts\import-products.ts "<file.md>" --apply   # write
+```
+
+Take a backup first (copy `data\foodlab.db` aside, or check last night's on the NAS). Running it
+twice is harmless: the second run finds everything already there.

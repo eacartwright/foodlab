@@ -54,6 +54,12 @@ const ids = (x: unknown, field: string): string[] => {
   if (!Array.isArray(x)) throw new Invalid(`${field}: expected a list`);
   return [...new Set(x.map((v) => id(v, field)).filter((v): v is string => !!v))];
 };
+/** 4 or 5 digits (5 = organic, a 9 in front), or blank. */
+const plu = (x: unknown): string => {
+  const s = str(x, "plu", 20).replace(/\s+/g, "");
+  if (s && !/^\d{4,5}$/.test(s)) throw new Invalid("plu: 4 or 5 digits");
+  return s;
+};
 const strs = (x: unknown, field: string): string[] => {
   if (x === undefined || x === null) return [];
   if (!Array.isArray(x)) throw new Invalid(`${field}: expected a list`);
@@ -117,6 +123,7 @@ export const validators: { [K in Kind]: (body: unknown, id: string, now: number)
       shelfLife: str(b.shelfLife, "shelfLife", 200),
       notes: str(b.notes, "notes"),
       tagIds: ids(b.tagIds, "tagIds"),
+      plu: plu(b.plu),
     };
   },
   products(body, rid, now): Product {

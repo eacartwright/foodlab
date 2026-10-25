@@ -116,6 +116,7 @@ function GroceryRow({ g, editing, onEdit }: { g: GroceryItem; editing: boolean; 
       <button className="grocery-main" onClick={onEdit} aria-expanded={editing} title="Note, food, product">
         <span className="grocery-name">{g.name}</span>
         {g.note && <span className="grocery-note"> · {g.note}</span>}
+        {food?.plu && <span className="muted grocery-plu" title="PLU"> · {food.plu}</span>}
         {stores.length > 0 && <span className="muted small grocery-stores">{stores.map((s) => s.name).join(", ")}</span>}
       </button>
       {editing && (

@@ -8,6 +8,7 @@ import { ConfirmDialog } from "./ConfirmDialog";
 import { ItemRow, Section } from "./rows";
 import { openQuickAdd } from "./QuickAdd";
 import { GroceryButton } from "./GroceriesPage";
+import { showToast } from "../toast";
 
 // A food: the database personality. What it is, its forms, its products best first, the
 // recipes it's in.
@@ -81,6 +82,22 @@ export function FoodPage({ id }: { id: string }) {
         <Field label="Form of">
           <Picker value={food.formOfId} options={options} placeholder="Not a form of anything" onChange={(formOfId) => save({ formOfId })} onCreate={(n) => ensureFood(n)} />
         </Field>
+        {(food.plu || view.isProduce(food.id)) && (
+          <Field label="PLU">
+            <DraftInput
+              className="input plu-input"
+              value={food.plu}
+              inputMode="numeric"
+              placeholder="From the sticker, e.g. 4053"
+              aria-label="PLU"
+              onCommit={(plu) => {
+                const p = plu.replace(/\s+/g, "");
+                if (!p || /^\d{4,5}$/.test(p)) save({ plu: p });
+                else showToast("A PLU is 4 or 5 digits");
+              }}
+            />
+          </Field>
+        )}
         <Field label="Shelf life">
           <DraftInput className="input" value={food.shelfLife} placeholder="e.g. 3 weeks opened, fridge" onCommit={(shelfLife) => save({ shelfLife })} />
         </Field>

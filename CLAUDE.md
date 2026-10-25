@@ -110,6 +110,10 @@ tombstones (`deleted`), restorable with Undo or the page's Restore.
 - 2026-10-24, first trip with Groceries: Done shopping now syncs (`inTrip` on the item,
   migration 4; it used to be per-device localStorage, so the desktop kept the struck-through
   items), and the struck-through rows lost their Undo (tap the box again).
+- 2026-10-25: **PLU** on foods (migration 5; shown under Produce / Fruit / Vegetable, on the
+  grocery list, searchable). `scripts/import-products.ts` imports a reviewed Markdown file
+  (Evan's Obsidian product list: 255 foods, 637 products) through the API; runbook has the steps.
+  Tested on a scratch DB; not run on the real one yet.
 - **Next:** deploy, install on the Android phone, check Share to foodlab, use Groceries in a store.
 - Then M3: derived facts from the log on pages, per-recipe product override,
   recipe cards, a Tags page.
