@@ -255,6 +255,8 @@ counter, and the same ten things typed out again every week.)
   Undo takes both back.
 - **Not needed** (on the row) takes it off without counting it as bought.
 - Delete (a tombstone, as everywhere) is for something I'll never buy again, not for "got it".
+  It's on the row, and for what's off the list, **Tidy** on Usual (2026-10-26): the chips
+  turn to × and delete, each with Undo. Staples stay (they come from foods).
 - Pantry inventory stays a non-goal (§3): `need` is "I'm out", not "I have 3".
 
 ## 4a. Model decisions
@@ -287,20 +289,25 @@ Answers to the ChatGPT sessions' modeling questions. Each is revisitable once th
 ```
 Desktop                                         Phone
 ┌──────────┬───────────────────────────────┐   ┌──────────────────────┐
-│ foodlab  │  [ breakfast + lemon + potato ] │   │ ☰ foodlab            │
+│ foodlab  │  [ breakfast + lemon + potato ] │   │ foodlab       ● Saved│
 │          │  + Food  + Product  + Recipe   │   │ [ search…          ] │
 │ Search   │                                │   │ + Food + Prod + Rec  │
 │ Eat      │  Recipes · Products · Foods …  │   │ …results / recent    │
-│ Groceries│                                │   │                      │
-│ ──────── │                                │   │                (+)   │
-│ Foods    │                                │   └──────────────────────┘
-│ Products │                                │   ☰ opens the same menu as
-│ Recipes  │                                │   a drawer; (+) = Quick add
-│ Stores   │                                │
-│ Staples  │                                │
+│ Groceries│                                │   │                (+)   │
+│ ──────── │                                │   ├──────────────────────┤
+│ Foods    │                                │   │ ☰  🍳  🛒  🧺  🔍    │
+│ Products │                                │   └──────────────────────┘
+│ Recipes  │                                │   More Recipes Products
+│ Stores   │                                │   Groceries Search;
+│ Staples  │                                │   (+) = Quick add
 │ ⚙        │                                │
 └──────────┴───────────────────────────────┘
 ```
+
+**The phone's tab bar** (2026-10-26): the right thumb can't reach a menu at the top, so the
+most used pages sit at the bottom, most used rightmost: More · Recipes · Products · Groceries ·
+Search. **More** opens the drawer (every page, 📝 and ⚙), its items pushed to the bottom; the
+top bar is just the name and the sync status.
 
 ### 5.1 Search (home)
 
@@ -368,7 +375,7 @@ rating, buy again or history; a product's notes, links and gluten-free stay with
 
 A **recipe** opens in **recipe view** (the casual personality): yield and time, ingredients as
 written with each food a link, instructions, notes and history. Tapping an ingredient shows a
-small card (preferred product, other recipes using it, Open). **Edit** switches to the fields
+small card (other recipes using it, Open; the preferred product is hidden, see below). **Edit** switches to the fields
 and the ingredient lines. A new recipe opens in Edit.
 
 ### 5.5 Quick add and sharing into foodlab
@@ -495,6 +502,10 @@ no service worker; Android just resumes the page). Every `/api` reply carries
 `X-Foodlab-Build`, the hashed script `index.html` loads; when it differs from the page's own,
 **Saved** becomes **↻ Update** (a reload). Coming back to the app with one waiting, nothing
 unsaved and nothing focused reloads by itself.
+
+**"Usually" (the preferred product) is hidden** on food pages and ingredient cards
+(2026-10-26): it isn't accurate yet. `View.preferredProduct` stays; bring the line back when
+ratings and buys make it right.
 
 **Text saves when the box is left**, never on a pause in typing. Ingredient lines first
 (2026-10-25): pauses mid-word made foods called "GF b", "GF bran flakes (" and so on. Then

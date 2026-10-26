@@ -6,7 +6,6 @@ import {
   formatQuantity,
   ingredientsFromText,
   parseLine,
-  productName,
   today,
   type Id,
   type Recipe,
@@ -139,12 +138,11 @@ function RecipeView({ r }: { r: Recipe }) {
   );
 }
 
-/** Tapping an ingredient: what I usually buy for it, where else it's used, and fixing the link. */
+/** Tapping an ingredient: where else it's used, and fixing the link. */
 function IngredientCard({ r, i }: { r: Recipe; i: RecipeIngredient }) {
   const { view } = useData();
   const [relink, setRelink] = useState(false);
   const food = view.food(i.foodId);
-  const best = food ? view.preferredProduct(food.id) : undefined;
   const also = food ? view.recipesUsing(food.id).filter((x) => x.id !== r.id) : [];
   return (
     <div className="ing-card">
@@ -157,14 +155,6 @@ function IngredientCard({ r, i }: { r: Recipe; i: RecipeIngredient }) {
             {food.staple && <span className="staple-mark">★</span>}
             {[i.prep, i.note].filter(Boolean).length > 0 && <span className="muted small">{[i.prep, i.note].filter(Boolean).join("; ")}</span>}
           </div>
-          {best ? (
-            <div>
-              Usually <A href={pathOf("products", best.id)}>{productName(best)}</A>
-              {best.storeIds.length > 0 && <span className="muted"> · {best.storeIds.map((s) => view.store(s)?.name).join(", ")}</span>}
-            </div>
-          ) : (
-            <div className="muted small">No favorite product yet.</div>
-          )}
           {also.length > 0 && (
             <div className="small">
               Also in{" "}

@@ -1,4 +1,4 @@
-import { productName, type Food } from "@foodlab/shared";
+import { type Food } from "@foodlab/shared";
 import { useState } from "react";
 import { duplicate, ensureFood, remove } from "../actions";
 import { A, go, pathOf } from "../router";
@@ -33,7 +33,6 @@ export function FoodPage({ id }: { id: string }) {
   const used = view.recipesUsing(food.id);
   const viaForms = view.recipesUsingForms(food.id);
   const preps = view.prepsOf(food.id);
-  const best = view.preferredProduct(food.id);
   // A new form or kind can't be this food or anything above it, and isn't one already.
   const above = new Set([food.id, ...view.ancestors(food.id).map((f) => f.id)]);
   const addable = (have: Food[]) => view.foods.filter((f) => !above.has(f.id) && !have.includes(f)).map((f) => ({ id: f.id, label: f.name }));
@@ -68,13 +67,6 @@ export function FoodPage({ id }: { id: string }) {
         </button>
         <GroceryButton name={food.name} foodId={food.id} />
       </div>
-      {best && (
-        <p className="lede">
-          Usually: <A href={pathOf("products", best.id)}>{productName(best)}</A>
-          {best.storeIds.length > 0 && <span className="muted"> · {best.storeIds.map((s) => view.store(s)?.name).join(", ")}</span>}
-        </p>
-      )}
-
       <div className="fields">
         <Field label="Is a">
           <Picker value={food.parentId} options={options} placeholder="Nothing (top level)" onChange={(parentId) => save({ parentId })} onCreate={(n) => ensureFood(n)} />

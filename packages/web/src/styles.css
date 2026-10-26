@@ -26,6 +26,7 @@
   --control: 34px;
   --control-radius: 8px;
   --sidebar: 228px;
+  --tabbar: 58px;
   --font: "Bricolage Grotesque", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-brand: "Unbounded", var(--font);
 }
@@ -314,6 +315,16 @@ textarea::placeholder {
 .chip:hover {
   text-decoration: none;
   background: var(--surface-2);
+}
+.chips .chip {
+  max-width: 100%;
+  white-space: normal;
+  text-align: left;
+}
+.chip-remove,
+.chip-remove:hover {
+  border-color: var(--danger);
+  color: var(--danger);
 }
 .chip.small {
   min-height: 30px;
@@ -627,7 +638,8 @@ textarea::placeholder {
   margin-left: var(--sidebar);
   padding: 24px 32px 96px;
 }
-.fab {
+.fab,
+.tabbar {
   display: none;
 }
 
@@ -1460,7 +1472,46 @@ ul.notes li.done .note-text {
   }
   .main {
     margin-left: 0;
-    padding: 14px 14px 110px;
+    padding: 14px 14px calc(var(--tabbar) + 100px);
+  }
+  .tabbar {
+    position: fixed;
+    z-index: 30;
+    inset: auto 0 0 0;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    height: calc(var(--tabbar) + env(safe-area-inset-bottom, 0px));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    background: var(--surface);
+    border-top: 1.5px solid var(--border);
+  }
+  .tabbar a,
+  .tabbar button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    border: 0;
+    background: none;
+    color: var(--muted);
+    font: inherit;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .tabbar .tab-icon {
+    font-size: 1.3rem;
+    line-height: 1;
+  }
+  .tabbar .active {
+    color: var(--primary);
+  }
+  .tabbar a:focus-visible,
+  .tabbar button:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: -4px;
   }
   .fab {
     display: flex;
@@ -1469,7 +1520,7 @@ ul.notes li.done .note-text {
     position: fixed;
     z-index: 25;
     right: 18px;
-    bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(var(--tabbar) + 14px + env(safe-area-inset-bottom, 0px));
     width: 58px;
     height: 58px;
     border-radius: 18px;
@@ -1482,13 +1533,17 @@ ul.notes li.done .note-text {
     cursor: pointer;
   }
   .toast {
-    bottom: calc(92px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(var(--tabbar) + 86px + env(safe-area-inset-bottom, 0px));
   }
   .drawer-backdrop {
     position: fixed;
     inset: 0;
     z-index: 40;
     background: var(--scrim);
+  }
+  /* Above the tab bar, its items at the bottom where the thumb is. */
+  .drawer-backdrop {
+    bottom: calc(var(--tabbar) + env(safe-area-inset-bottom, 0px));
   }
   .drawer {
     position: absolute;
@@ -1500,6 +1555,12 @@ ul.notes li.done .note-text {
     padding: 18px 14px;
     padding-top: calc(18px + env(safe-area-inset-top, 0px));
     background: var(--surface);
+  }
+  .drawer .nav {
+    margin-top: auto;
+  }
+  .drawer .sidebar-foot {
+    margin-top: 0;
   }
   .drawer .nav a {
     min-height: 46px;

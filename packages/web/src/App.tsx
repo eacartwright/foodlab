@@ -27,6 +27,14 @@ const NAV = [
   { href: "/staples", label: "Staples", icon: "★" },
 ] as const;
 
+/** The phone's tab bar, Search rightmost: the right thumb reaches the right end best. More opens the drawer. */
+const TABS = [
+  { href: "/recipes", label: "Recipes", icon: "🍳" },
+  { href: "/products", label: "Products", icon: "🛒" },
+  { href: "/groceries", label: "Groceries", icon: "🧺" },
+  { href: "/", label: "Search", icon: "🔍" },
+] as const;
+
 const isTyping = (el: EventTarget | null) => el instanceof HTMLElement && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName));
 
 function Page() {
@@ -214,9 +222,6 @@ export function App() {
       </aside>
 
       <header className="topbar">
-        <button className="btn icon subtle" aria-label="Menu" onClick={() => setDrawer(true)}>
-          ☰
-        </button>
         <A href="/" className="brand">
           foodlab
         </A>
@@ -241,6 +246,19 @@ export function App() {
       <button className="fab" aria-label="Add" onClick={() => openQuickAdd()}>
         +
       </button>
+
+      <nav className="tabbar" aria-label="Tabs">
+        <button className={drawer ? "active" : ""} aria-expanded={drawer} onClick={() => setDrawer(!drawer)}>
+          <span className="tab-icon">☰</span>
+          More
+        </button>
+        {TABS.map((t) => (
+          <A key={t.href} href={t.href} className={active(t.href) && !drawer ? "active" : ""} aria-current={active(t.href) ? "page" : undefined} onClick={() => setDrawer(false)}>
+            <span className="tab-icon">{t.icon}</span>
+            {t.label}
+          </A>
+        ))}
+      </nav>
 
       {quick && <QuickAdd key={JSON.stringify(quick)} init={quick} />}
       {settings && <SettingsDialog onClose={() => setSettings(false)} />}

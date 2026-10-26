@@ -15,11 +15,13 @@ export function GroceriesPage() {
   const { view } = useData();
   const [text, setText] = useState("");
   const [editing, setEditing] = useState<string | null>(null);
+  const [tidy, setTidy] = useState(false);
   const since = tripStart();
   const list = view.groceryList();
   const trip = view.groceryTrip(since);
   const typed = text.trim();
-  const usual = typed ? view.groceryMatches(typed, since) : view.groceryUsual(since);
+  // Tidying deletes what I've bought before; staples come from foods, so they stay.
+  const usual = typed ? view.groceryMatches(typed, since) : view.groceryUsual(since).filter((u) => !tidy || u.item);
   const already = typed ? list.filter((g) => g.name.toLowerCase().includes(typed.toLowerCase())) : [];
 
   const add = () => {
@@ -72,7 +74,17 @@ export function GroceriesPage() {
         </button>
       )}
 
-      <Section title={typed ? "Matching" : "Usual"} count={usual.length || undefined}>
+      <Section
+        title={typed ? "Matching" : "Usual"}
+        count={usual.length || undefined}
+        actions={
+          !typed && (
+            <button className="btn subtle" aria-pressed={tidy} onClick={() => setTidy(!tidy)} title="Delete things I won't buy again">
+              {tidy ? "Done tidying" : "Tidy"}
+            </button>
+          )
+        }
+      >
         {usual.length === 0 ? (
           <p className="empty-line">
             {!typed
@@ -86,14 +98,15 @@ export function GroceriesPage() {
             {usual.map((u) => (
               <button
                 key={u.item?.id ?? u.product?.id ?? u.food?.id ?? u.name}
-                className="chip"
+                className={`chip ${tidy && !typed ? "chip-remove" : ""}`}
                 title={u.item ? `Bought ${u.item.count}×` : u.food?.staple ? "A staple" : undefined}
                 onClick={() => {
+                  if (tidy && !typed && u.item) return remove("groceries", u.item);
                   needGrocery(u);
                   setText("");
                 }}
               >
-                + {u.name}
+                {tidy && !typed ? "×" : "+"} {u.name}
                 {!u.item && u.food?.staple && <span className="muted">★</span>}
               </button>
             ))}
