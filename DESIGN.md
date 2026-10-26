@@ -496,9 +496,11 @@ no service worker; Android just resumes the page). Every `/api` reply carries
 **Saved** becomes **↻ Update** (a reload). Coming back to the app with one waiting, nothing
 unsaved and nothing focused reloads by itself.
 
-**Ingredient lines save when the box is left**, not on a pause in typing like other text
-(2026-10-25): pauses mid-word made foods called "GF b", "GF bran flakes (" and so on.
-Leaving the app counts as leaving the box. Lines no longer make foods at all (§4.5).
+**Text saves when the box is left**, never on a pause in typing. Ingredient lines first
+(2026-10-25): pauses mid-word made foods called "GF b", "GF bran flakes (" and so on. Then
+all text boxes (2026-10-26): the server trims, and its reply to a pause save reset the box
+mid-typing (the space just typed vanished, the cursor stepped back). Leaving the app or the
+page counts as leaving the box (Done on a recipe too). Lines no longer make foods at all (§4.5).
 
 ## 10. Milestones
 

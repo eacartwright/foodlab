@@ -228,7 +228,6 @@ function RecipeEdit({ r }: { r: Recipe }) {
           <DraftTextarea
             className="input mono-ish"
             rows={5}
-            commitOnPause={false}
             value={r.ingredients.map((i) => i.line).join("\n")}
             placeholder={"One per line:\n2 slices American cheese\n1 lemon, zested\n1½ cups cooked rice (optional)"}
             onCommit={(text) => save({ ingredients: ingredientsFromText(text, (data().state.recipes[r.id] ?? r).ingredients, (n) => data().view.findFood(n)?.id) })}

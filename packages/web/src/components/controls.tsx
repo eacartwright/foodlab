@@ -74,18 +74,16 @@ export function NumberInput({
   );
 }
 
-/** A text area that saves a moment after typing stops, and when it loses focus. Grows with its text. */
+/**
+ * A text area that saves when it loses focus, the app is hidden or the page closes. Grows with its text.
+ * Not on a pause in typing: the server trims the text, and its reply reset the draft mid-typing
+ * (lost the trailing space, cursor stepped back; 2026-10-26).
+ */
 export function DraftTextarea({
   value,
   onCommit,
-  commitOnPause = true,
   ...rest
-}: {
-  value: string;
-  onCommit: (v: string) => void;
-  /** Also save after a pause in typing. Off where a save acts on half-typed text (ingredient lines make foods). */
-  commitOnPause?: boolean;
-} & Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, "value" | "onChange">) {
+}: { value: string; onCommit: (v: string) => void } & Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, "value" | "onChange">) {
   const [draft, setDraft] = useState(value);
   const [base, setBase] = useState(value);
   if (value !== base) {
@@ -94,9 +92,7 @@ export function DraftTextarea({
   }
   const latest = useRef({ draft, value, onCommit });
   latest.current = { draft, value, onCommit };
-  const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const commit = () => {
-    clearTimeout(timer.current);
     const l = latest.current;
     if (l.draft !== l.value) l.onCommit(l.draft);
   };
@@ -121,11 +117,7 @@ export function DraftTextarea({
       ref={ref}
       {...rest}
       value={draft}
-      onChange={(e) => {
-        setDraft(e.target.value);
-        clearTimeout(timer.current);
-        if (commitOnPause) timer.current = setTimeout(commit, 1200);
-      }}
+      onChange={(e) => setDraft(e.target.value)}
       onBlur={commit}
     />
   );
