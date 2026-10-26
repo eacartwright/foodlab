@@ -124,6 +124,10 @@ tombstones (`deleted`), restorable with Undo or the page's Restore.
   making foods at all: no match = text, linked from the Food box (opens with the parsed name).
   Meal times went app-wide: `settings` kind (migration 6), `mealNow` / `mealTimes` in shared;
   search highlights the same meal. 59 tests, browser-checked on a scratch copy.
+- 2026-10-26, Evan's dev notes: text boxes save only when left (a pause save's trimmed reply
+  reset the box mid-typing); Groceries' Usual has **Tidy** (chips delete, with Undo); "Usually"
+  (preferred product) hidden until accurate; the phone has a **bottom tab bar** (More · Recipes ·
+  Products · Groceries · Search). Pushed (`951c25e`). Placeholder text: Evan is listing which to cut.
 - `Z:` on Evan's laptop is the mini PC's `C:` (`\\ripley\C`), so `Z:\Apps\foodlab` is the
   **live clone**: never edit, build or `npm install` there, and never open its `data/foodlab.db`
   over the share (copy it with its `-wal` to scratch to look). Develop in the laptop's
