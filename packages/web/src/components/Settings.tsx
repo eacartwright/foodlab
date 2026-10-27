@@ -1,72 +1,396 @@
-import { blank, DEFAULT_MEAL_TIMES, MEAL_TAGS, mealTimes, SETTINGS_ID, type MealSlot } from "@foodlab/shared";
-import { useState } from "react";
+import {
+  AI_MODELS,
+  aiOf,
+  blank,
+  DEFAULT_MEAL_TIMES,
+  MEAL_TAGS,
+  mealTimes,
+  modelLabel,
+  SETTINGS_ID,
+  type AiModel,
+  type AiSettings,
+  type AiUsage,
+  type MealSlot,
+  type ReadRecipe,
+  type Settings,
+} from "@foodlab/shared";
+import { useEffect, useState } from "react";
+import { aiAlert, money, type ReadReply } from "../ai";
+import { Markdown } from "../markdown";
 import { data, put, refresh, useData } from "../sync";
 import { setThemePref, themePref, type ThemePref } from "../theme";
 import { Dialog } from "./Dialog";
-import { Field, Segmented } from "./controls";
+import { Field, NumberInput, Segmented } from "./controls";
+
+// Settings (DESIGN.md §5.9): sections down the side, so there's room for more of them.
+// Meal times and AI are app-wide (the settings record); Colors is per device.
+
+const SECTIONS = [
+  { id: "general", label: "General", icon: "⚙" },
+  { id: "meals", label: "Meal times", icon: "🕑" },
+  { id: "ai", label: "AI", icon: "✨" },
+  { id: "data", label: "Data", icon: "🗄" },
+] as const;
+type Section = (typeof SECTIONS)[number]["id"];
+const LAST = "foodlab:settings-section";
+
+/** Saves the settings record, built on the latest copy. */
+const saveSettings = (patch: Partial<Settings>) => put("settings", { ...(data().state.settings[SETTINGS_ID] ?? blank.settings()), ...patch });
 
 export function SettingsDialog({ onClose }: { onClose: () => void }) {
-  const { state, pending, status } = useData();
-  const [theme, setTheme] = useState<ThemePref>(themePref());
-  const slots = mealTimes(state);
-  const saveSlots = (mealTimes: MealSlot[]) => put("settings", { ...(data().state.settings[SETTINGS_ID] ?? blank.settings()), mealTimes });
-  const changeSlot = (i: number, change: Partial<MealSlot>) => saveSlots(mealTimes(data().state).map((s, j) => (j === i ? { ...s, ...change } : s)));
-  const count = (k: "foods" | "products" | "recipes" | "stores") => Object.values(state[k]).filter((x) => !x.deleted).length;
+  const [section, setSection] = useState<Section>(() => {
+    try {
+      const s = localStorage.getItem(LAST) as Section | null;
+      if (s && SECTIONS.some((x) => x.id === s)) return s;
+    } catch {
+      // Storage blocked: start at General.
+    }
+    return "general";
+  });
+  const pick = (s: Section) => {
+    setSection(s);
+    try {
+      localStorage.setItem(LAST, s);
+    } catch {
+      // Not remembered; fine.
+    }
+  };
   return (
-    <Dialog title="Settings" onClose={onClose}>
-      <div className="fields">
-        <Field label="Colors">
-          <Segmented
-            value={theme}
-            options={["system", "light", "dark"] as const}
-            labels={{ system: "System", light: "Light", dark: "Dark" }}
-            clearable={false}
-            onChange={(t) => {
-              if (!t) return;
-              setTheme(t);
-              setThemePref(t);
-            }}
-          />
-          <p className="muted small">This device only.</p>
-        </Field>
-        <Field label="Meal times">
-          <div className="meal-times">
-            {slots.map((s, i) => (
-              <div className="inline" key={i}>
-                <input
-                  type="time"
-                  className="input"
-                  value={s.from}
-                  aria-label={`Slot ${i + 1} starts`}
-                  onChange={(e) => e.target.value && changeSlot(i, { from: e.target.value })}
-                />
-                <select className="select grow" value={s.tagId} aria-label={`Slot ${i + 1} meal`} onChange={(e) => changeSlot(i, { tagId: e.target.value })}>
-                  {MEAL_TAGS.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            ))}
-          </div>
-          <div>
-            <button className="btn subtle" onClick={() => saveSlots(DEFAULT_MEAL_TIMES)}>
-              Reset
+    <Dialog title="Settings" onClose={onClose} className="settings">
+      <div className="settings-layout">
+        <nav className="settings-nav" role="tablist" aria-orientation="vertical" aria-label="Settings sections">
+          {SECTIONS.map((s) => (
+            <button
+              key={s.id}
+              role="tab"
+              id={`settings-tab-${s.id}`}
+              aria-selected={section === s.id}
+              aria-controls="settings-panel"
+              className={section === s.id ? "on" : ""}
+              onClick={() => pick(s.id)}
+            >
+              <span className="settings-icon">{s.icon}</span>
+              {s.label}
             </button>
-          </div>
-        </Field>
-        <Field label="Data">
-          <p className="small">
-            {count("foods")} foods · {count("products")} products · {count("recipes")} recipes · {count("stores")} stores
-            <br />
-            Version {state.rev} · {pending ? `${pending} change${pending === 1 ? "" : "s"} waiting to save` : "everything saved"} ({status})
-          </p>
-          <button className="btn" onClick={() => void refresh()}>
-            Reload from the server
-          </button>
-        </Field>
+          ))}
+        </nav>
+        <div id="settings-panel" role="tabpanel" aria-labelledby={`settings-tab-${section}`} className="settings-panel">
+          {section === "general" ? <General /> : section === "meals" ? <MealTimes /> : section === "ai" ? <AiSection /> : <DataSection />}
+        </div>
       </div>
     </Dialog>
+  );
+}
+
+function General() {
+  const [theme, setTheme] = useState<ThemePref>(themePref());
+  return (
+    <div className="fields">
+      <Field label="Colors">
+        <Segmented
+          value={theme}
+          options={["system", "light", "dark"] as const}
+          labels={{ system: "System", light: "Light", dark: "Dark" }}
+          clearable={false}
+          onChange={(t) => {
+            if (!t) return;
+            setTheme(t);
+            setThemePref(t);
+          }}
+        />
+        <p className="muted small">This device only.</p>
+      </Field>
+    </div>
+  );
+}
+
+function MealTimes() {
+  const { state } = useData();
+  const slots = mealTimes(state);
+  const saveSlots = (mealTimes: MealSlot[]) => saveSettings({ mealTimes });
+  const changeSlot = (i: number, change: Partial<MealSlot>) => saveSlots(mealTimes(data().state).map((s, j) => (j === i ? { ...s, ...change } : s)));
+  return (
+    <div className="fields">
+      <Field label="Meal times">
+        <div className="meal-times">
+          {slots.map((s, i) => (
+            <div className="inline" key={i}>
+              <input
+                type="time"
+                className="input"
+                value={s.from}
+                aria-label={`Slot ${i + 1} starts`}
+                onChange={(e) => e.target.value && changeSlot(i, { from: e.target.value })}
+              />
+              <select className="select grow" value={s.tagId} aria-label={`Slot ${i + 1} meal`} onChange={(e) => changeSlot(i, { tagId: e.target.value })}>
+                {MEAL_TAGS.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ))}
+        </div>
+        <div>
+          <button className="btn subtle" onClick={() => saveSlots(DEFAULT_MEAL_TIMES)}>
+            Reset
+          </button>
+        </div>
+      </Field>
+    </div>
+  );
+}
+
+function DataSection() {
+  const { state, pending, status } = useData();
+  const count = (k: "foods" | "products" | "recipes" | "stores") => Object.values(state[k]).filter((x) => !x.deleted).length;
+  return (
+    <div className="fields">
+      <Field label="Data">
+        <p className="small">
+          {count("foods")} foods · {count("products")} products · {count("recipes")} recipes · {count("stores")} stores
+          <br />
+          Version {state.rev} · {pending ? `${pending} change${pending === 1 ? "" : "s"} waiting to save` : "everything saved"} ({status})
+        </p>
+        <button className="btn" onClick={() => void refresh()}>
+          Reload from the server
+        </button>
+      </Field>
+    </div>
+  );
+}
+
+// ---- AI (DESIGN.md §5.9) ----
+
+const MODEL_OPTIONS = ["off", ...AI_MODELS.map((m) => m.id)] as AiModel[];
+// Short, so the four fit across a phone: "Haiku", not "Haiku 5.5".
+const MODEL_LABELS = Object.fromEntries(MODEL_OPTIONS.map((m) => [m, m === "off" ? "Off" : modelLabel(m).replace(/ [\d.]+$/, "")])) as Record<AiModel, string>;
+const ALERT_CHOICES = [50, 75, 90];
+const tokensK = (n: number) => (n >= 10_000 ? `${Math.round(n / 1000)}K` : n >= 1000 ? `${(n / 1000).toFixed(1)}K` : String(n));
+const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
+
+function AiSection() {
+  const { state } = useData();
+  const ai = aiOf(state);
+  const [use, setUse] = useState<AiUsage | null>(null);
+  const [error, setError] = useState("");
+  const load = () =>
+    fetch("/api/ai")
+      .then((r) => r.json() as Promise<AiUsage>)
+      .then((u) => {
+        setUse(u);
+        setError("");
+      })
+      .catch(() => setError("Couldn't reach foodlab (offline?)"));
+  useEffect(() => void load(), []);
+  const saveAi = (patch: Partial<AiSettings>) => saveSettings({ ai: { ...aiOf(data().state), ...patch } });
+
+  return (
+    <div className="fields ai-settings">
+      {use && !use.configured && (
+        <p className="notice">
+          No API key on the server yet: add <code>ANTHROPIC_API_KEY=…</code> to <code>.env</code> and restart (runbook). Until then recipes are read without AI.
+        </p>
+      )}
+      {error && <p className="notice">{error}</p>}
+      <Field label="Model">
+        <Segmented value={ai.model} options={MODEL_OPTIONS} labels={MODEL_LABELS} clearable={false} onChange={(model) => model && saveAi({ model })} />
+      </Field>
+      <Field label="This month">{use ? <Spend use={use} ai={ai} /> : !error && <p className="muted small">Loading…</p>}</Field>
+      <Field label="Monthly cap">
+        <div className="inline">
+          <span>$</span>
+          <NumberInput className="input money-input" value={ai.monthlyLimitUsd} aria-label="Monthly cap in dollars" onCommit={(monthlyLimitUsd) => saveAi({ monthlyLimitUsd })} />
+        </div>
+      </Field>
+      <Field label="Alerts at">
+        <div className="chips">
+          {ALERT_CHOICES.map((p) => {
+            const on = ai.alertsAt.includes(p);
+            return (
+              <button
+                key={p}
+                className={`chip ${on ? "chip-on" : ""}`}
+                aria-pressed={on}
+                onClick={() => saveAi({ alertsAt: on ? ai.alertsAt.filter((x) => x !== p) : [...ai.alertsAt, p].sort((a, b) => a - b) })}
+              >
+                {p}%
+              </button>
+            );
+          })}
+        </div>
+      </Field>
+      <Field label="Compare">
+        <Compare onDone={() => void load()} />
+      </Field>
+    </div>
+  );
+}
+
+function Spend({ use, ai }: { use: AiUsage; ai: AiSettings }) {
+  const cap = ai.monthlyLimitUsd;
+  const pct = cap ? use.costUsd / cap : 0;
+  const level = !cap ? "" : pct >= 1 ? "over" : ai.alertsAt.some((a) => pct * 100 >= a) ? "warn" : "";
+  const [y, m] = use.month.split("-").map(Number) as [number, number];
+  const days = new Date(y, m, 0).getDate();
+  const byDay = new Map(use.byDay.map((d) => [d.day, d.costUsd]));
+  const most = Math.max(...use.byDay.map((d) => d.costUsd), 0);
+  const monthName = new Date(y, m - 1, 1).toLocaleString(undefined, { month: "short" });
+  return (
+    <div className="stack-sm">
+      <div className="spend-head">
+        <strong className="spend-total">{money(use.costUsd)}</strong>
+        <span className="muted small">est.</span>
+        <span className="muted">
+          {cap ? ` of $${cap.toFixed(2)} · ${Math.round(pct * 100)}%` : " (no cap)"}
+          {level === "over" && " · cap reached, AI paused"}
+          {level === "warn" && " · past an alert"}
+        </span>
+      </div>
+      {cap !== null && cap > 0 && (
+        <div className={`meter ${level}`} role="meter" aria-valuemin={0} aria-valuemax={cap} aria-valuenow={use.costUsd} aria-label="Spent this month">
+          <div className="meter-fill" style={{ width: `${Math.min(pct, 1) * 100}%` }} />
+          {ai.alertsAt.map((a) => (
+            <span key={a} className="meter-tick" style={{ left: `${a}%` }} />
+          ))}
+        </div>
+      )}
+      <p className="small muted">
+        {use.calls} call{use.calls === 1 ? "" : "s"} · {tokensK(use.tokens.input)} tokens in · {tokensK(use.tokens.output)} out
+      </p>
+      {use.calls > 0 && (
+        <>
+          <div className="day-bars" aria-label="Cost by day">
+            {Array.from({ length: days }, (_, i) => {
+              const c = byDay.get(i + 1) ?? 0;
+              return (
+                <span key={i} className="day-bar" title={`${monthName} ${i + 1}: ${money(c)}`}>
+                  {c > 0 && <span style={{ height: `${Math.max((c / most) * 100, 6)}%` }} />}
+                </span>
+              );
+            })}
+          </div>
+          <table className="db small">
+            <thead>
+              <tr>
+                <th>Model</th>
+                <th className="num">Calls</th>
+                <th className="num wide-only">In / out</th>
+                <th className="num">Cost</th>
+              </tr>
+            </thead>
+            <tbody>
+              {use.byModel.map((b) => (
+                <tr key={b.model}>
+                  <td>{modelLabel(b.model)}</td>
+                  <td className="num">{b.calls}</td>
+                  <td className="num wide-only">
+                    {tokensK(b.tokens.input)} / {tokensK(b.tokens.output)}
+                  </td>
+                  <td className="num">{money(b.costUsd)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <details>
+            <summary className="small">Recent calls</summary>
+            <ul className="recent-calls small">
+              {use.recent.map((r) => (
+                <li key={r.at}>
+                  <span className="muted">{new Date(r.at).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</span> {modelLabel(r.model)} · {r.purpose} ·{" "}
+                  {money(r.costUsd)}
+                  {!r.ok && <span className="muted"> · {r.note || "failed"}</span>}
+                </li>
+              ))}
+            </ul>
+          </details>
+        </>
+      )}
+    </div>
+  );
+}
+
+type CompareResult = ReadReply & { model: string; ms?: number; tokens?: { input: number; output: number } };
+
+/** The same recipe through every model and the plain reader, side by side. */
+function Compare({ onDone }: { onDone: () => void }) {
+  const [input, setInput] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [out, setOut] = useState<{ plain: ReadRecipe | null; results: CompareResult[] } | null>(null);
+  const [error, setError] = useState("");
+  const run = async () => {
+    const t = input.trim();
+    const isUrl = /^https?:\/\/\S+$/.test(t);
+    setBusy(true);
+    setError("");
+    try {
+      const res = await fetch("/api/ai/compare", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(isUrl ? { url: t } : { text: t }) });
+      const body = (await res.json()) as { plain?: ReadRecipe | null; results?: CompareResult[]; message?: string };
+      if (body.results) {
+        setOut({ plain: body.plain ?? null, results: body.results });
+        body.results.forEach(aiAlert);
+      } else setError(body.message ?? "Couldn't compare");
+    } catch {
+      setError("Couldn't reach foodlab (offline?)");
+    }
+    setBusy(false);
+    onDone();
+  };
+  return (
+    <div className="stack-sm">
+      <textarea className="input" rows={3} value={input} onChange={(e) => setInput(e.target.value)} aria-label="Recipe link or text to compare" />
+      <div className="inline">
+        <button className="btn" disabled={!input.trim() || busy} onClick={() => void run()}>
+          {busy ? "Reading with each model…" : "Compare models"}
+        </button>
+        {error && <span className="muted small">{error}</span>}
+      </div>
+      {out && (
+        <div className="compare-grid">
+          <CompareCard title="Plain reader" sub="free" recipe={out.plain} />
+          {out.results.map((r) => (
+            <CompareCard
+              key={r.model}
+              title={modelLabel(r.model)}
+              sub={r.error ? r.error : `${money(r.costUsd ?? 0)} · ${((r.ms ?? 0) / 1000).toFixed(1)} s · ${tokensK(r.tokens?.input ?? 0)} in / ${tokensK(r.tokens?.output ?? 0)} out`}
+              recipe={r.recipe ?? null}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CompareCard({ title, sub, recipe }: { title: string; sub: string; recipe: ReadRecipe | null }) {
+  const steps = recipe ? recipe.instructions.split("\n").filter((l) => /^\d+\./.test(l)).length : 0;
+  return (
+    <div className="compare-card">
+      <div className="strong">{title}</div>
+      <div className="muted small">{sub}</div>
+      {recipe ? (
+        <>
+          <div className="compare-name">{recipe.name || "(no name)"}</div>
+          <div className="small">
+            {plural(recipe.ingredients.length, "ingredient")} · {plural(steps, "step")}
+            {recipe.yieldQty !== null && ` · makes ${recipe.yieldQty}${recipe.yieldUnit ? ` ${recipe.yieldUnit}` : ""}`}
+            {recipe.prepMin !== null && ` · prep ${recipe.prepMin}`}
+            {recipe.cookMin !== null && ` · cook ${recipe.cookMin}`}
+          </div>
+          <details>
+            <summary className="small">Ingredients and steps</summary>
+            <ul className="small compare-ingredients">
+              {recipe.ingredients.map((l, i) => (
+                <li key={i}>{l}</li>
+              ))}
+            </ul>
+            <Markdown className="small" text={recipe.instructions} />
+          </details>
+        </>
+      ) : (
+        <div className="muted small">No recipe.</div>
+      )}
+    </div>
   );
 }

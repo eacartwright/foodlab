@@ -390,11 +390,25 @@ own pass later.
 (a recipe site, a product listing, a Find Me Gluten Free place) opens Quick add with its title
 as the name and its link filled in.
 
-**Reading a shared recipe** (planned for M3, 2026-10-25). Sharing a recipe page has the server
-fetch it and read the recipe data most recipe sites embed (schema.org `Recipe`): name, yield,
-times, ingredient lines, instructions. Free, no AI. Only when a page has none does it ask the
-Claude API, with the key kept on the mini PC (pennies a recipe). Either way the result fills a
-new recipe I review before it saves; ingredient lines then link foods the usual way (§4.5).
+**Reading a shared recipe** (M3; built 2026-10-26). Sharing any link has the server fetch it
+(`GET /api/read-recipe`, openly as foodlab, web pages only, 15 s, 5 MB) and read the recipe
+data most recipe sites embed (schema.org `Recipe`, `shared/recipeRead.ts`): name, yield,
+times, ingredient lines, instructions (HowToSections become `###` headings). Free, no AI. A
+page with a recipe turns Quick add into a Recipe showing "✓ 12 ingredients · 10 steps"; Add
+makes it and opens it in **Edit** to check (the review is the Edit page, not a step before
+saving: deleting is a tombstone with Undo). Ingredient lines link foods the usual way (§4.5).
+
+Some sites refuse anything but a browser (Allrecipes, Serious Eats, Budget Bytes, Brown Eyed Baker: 403). foodlab
+doesn't disguise itself to get past that; Quick add says the site wouldn't let it read the
+page and offers **Paste**: copy the recipe on the phone, paste, **Read it**
+(`recipeFromText`: first line the name, lines under Ingredients / Instructions, else lines
+starting with an amount are ingredients). Paste works without a link too.
+
+**Claude reads what the plain reader can't** (2026-10-26, §5.9): a page with no recipe data
+has its readable text sent to Claude (`server/ai.ts`, structured output in the recipe's
+shape, effort low), and **Read it** on pasted text goes to Claude, falling back to
+`recipeFromText` when AI is off, capped, keyless or offline. Quick add shows which read it
+and the cost ("Opus 5.5 · 3.10¢"). Pages with recipe data never go to Claude.
 
 ### 5.6 Staples
 
@@ -438,6 +452,32 @@ signal: checking off goes through the outbox like any save).
   or product it names.
 - Adding from elsewhere: **+ Groceries** on a food, product or staple row puts it on the list
   (making the item if it's new).
+
+### 5.9 Settings and AI
+
+⚙ opens Settings with its **sections down the side** (2026-10-26; sideshow's tabs across the
+top got crowded): General (Colors, per device) · Meal times · **AI** · Data. On the phone the
+side column is narrow, icon over label. The last section opened is remembered per device.
+
+**AI** (app-wide, in the settings record's `ai`):
+
+- **Model**: Off · Haiku · Sonnet · Opus (5.5 each). Opus 5.5 until testing says otherwise.
+- **This month**: estimated cost (from token counts × list prices, `shared/ai.ts`), a meter
+  against the cap with a tick per alert level (green, warn past an alert, danger at the cap),
+  calls and tokens, a bar per day, a table by model, the recent calls (`GET /api/ai`, from
+  the `ai_usage` table, migration 7). Usage is server-only, not part of the synced state.
+- **Monthly cap** in dollars (default $5; blank = none): at it the server makes no more calls
+  until the month turns. The call that crosses it still finishes, so the total can end a
+  little over.
+- **Alerts at** 50 / 75 / 90% of the cap (default 75 and 90; 100% always): a call that
+  crosses one shows a toast, and the meter turns. No push notifications (yet).
+- **Compare**: a link or pasted text through every model and the plain reader, side by side
+  (cost, time, tokens, what each read), counted in the month's use. For choosing the model.
+
+The key is `ANTHROPIC_API_KEY` in `.env` on the mini PC (runbook), never in the app. Without
+it the AI section says so and reading works as before. Refusal fallbacks (re-running a
+declined request on another model) are left out: recipes don't trip them, and a fallback
+bills at another model's price, which the tracker would miss.
 
 ## 6. Later (designed for, not built)
 
@@ -517,8 +557,8 @@ page counts as leaving the box (Done on a recipe too). Lines no longer make food
 
 | # | Goal | Done when… |
 |---|---|---|
-| **M1** | What can I eat (lunch first) | Foods (is a, form of, staple), products (stores, ratings, eating fields), stores, recipes with parsed ingredient lines, meal and personal tags, the `+` search, Eat with Work lunch filters, lists and pages, Quick add, Share to foodlab, Staples with suggestions, rating history and hand-written log notes, offline outbox. Deployed at foodlab.evans.tools, installed on the phone. **Built 2026-10-23, not yet deployed.** |
-| **M2** | Groceries | A standing list that replaces Todoist (§4.10, §5.8): items made once and needed or not, check off with this trip's Undo, Usual (most bought + staples) one tap from the list, + Groceries on foods, products and staples, `bought` log entries for linked products. Works offline in the store. **Built 2026-10-24, not yet deployed.** |
+| **M1** | What can I eat (lunch first) | Foods (is a, form of, staple), products (stores, ratings, eating fields), stores, recipes with parsed ingredient lines, meal and personal tags, the `+` search, Eat with Work lunch filters, lists and pages, Quick add, Share to foodlab, Staples with suggestions, rating history and hand-written log notes, offline outbox. Deployed at foodlab.evans.tools, installed on the phone. **Done 2026-10-26**: deployed, installed from Chrome on the Pixel 8a, Share to foodlab working. |
+| **M2** | Groceries | A standing list that replaces Todoist (§4.10, §5.8): items made once and needed or not, check off with this trip's Undo, Usual (most bought + staples) one tap from the list, + Groceries on foods, products and staples, `bought` log entries for linked products. Works offline in the store. **Done 2026-10-26**: deployed and used for a shop; offline checked in airplane mode (revisit if a real store says otherwise). |
 | **M3** | Memory | Log entries' derived facts on pages (times made, last made, last bought); per-recipe product override; recipe card view; reading a shared recipe (§5.5); Tags page (rename, merge, delete). |
 | **M4** | Places & dishes | Places (restaurants, stores with prepared food: address → Maps, phone, hours, Find Me Gluten Free link, been / want to try) and dishes with the eating fields, Tried / Want to try per place. Dishes join Eat. |
 | **M5** | Photos | On products, recipes and dishes (sideshow's file store), and photos or files on dev notes. |

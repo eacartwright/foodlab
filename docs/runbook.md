@@ -48,6 +48,8 @@ setup); this file has only what's different. Legend: **[Evan]** = needs Evan.
 6. **[Evan]** Android: Chrome → `foodlab.evans.tools` → sign in → ⋮ → **Install app** (or *Add to
    Home screen* → *Install*). Then share any web page and look for **foodlab** in the share
    sheet. If it's missing, uninstall, check step 4's bypass, and install again.
+   It has to be **Chrome's** install: Firefox's *Add to Home screen* makes a shortcut with no
+   share target (2026-10-26).
 
 ## Everyday
 
@@ -59,6 +61,17 @@ setup); this file has only what's different. Legend: **[Evan]** = needs Evan.
   delete `data\foodlab.db-wal` and `-shm`, `Start-ScheduledTask foodlab`.
 - **Signed out:** the status badge says **Signed out · Sign in**; changes wait on the device
   until then.
+
+## Claude API key (AI reading, DESIGN.md §5.9)
+
+1. **[Evan]** platform.claude.com: Billing → add a little credit; Limits → a low monthly
+   spend limit (a second stop behind foodlab's own cap); API Keys → **Create key** "foodlab
+   mini PC", copy it (shown once).
+2. **[Evan]** On the mini PC itself (Remote Desktop, not `Z:`): open `C:\Apps\foodlab\.env` in
+   Notepad, add `ANTHROPIC_API_KEY=sk-ant-…`, save. `install.ps1` keeps lines it doesn't own.
+3. Task Scheduler → **foodlab** → End, then Run. Settings → AI no longer says there's no key.
+4. Laptop testing: its own key in `C:\Dev\foodlab\.env` (git-ignored; `npm run dev` reads it).
+   Never paste a key into chat, a dev note or git.
 
 ## Importing foods and products from Markdown
 

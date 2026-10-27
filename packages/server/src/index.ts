@@ -4,9 +4,11 @@ import { Hono } from "hono";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { Invalid, KINDS, type Kind } from "@foodlab/shared";
+import { AI_MODELS, aiOf, Invalid, KINDS, recipeFromText, type Kind, type ReadRecipe } from "@foodlab/shared";
+import { AiStopped, aiRead, pagePrompt, usage, type AiResult } from "./ai";
 import { startBackups } from "./backup";
 import { openDb } from "./db";
+import { readRecipe } from "./readRecipe";
 import { writeDevNotes } from "./devNotesFile";
 import { Store } from "./store";
 
@@ -67,7 +69,82 @@ app.put("/api/:kind/:id", async (c) => {
   }
 });
 
+// A shared recipe page, read (DESIGN.md §5.5): its recipe data, else Claude reads its text.
+// Nothing is saved but the AI's cost: the app makes the recipe.
+app.get("/api/read-recipe", async (c) => {
+  const url = c.req.query("url") ?? "";
+  const r = await readRecipe(url);
+  if ("recipe" in r) return c.json({ recipe: r.recipe, via: "page" });
+  if (r.error !== "none") return c.json(r);
+  try {
+    const ai = await aiRead(db, aiOf(store.state), pagePrompt(url, r.html), "read");
+    if (ai.recipe) return c.json({ ...aiReply(ai), via: "ai" });
+    return c.json({ error: "none", message: "No recipe found on the page", ...aiReply(ai) });
+  } catch (err) {
+    return c.json({ error: "none", message: `No recipe data on the page${aiWhy(err)}` });
+  }
+});
+
+// Pasted recipe text: Claude reads it when AI is on, else the plain reader (recipeFromText).
+app.post("/api/read-text", async (c) => {
+  const body = await jsonBody(c);
+  const text = typeof body?.text === "string" ? body.text.slice(0, 60_000) : "";
+  if (!text.trim()) return c.json({ error: "failed", message: "Nothing to read" }, 400);
+  try {
+    const ai = await aiRead(db, aiOf(store.state), text, "paste");
+    if (ai.recipe) return c.json({ ...aiReply(ai), via: "ai" });
+  } catch (err) {
+    return c.json({ recipe: recipeFromText(text), via: "text", note: aiWhy(err).replace(/^ \(|\)$/g, "") });
+  }
+  return c.json({ recipe: recipeFromText(text), via: "text" });
+});
+
+// Settings → AI: this month's use.
+app.get("/api/ai", (c) => c.json(usage(db)));
+
+// Settings → AI → Compare: the same recipe through every model, and the plain reader.
+app.post("/api/ai/compare", async (c) => {
+  const body = await jsonBody(c);
+  let text = typeof body?.text === "string" ? body.text.slice(0, 60_000) : "";
+  let plain: ReadRecipe | null = text ? recipeFromText(text) : null;
+  const url = typeof body?.url === "string" ? body.url : "";
+  if (url) {
+    const r = await readRecipe(url);
+    if (!("html" in r)) return c.json({ error: r.error, message: r.message });
+    // With recipe data or without, Claude gets the page's text, to compare.
+    plain = "recipe" in r ? r.recipe : null;
+    text = pagePrompt(url, r.html);
+  }
+  if (!text.trim()) return c.json({ error: "failed", message: "Nothing to read" }, 400);
+  const ai = aiOf(store.state);
+  const results = await Promise.all(
+    AI_MODELS.map(async (m) => {
+      try {
+        return aiReply(await aiRead(db, { ...ai, model: m.id }, text, "compare", m.id));
+      } catch (err) {
+        return { model: m.id, error: aiWhy(err).replace(/^ \(|\)$/g, "") || "Failed" };
+      }
+    }),
+  );
+  return c.json({ plain, results });
+});
+
 app.all("/api/*", (c) => c.json({ error: "Not found" }, 404));
+
+const aiReply = (a: AiResult) => ({ recipe: a.recipe, model: a.model, costUsd: a.costUsd, tokens: a.tokens, ms: a.ms, alerts: a.alerts, limitUsd: aiOf(store.state).monthlyLimitUsd });
+
+/** Why Claude wasn't used, for the app to show: " (AI: …)". */
+function aiWhy(err: unknown): string {
+  if (err instanceof AiStopped) return ` (AI: ${err.message})`;
+  console.error(err);
+  return " (AI: the call failed)";
+}
+
+async function jsonBody(c: { req: { header: (n: string) => string | undefined; json: () => Promise<unknown> } }): Promise<Record<string, unknown> | undefined> {
+  if (!(c.req.header("content-type") ?? "").startsWith("application/json")) return undefined;
+  const b = await c.req.json().catch(() => undefined);
+  return b && typeof b === "object" ? (b as Record<string, unknown>) : undefined;
+}
 
 // In production the server also serves the built web app.
 if (existsSync(WEB_DIST)) {

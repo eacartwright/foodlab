@@ -1,6 +1,8 @@
 // The records foodlab stores (DESIGN.md §4). Client and server share these.
 // Every record is saved whole (PUT /api/<kind>/<id>); `updatedAt` and `rev` are set by the server.
 
+import { DEFAULT_AI, type AiSettings } from "./ai";
+
 export type Id = string;
 
 /** In the order they're offered: best first. */
@@ -179,6 +181,7 @@ export interface MealSlot {
 /** App-wide settings: one record, id `SETTINGS_ID`. Per-device ones (Colors) stay on the device. */
 export interface Settings extends Base {
   mealTimes: MealSlot[];
+  ai: AiSettings;
 }
 export const SETTINGS_ID = "app";
 
@@ -270,7 +273,7 @@ export const blank = {
   }),
   tags: (id: Id, name: string, now = Date.now()): Tag => ({ ...EMPTY_BASE(id, now), name, kind: "personal" }),
   devnotes: (id: Id, text: string, path: string, now = Date.now()): DevNote => ({ ...EMPTY_BASE(id, now), text, path, done: false }),
-  settings: (now = Date.now()): Settings => ({ ...EMPTY_BASE(SETTINGS_ID, now), mealTimes: DEFAULT_MEAL_TIMES }),
+  settings: (now = Date.now()): Settings => ({ ...EMPTY_BASE(SETTINGS_ID, now), mealTimes: DEFAULT_MEAL_TIMES, ai: DEFAULT_AI }),
   groceries: (id: Id, name: string, now = Date.now()): GroceryItem => ({
     ...EMPTY_BASE(id, now),
     name,

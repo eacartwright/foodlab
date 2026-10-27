@@ -1,0 +1,53 @@
+import { modelLabel, recipeFromText, type ReadRecipe } from "@foodlab/shared";
+import { showToast } from "./toast";
+
+// Reading recipes through the server, which may ask Claude (DESIGN.md §5.5, §5.9).
+
+export interface ReadReply {
+  recipe?: ReadRecipe | null;
+  /** page = the page's recipe data, ai = Claude, text = the plain reader. */
+  via?: "page" | "ai" | "text";
+  model?: string;
+  costUsd?: number;
+  alerts?: number[];
+  limitUsd?: number | null;
+  error?: string;
+  message?: string;
+  /** Why Claude wasn't used. */
+  note?: string;
+}
+
+/** "0.31¢", "$1.20". */
+export const money = (usd: number) => (usd < 0.01 ? `${(usd * 100).toFixed(2)}¢` : `$${usd.toFixed(2)}`);
+
+/** How a recipe was read, for Quick add: "Opus 5.5 · 3.10¢". */
+export const viaText = (r: ReadReply) => (r.via === "ai" && r.model ? `${modelLabel(r.model)} · ${money(r.costUsd ?? 0)}` : "");
+
+/** A call that crossed an alert level says so. */
+export function aiAlert(r: ReadReply) {
+  if (!r.alerts?.length || !r.limitUsd) return;
+  const top = Math.max(...r.alerts);
+  showToast(top >= 100 ? `AI: this month's $${r.limitUsd} cap is used up. No more AI reading until next month (Settings → AI).` : `AI: ${top}% of this month's $${r.limitUsd} is used.`);
+}
+
+export async function readLink(url: string): Promise<ReadReply> {
+  try {
+    const r = (await (await fetch(`/api/read-recipe?url=${encodeURIComponent(url)}`)).json()) as ReadReply;
+    aiAlert(r);
+    return r;
+  } catch {
+    return { error: "failed", message: "Couldn't reach foodlab (offline?)" };
+  }
+}
+
+/** Pasted text: Claude on the server, or the plain reader here when offline. */
+export async function readText(text: string): Promise<ReadReply> {
+  try {
+    const res = await fetch("/api/read-text", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text }) });
+    const r = (await res.json()) as ReadReply;
+    aiAlert(r);
+    return r;
+  } catch {
+    return { recipe: recipeFromText(text), via: "text", note: "offline" };
+  }
+}

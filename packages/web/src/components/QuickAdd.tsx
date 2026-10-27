@@ -1,8 +1,9 @@
-import { MEAL_TAGS, blank, newId, tidyName, withoutBrand, type Id, type Rating } from "@foodlab/shared";
-import { useId, useState, useSyncExternalStore } from "react";
+import { MEAL_TAGS, blank, ingredientsFromText, newId, tidyName, withoutBrand, type Id, type Rating, type ReadRecipe } from "@foodlab/shared";
+import { useEffect, useId, useState, useSyncExternalStore } from "react";
 import { ensureFood, ensureStore } from "../actions";
 import { go, pathOf } from "../router";
-import { put, useData } from "../sync";
+import { readLink as readFromLink, readText, viaText, type ReadReply } from "../ai";
+import { data, put, useData } from "../sync";
 import { showToast } from "../toast";
 import { Dialog } from "./Dialog";
 import { Field, MultiPicker, Picker, RatingInput, Segmented } from "./controls";
@@ -69,6 +70,35 @@ export function QuickAdd({ init }: { init: QuickAddInit }) {
   const [staple, setStaple] = useState(false);
   const [another, setAnother] = useState(false);
   const [added, setAdded] = useState(0);
+  // A recipe read from its link, or from text pasted when the site won't let foodlab read it.
+  const [read, setRead] = useState<ReadRecipe | null>(null);
+  const [reading, setReading] = useState<"" | "busy" | "paste" | string>("");
+  const [pasted, setPasted] = useState("");
+  const [via, setVia] = useState("");
+
+  const applyRead = (reply: ReadReply) => {
+    const r = reply.recipe;
+    if (!r) return setReading(reply.message ?? "Couldn't read it");
+    setRead(r);
+    setVia(viaText(reply));
+    setKind("recipes");
+    setReading("");
+    // The page's own name beats a share title ("Easy Pancakes Recipe | BBC Good Food"), not a typed one.
+    if (r.name) setName((n) => (!n.trim() || n === (init.name ?? "") ? r.name : n));
+  };
+  const readLink = async (url = link.trim()) => {
+    if (!url) return;
+    setReading("busy");
+    applyRead(await readFromLink(url));
+  };
+  const readPasted = async () => {
+    setReading("busy-paste");
+    applyRead(await readText(pasted));
+  };
+  // Shared to foodlab: read the page straight away; a page with a recipe makes this a recipe.
+  useEffect(() => {
+    if (init.link) void readLink(init.link);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const pickKind = (k: AddKind) => {
     setKind(k);
@@ -102,18 +132,33 @@ export function QuickAdd({ init }: { init: QuickAddInit }) {
       const b = brand.trim() || view.brands().find((x) => withoutBrand(n, x) !== n) || "";
       put("products", { ...blank.products(id, withoutBrand(n, b)), brand: b, foodId, storeIds, rating, tagIds, links, status });
     } else {
-      put("recipes", { ...blank.recipes(id, n), rating, tagIds, links, status });
+      const fromRead = read
+        ? {
+            yieldQty: read.yieldQty,
+            yieldUnit: read.yieldUnit,
+            prepMin: read.prepMin,
+            cookMin: read.cookMin,
+            instructions: read.instructions,
+            ingredients: ingredientsFromText(read.ingredients.join("\n"), [], (f) => data().view.findFood(f)?.id),
+          }
+        : {};
+      put("recipes", { ...blank.recipes(id, n), ...fromRead, rating, tagIds, links, status });
     }
     if (another) {
       setBrand("");
       setName("");
       setLink("");
       setRating(null);
+      setRead(null);
+      setVia("");
+      setReading("");
+      setPasted("");
       setAdded((a) => a + 1);
       showToast(`Added “${n}”`);
     } else {
       closeQuickAdd();
-      go(pathOf(kind, id));
+      // A read recipe opens in Edit, to check what came in.
+      go(pathOf(kind, id) + (kind === "recipes" && read ? "?edit=1" : ""));
     }
   };
 
@@ -195,9 +240,51 @@ export function QuickAdd({ init }: { init: QuickAddInit }) {
                 ))}
               </div>
             </Field>
-            {(link || init.link) && (
+            {(link || init.link || kind === "recipes") && (
               <Field label="Link">
-                <input className="input" value={link} onChange={(e) => setLink(e.target.value)} />
+                <input className="input" value={link} onChange={(e) => setLink(e.target.value)} aria-label="Link" />
+              </Field>
+            )}
+            {kind === "recipes" && (
+              <Field label="Recipe">
+                <div className="stack-sm">
+                  {read ? (
+                    <div className="inline read-summary">
+                      <span>
+                        ✓ {read.ingredients.length} ingredients · {read.instructions.split("\n").filter((l) => /^\d+\./.test(l)).length} steps
+                        {read.yieldQty !== null && ` · makes ${read.yieldQty}${read.yieldUnit ? ` ${read.yieldUnit}` : ""}`}
+                        {via && <span className="muted small"> · {via}</span>}
+                      </span>
+                      <button className="btn icon subtle" aria-label="Don't use it" title="Don't use it" onClick={() => setRead(null)}>
+                        ✕
+                      </button>
+                    </div>
+                  ) : reading === "paste" || reading === "busy-paste" ? (
+                    <>
+                      <textarea className="input" rows={6} autoFocus value={pasted} onChange={(e) => setPasted(e.target.value)} aria-label="Pasted recipe" />
+                      <div className="inline">
+                        <button className="btn" disabled={!pasted.trim() || reading === "busy-paste"} onClick={() => void readPasted()}>
+                          {reading === "busy-paste" ? "Reading…" : "Read it"}
+                        </button>
+                        <button className="btn subtle" onClick={() => setReading("")}>
+                          Cancel
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="inline">
+                      {reading && reading !== "busy" && <span className="muted small">{reading}.</span>}
+                      {link.trim() && (
+                        <button className="btn" disabled={reading === "busy"} onClick={() => void readLink()}>
+                          {reading === "busy" ? "Reading…" : "Read link"}
+                        </button>
+                      )}
+                      <button className="btn subtle" onClick={() => setReading("paste")}>
+                        Paste
+                      </button>
+                    </div>
+                  )}
+                </div>
               </Field>
             )}
           </div>
@@ -226,6 +313,6 @@ export function fromShare(q: URLSearchParams): QuickAddInit {
   if (!url) url = /(https?:\/\/\S+)/.exec(text)?.[1] ?? "";
   const rest = text.replace(url, "").trim();
   const name = (title || rest.split("\n")[0] || "").replace(/\s+[|–—-]\s+[^|–—-]+$/, "").replace(/\s+recipe$/i, "").trim();
-  const recipe = /recipe|allrecipes|seriouseats|food52|bonappetit|nytimes\.com\/.*cooking|budgetbytes/i.test(url + " " + text);
+  const recipe = /recipe|allrecipes|seriouseats|food52|bonappetit|nytimes\.com\/.*cooking|budgetbytes/i.test(`${url} ${title} ${text}`);
   return { kind: recipe ? "recipes" : "products", name, link: url };
 }

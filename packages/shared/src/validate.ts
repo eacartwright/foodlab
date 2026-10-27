@@ -24,6 +24,7 @@ import {
   type Store,
   type Tag,
 } from "./types";
+import { AI_MODELS, DEFAULT_AI, type AiModel, type AiSettings } from "./ai";
 
 // Turns a request body into a clean record, or says what's wrong. The server runs these on
 // every save; references to other records are checked separately (server), since that needs state.
@@ -79,6 +80,17 @@ const num = (x: unknown, field: string, min = 0, max = 1e6): number | null => {
   return x;
 };
 const bool = (x: unknown) => x === true;
+
+/** The AI settings; a record saved before they existed gets the defaults. */
+function aiSettings(x: unknown): AiSettings {
+  if (x === undefined || x === null) return DEFAULT_AI;
+  const b = obj(x);
+  const model = b.model as AiModel;
+  if (model !== "off" && !AI_MODELS.some((m) => m.id === model)) throw new Invalid("ai.model: off or a Claude model");
+  if (!Array.isArray(b.alertsAt) || b.alertsAt.length > 6) throw new Invalid("ai.alertsAt: up to 6 percentages");
+  const alertsAt = [...new Set(b.alertsAt.map((p, n) => Math.round(num(p, `ai.alertsAt[${n}]`, 1, 100) ?? 0)))].filter(Boolean).sort((p, q) => p - q);
+  return { model, monthlyLimitUsd: num(b.monthlyLimitUsd, "ai.monthlyLimitUsd", 0, 1000), alertsAt };
+}
 const time = (x: unknown, fallback: number) => (typeof x === "number" && Number.isFinite(x) ? x : fallback);
 
 function base(b: In, rid: string, now: number) {
@@ -221,6 +233,6 @@ export const validators: { [K in Kind]: (body: unknown, id: string, now: number)
       if (!MEAL_TAGS.some((t) => t.id === s.tagId)) throw new Invalid(`mealTimes[${n}].tagId: a meal`);
       return { from, tagId: s.tagId as string };
     });
-    return { ...base(b, rid, now), mealTimes };
+    return { ...base(b, rid, now), mealTimes, ai: aiSettings(b.ai) };
   },
 };

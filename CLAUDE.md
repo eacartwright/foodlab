@@ -27,15 +27,19 @@ aria-label (a page's title behind the Quick add dialog): scope selectors to `.qu
 - `packages/shared` — `types.ts` (records, the eating fields, meal tags, `blank.*` for new
   records, `productName` = brand + name, `withoutBrand`), `validate.ts` (body → clean record, used by the server on every save),
   `ingredients.ts` (`parseLine`, `ingredientsFromText`: links existing foods only, never makes one, `nameKey` for plural/case-proof matching, `formatAmount`),
+  `ai.ts` (models + prices, `AiSettings`, `costUsd`, `crossed` alert levels),
+  `recipeRead.ts` (`recipeFromHtml`: schema.org Recipe JSON-LD; `recipeFromText`: pasted text),
   `derive.ts` (`View`: reverse links, preferred products, ancestors/descendants, staple
   suggestions, the `+` search, the Eat list). Pure; tests beside them.
 - `packages/server` — Node + Hono + `node:sqlite` (Node ≥ 22.13). `db.ts`: relational tables
   (foods, stores, products + `product_stores`, recipes + `recipe_ingredients`, tags +
-  `item_tags`, `log_entries`, `dev_notes`, `grocery_items`, `settings` (one row, `app`: Meal times), `meta.rev`), `loadState` / `save.<kind>`. `store.ts`: the state
+  `item_tags`, `log_entries`, `dev_notes`, `grocery_items`, `settings` (one row, `app`: Meal times, AI), `ai_usage` (server-only), `meta.rev`), `loadState` / `save.<kind>`. `store.ts`: the state
   in memory; `put(kind, id, body)` validates, checks links (no unknown ids, no food loops,
   meal tags fixed), writes a `rating` log entry when a rating changes, bumps `rev`.
   `index.ts`: `GET /api/state` (all of it, ETag = rev), `PUT /api/<kind>/<id>` (whole
-  record), `/api/health`, and the built app with SPA fallback (`/share`, `/foods/<id>`…).
+  record), `/api/health`, `GET /api/read-recipe?url=` (`readRecipe.ts`: fetches a shared page openly, never
+  disguised as a browser; no recipe data → Claude), `POST /api/read-text`, `GET /api/ai`, `POST /api/ai/compare`
+  (`ai.ts`: `@anthropic-ai/sdk` `messages.parse` + Zod, effort low, cost into `ai_usage`, monthly cap), and the built app with SPA fallback (`/share`, `/foods/<id>`…).
 - `packages/web` — React + Vite, installable PWA with a **share target** (`/share`,
   `manifest.webmanifest`). `sync.ts`: server state cached in localStorage + an **outbox** of
   whole records (latest version per record, in first-changed order; a `seq` stops a reply
@@ -132,6 +136,13 @@ tombstones (`deleted`), restorable with Undo or the page's Restore.
   **live clone**: never edit, build or `npm install` there, and never open its `data/foodlab.db`
   over the share (copy it with its `-wal` to scratch to look). Develop in the laptop's
   `C:\Dev\foodlab`; read the live dev notes at `Z:\Apps\foodlab\data\dev-notes.md`.
-- **Next:** deploy, install on the Android phone, check Share to foodlab, use Groceries in a store.
-- Then M3: derived facts from the log on pages, per-recipe product override,
-  recipe cards, a Tags page.
+- 2026-10-26: **M1 and M2 done** (deployed, installed from Chrome on the Pixel 8a, Share working,
+  Groceries offline checked in airplane mode).
+- 2026-10-26: **reading a shared recipe** built (DESIGN.md §5.5): any shared link is read; a
+  recipe fills Quick add and opens in Edit; sites that refuse (403) get **Paste**. 68 tests.
+- 2026-10-26: **Settings → sections down the side; AI section** (DESIGN.md §5.9): model switch, month's
+  cost meter + alerts + cap, Compare models. Claude reads pages without recipe data and pasted text.
+  Tested against a local stand-in for the API (no key on the laptop); 72 tests. Not yet run for real:
+  Evan adds `ANTHROPIC_API_KEY` (runbook), then Compare Haiku vs Opus on real recipes and picks one.
+- **Next: M3**: a Tags page;
+  derived facts from the log and per-recipe product override wait for more log data.
