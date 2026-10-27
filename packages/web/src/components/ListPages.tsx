@@ -648,7 +648,6 @@ export function RecipesList() {
             </A>
             {r.status === "want" && <span className="badge">want to try</span>}
             {r.glutenFree === "no" && <NotGF />}
-            <div className="muted small clip">{view.ingredientSummary(r)}</div>
           </td>
           <td className="hide-sm muted small clip">{r.ingredients.length || ""}</td>
           <td className="hide-sm muted">{r.method ? METHOD_LABEL[r.method] : ""}</td>
