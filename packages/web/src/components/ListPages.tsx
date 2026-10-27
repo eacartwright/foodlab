@@ -1,4 +1,4 @@
-import { METHOD_LABEL, RATINGS, RATING_EMOJI, nameKey, productName, type Food, type FoodNode, type Product, type Rating } from "@foodlab/shared";
+import { METHOD_LABEL, RATINGS, RATING_EMOJI, STATUSES, STATUS_LABEL, nameKey, productName, type Food, type FoodNode, type Product, type Rating } from "@foodlab/shared";
 import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import { ensureStore } from "../actions";
 import { A, go, pathOf, setQuery, useRoute } from "../router";
@@ -590,15 +590,17 @@ export function RecipesList() {
   const f = query.get("f") ?? "";
   const tag = query.get("tag");
   const rating = query.get("rating");
+  const status = query.get("status");
   const rows = useMemo(
     () =>
       view.recipes.filter(
         (r) =>
           (match(r.name, f) || r.ingredients.some((i) => match(view.food(i.foodId)?.name ?? i.line, f))) &&
           (!tag || r.tagIds.includes(tag)) &&
-          ratingOk(r.rating, rating),
+          ratingOk(r.rating, rating) &&
+          (!status || r.status === status),
       ),
-    [view, f, tag, rating],
+    [view, f, tag, rating, status],
   );
   const { sorted, th } = useSort(rows, {
     rating: { value: (r) => rank(r.rating), desc: true },
@@ -624,6 +626,14 @@ export function RecipesList() {
               </option>
             ))}
           </select>
+          <select className="select" value={status ?? ""} onChange={(e) => setQuery({ status: e.target.value || null })} aria-label="Tried">
+            <option value="">Tried or not</option>
+            {[...STATUSES].reverse().map((x) => (
+              <option key={x} value={x}>
+                {STATUS_LABEL[x]}
+              </option>
+            ))}
+          </select>
           <RatingFilter />
         </>
       }
@@ -646,7 +656,6 @@ export function RecipesList() {
             <A href={pathOf("recipes", r.id)} className="strong">
               {r.name}
             </A>
-            {r.status === "want" && <span className="badge">want to try</span>}
             {r.glutenFree === "no" && <NotGF />}
           </td>
           <td className="hide-sm muted small clip">{r.ingredients.length || ""}</td>

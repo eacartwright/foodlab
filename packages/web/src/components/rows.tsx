@@ -29,11 +29,7 @@ export function Rating({ value }: { value: Product["rating"] }) {
 
 /** What to show under a thing's name. */
 export function subline(view: View, kind: SearchKind, item: Item, hideFood = false): ReactNode {
-  if (kind === "recipes") {
-    const r = item as Recipe;
-    const bits = [view.ingredientSummary(r)];
-    return bits.filter(Boolean).join(" · ") || <span className="muted">No ingredients yet</span>;
-  }
+  if (kind === "recipes") return "";
   if (kind === "products") {
     const p = item as Product;
     const food = view.food(p.foodId);
@@ -88,6 +84,7 @@ export function ItemRow({
 }) {
   const rated = kind === "recipes" || kind === "products" ? (item as Product | Recipe) : null;
   const lunch = rated ? lunchFacts(rated) : "";
+  const sub = subline(view, kind, item, hideFood);
   return (
     <A className={`row ${item.deleted ? "is-deleted" : ""}`} href={pathOf(kind, item.id)}>
       {showKind && (
@@ -103,10 +100,9 @@ export function ItemRow({
               ★
             </span>
           )}
-          {rated?.status === "want" && <span className="badge">want to try</span>}
           {rated?.glutenFree === "no" && <NotGF />}
         </span>
-        <span className="row-sub">{subline(view, kind, item, hideFood)}</span>
+        {sub && <span className="row-sub">{sub}</span>}
         {lunch && <span className="row-sub lunch">{lunch}</span>}
         {extra}
       </span>
