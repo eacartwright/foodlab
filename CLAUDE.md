@@ -144,5 +144,8 @@ tombstones (`deleted`), restorable with Undo or the page's Restore.
   cost meter + alerts + cap, Compare models. Claude reads pages without recipe data and pasted text.
   Tested against a local stand-in for the API (no key on the laptop); 72 tests. Not yet run for real:
   Evan adds `ANTHROPIC_API_KEY` (runbook), then Compare Haiku vs Opus on real recipes and picks one.
+- 2026-10-27: Lists: no ingredient line under recipes, no want-to-try pill (Recipes filters by
+  tried). **Scaling** on the recipe view (DESIGN.md §5.4, `shared/scale.ts`): − servings +, kitchen
+  rounding, Save keeps `myYield` (migration 8). 81 tests, browser-checked on a scratch DB.
 - **Next: M3**: a Tags page;
   derived facts from the log and per-recipe product override wait for more log data.

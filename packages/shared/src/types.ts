@@ -118,6 +118,8 @@ export interface Recipe extends Base, Eating {
   method: Method | null;
   yieldQty: number | null;
   yieldUnit: string;
+  /** How many I usually make (same unit as the yield); the page opens scaled to it. Null = as written. */
+  myYield: number | null;
   prepMin: number | null;
   cookMin: number | null;
   instructions: string;
@@ -266,6 +268,7 @@ export const blank = {
     method: null,
     yieldQty: null,
     yieldUnit: "",
+    myYield: null,
     prepMin: null,
     cookMin: null,
     instructions: "",

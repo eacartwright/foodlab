@@ -151,6 +151,7 @@ not rated / 👎 don't buy. Searching "Wegmans" finds the store and its products
 | `name` | Required. |
 | `method` | `assembly` · `no-cook` · `cook` · `bake`. A sandwich or cereal is a legit recipe. |
 | `yieldQty` / `yieldUnit` | "1 sandwich", "1 loaf", "12 muffins", "4 servings". |
+| `myYield` | How many I usually make, in the yield's unit; the recipe opens scaled to it. Blank = as written. |
 | `prepMin` / `cookMin` | Optional. |
 | `instructions` | Light Markdown (lists, bold, links). |
 | eating fields | §4.6 |
@@ -378,6 +379,15 @@ written with each food a link, instructions, notes and history. Tapping an ingre
 small card (other recipes using it, Open; the preferred product is hidden, see below). **Edit** switches to the fields
 and the ingredient lines. A new recipe opens in Edit.
 
+**Scaling** (`shared/scale.ts`): with a yield, the view has **− 4 servings +** (whole steps, a
+half below one). Only what's shown changes; the lines keep their amounts as written, and the
+instructions aren't scaled. A scaled amount is shown in the accent, rounded to what you'd
+measure: tsp / tbsp / cups switch to the handiest ("1 tbsp + 1 tsp", ¼ cup), spoons to ⅛–¾,
+cups to ¼ / ⅓ / ½ / ⅔ / ¾, under about ⅛ tsp "a pinch", lb ↔ oz, counted things in halves
+(quarters below a half). "≈" marks an amount rounded more than 3%. Lines without a number
+("salt to taste", "a pinch of salt") stay. **Save** keeps the size as the recipe's `myYield`;
+**Reset** goes back to as written.
+
 ### 5.5 Quick add and sharing into foodlab
 
 **+** (header on desktop, floating on the phone) opens Quick add: Food · Product · Recipe, the
@@ -580,6 +590,10 @@ rule; whether log entries need actual quantities (a recipe-instance object).
 
 Decided:
 
+- 2026-10-27: **scaling** a recipe's amounts for the view, rounded to kitchen measures (§5.4).
+  It opens as written unless a size is saved for that recipe (`myYield`, migration 8).
+  Lists don't mark want-to-try (most recipes will be); the rating marks tried, and Recipes
+  filters by tried.
 - 2026-10-25: **PLU on foods** (§4.2). The Obsidian "Food Products" list imported through a
   reviewed Markdown file (`scripts/import-products.ts`, runbook): ⭐ → ❤️, ~~struck~~ → 👎,
   *italic* → want to try; its headings became the food tree, Produce split into Fruit and Vegetable.

@@ -1091,6 +1091,26 @@ table.parsed .input {
   color: var(--muted);
   margin: 0 0 10px;
 }
+/* − 4 servings + : the yield, scaled while cooking. */
+.servings {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px;
+  color: var(--muted);
+  margin: -6px 0 10px;
+}
+.servings .btn.icon {
+  font-size: 1.2rem;
+}
+.servings .btn:not(.icon) {
+  padding: 0 8px;
+}
+/* An amount that's been scaled from what the recipe says. */
+.scaled {
+  font-weight: 700;
+  color: var(--primary);
+}
 .recipe-actions {
   display: flex;
   align-items: center;

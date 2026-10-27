@@ -172,6 +172,7 @@ export const validators: { [K in Kind]: (body: unknown, id: string, now: number)
       method: oneOf(b.method, METHODS, "method"),
       yieldQty: num(b.yieldQty, "yieldQty", 0, 10_000),
       yieldUnit: str(b.yieldUnit, "yieldUnit", 60).trim(),
+      myYield: num(b.myYield, "myYield", 0, 10_000),
       prepMin: num(b.prepMin, "prepMin", 0, 100_000),
       cookMin: num(b.cookMin, "cookMin", 0, 100_000),
       instructions: str(b.instructions, "instructions", 100_000),

@@ -175,6 +175,8 @@ const MIGRATIONS: string[] = [
   );
   CREATE INDEX ai_usage_month ON ai_usage (month);
   `,
+  // 2026-10-27: a recipe's usual size ("I make this for 2"); the page opens scaled to it.
+  `ALTER TABLE recipes ADD COLUMN my_yield REAL;`,
 ];
 
 export type DB = DatabaseSync;
@@ -297,6 +299,7 @@ export function loadState(db: DB): State {
       method: r.method,
       yieldQty: r.yield_qty,
       yieldUnit: r.yield_unit,
+      myYield: r.my_yield,
       prepMin: r.prep_min,
       cookMin: r.cook_min,
       instructions: r.instructions,
@@ -411,6 +414,7 @@ export const save = {
       method: x.method,
       yield_qty: x.yieldQty,
       yield_unit: x.yieldUnit,
+      my_yield: x.myYield,
       prep_min: x.prepMin,
       cook_min: x.cookMin,
       instructions: x.instructions,

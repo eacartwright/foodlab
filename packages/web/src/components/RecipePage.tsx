@@ -6,7 +6,9 @@ import {
   formatQuantity,
   ingredientsFromText,
   parseLine,
+  scaleLine,
   today,
+  yieldText,
   type Id,
   type Recipe,
   type RecipeIngredient,
@@ -36,17 +38,20 @@ export function RecipePage({ id }: { id: string }) {
   }, [fresh, query]);
   if (!r) return <NotFound what="recipe" />;
   const editing = query.get("edit") === "1" || (fresh && query.get("edit") !== "0");
-  return editing ? <RecipeEdit r={r} /> : <RecipeView r={r} />;
+  return editing ? <RecipeEdit r={r} /> : <RecipeView key={r.id} r={r} />;
 }
 
 function RecipeView({ r }: { r: Recipe }) {
   const { view } = useData();
   const [open, setOpen] = useState<Id | null>(null);
+  // Opens at my usual size if I saved one, else as written. Scaling changes only what's shown.
+  const [servings, setServings] = useState(r.myYield ?? r.yieldQty);
+  const factor = r.yieldQty && servings ? servings / r.yieldQty : 1;
   const save = (patch: Partial<Recipe>) => put("recipes", { ...(data().state.recipes[r.id] ?? r), ...patch });
   const time = [r.prepMin ? `prep ${r.prepMin} min` : null, r.cookMin ? `cook ${r.cookMin} min` : null];
   const meta = [
     r.method ? METHOD_LABEL[r.method] : null,
-    r.yieldQty !== null || r.yieldUnit ? `makes ${r.yieldQty !== null ? formatQuantity(r.yieldQty) : ""} ${r.yieldUnit}`.replace(/\s+/g, " ").trim() : null,
+    r.yieldQty === null && r.yieldUnit ? `makes ${r.yieldUnit}` : null,
     ...time,
     r.glutenFree !== "unknown" ? GF_LABEL[r.glutenFree] : null,
   ].filter(Boolean);
@@ -66,6 +71,7 @@ function RecipeView({ r }: { r: Recipe }) {
       </div>
       <h1 className="recipe-title">{r.name}</h1>
       {meta.length > 0 && <p className="recipe-meta">{meta.join(" · ")}</p>}
+      {r.yieldQty !== null && servings !== null && <Servings r={r} servings={servings} setServings={setServings} save={save} />}
       {(tags.length > 0 || lunch || r.status === "want") && (
         <div className="chips">
           {r.status === "want" && <span className="badge">want to try</span>}
@@ -97,14 +103,28 @@ function RecipeView({ r }: { r: Recipe }) {
           <h3>Ingredients</h3>
           {r.ingredients.length ? (
             <ul>
-              {r.ingredients.map((i) => (
+              {r.ingredients.map((i) => {
+                const s = scaleLine(i.line, factor);
+                return (
                 <li key={i.id}>
                   <button className={`ing ${open === i.id ? "open" : ""} ${i.optional ? "optional" : ""}`} onClick={() => setOpen(open === i.id ? null : i.id)} aria-expanded={open === i.id}>
-                    {i.line}
+                    {s ? (
+                      <>
+                        {s.before}
+                        <span className="scaled" title={s.approx ? "Rounded" : undefined}>
+                          {s.approx && "≈ "}
+                          {s.amount}
+                        </span>
+                        {s.after}
+                      </>
+                    ) : (
+                      i.line
+                    )}
                   </button>
                   {open === i.id && <IngredientCard r={r} i={i} />}
                 </li>
-              ))}
+                );
+              })}
             </ul>
           ) : (
             <p className="empty-line">None yet.</p>
@@ -187,6 +207,37 @@ function IngredientCard({ r, i }: { r: Recipe; i: RecipeIngredient }) {
       ) : (
         <button className="btn subtle small-btn" onClick={() => setRelink(true)}>
           {food ? "Wrong food?" : "Link a food"}
+        </button>
+      )}
+    </div>
+  );
+}
+
+/** −  4 servings  + , and Save when it's not my usual size. */
+function Servings({ r, servings, setServings, save }: { r: Recipe; servings: number; setServings: (n: number) => void; save: (p: Partial<Recipe>) => void }) {
+  const written = r.yieldQty!;
+  const usual = r.myYield ?? written;
+  // Whole steps, and a half below one ("½ loaf").
+  const down = servings > 1 ? Math.ceil(servings - 1) : 0.5;
+  const up = servings < 1 ? 1 : Math.floor(servings + 1);
+  return (
+    <div className="servings">
+      makes
+      <button className="btn icon subtle" onClick={() => setServings(down)} disabled={servings <= 0.5} aria-label="Fewer servings">
+        −
+      </button>
+      <span className={servings !== written ? "scaled" : undefined}>{yieldText(servings, r.yieldUnit, written)}</span>
+      <button className="btn icon subtle" onClick={() => setServings(up)} disabled={servings >= 1000} aria-label="More servings">
+        +
+      </button>
+      {servings !== usual && (
+        <button className="btn subtle" onClick={() => save({ myYield: servings === written ? null : servings })} title="Open this recipe at this size from now on">
+          Save
+        </button>
+      )}
+      {servings !== written && (
+        <button className="btn subtle" onClick={() => setServings(written)} title={`As written: ${yieldText(written, r.yieldUnit, written)}`}>
+          Reset
         </button>
       )}
     </div>

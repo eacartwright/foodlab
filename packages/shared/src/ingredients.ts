@@ -166,6 +166,30 @@ export function parseLine(input: string): ParsedLine {
 }
 
 /**
+ * Where a line's amount is, as typed, for scaling: "1½ cups rice" → quantity 1.5, unit "cup",
+ * and the "1½ cups" span. A range keeps its high end ("2-3 tbsp"). No number, no amount.
+ */
+export function amountIn(line: string): { start: number; end: number; quantity: number; high: number | null; unit: string } | null {
+  const start = /^\s*(?:[-*•]\s+|\d+[.)]\s+(?=\D))?/.exec(line)![0].length;
+  const q = readQuantity(line.slice(start));
+  if (!q) return null;
+  let end = line.length - q.rest.length;
+  const high = q.range ? (readQuantity(q.range)?.value ?? null) : null;
+  let unit = "";
+  const rest = line.slice(end);
+  const two = /^\s*(fl\.?\s*oz\.?|fluid ounces?)/i.exec(rest);
+  const w = /^\s*([^\s,(]+)/.exec(rest);
+  if (two) {
+    unit = "fl oz";
+    end += two[0].length;
+  } else if (w && unitOf(w[1]!)) {
+    unit = unitOf(w[1]!)!;
+    end += w[0].length;
+  }
+  return { start, end, quantity: q.value, high, unit };
+}
+
+/**
  * Ingredient lines as typed → the recipe's ingredients. A line typed exactly as before keeps
  * its ingredient. A changed line keeps the food of the old line it replaced (same food name, so
  * "2 slices cheese" → "3 slices cheese" keeps a hand-picked American cheese). Otherwise the food

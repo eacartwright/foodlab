@@ -1,6 +1,7 @@
 export * from "./types";
 export * from "./validate";
 export * from "./ingredients";
+export * from "./scale";
 export * from "./id";
 export * from "./derive";
 export * from "./mealTimes";
