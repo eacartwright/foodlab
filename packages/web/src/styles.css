@@ -712,7 +712,7 @@ textarea::placeholder {
 .product-title .brand-input {
   flex: 0 1 auto;
   field-sizing: content;
-  min-width: 3.5em;
+  min-width: 1em;
   max-width: 100%;
 }
 /* Chromium keeps room for a datalist arrow; suggestions still show while typing. */
