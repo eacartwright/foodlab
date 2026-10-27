@@ -676,6 +676,9 @@ textarea::placeholder {
 .crumbs {
   text-transform: none;
   letter-spacing: 0;
+  /* Beside the spaced-out capitals, a plain space looked missing ("of Mayonnaise"). The space
+     before the crumbs stays outside them, at its plain width. */
+  word-spacing: 0.15em;
   font-weight: 500;
 }
 .title-row {

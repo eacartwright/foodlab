@@ -48,9 +48,9 @@ export function FoodPage({ id }: { id: string }) {
       <div className="page-kind">
         <span>
           🥕 Food
+          {path.length > 0 && " "}
           {path.length > 0 && (
             <span className="crumbs">
-              {" "}
               {path.map((f) => (
                 <span key={f.id}>
                   <A href={pathOf("foods", f.id)}>{f.name}</A> ›{" "}

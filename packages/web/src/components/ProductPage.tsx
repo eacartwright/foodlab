@@ -33,9 +33,9 @@ export function ProductPage({ id }: { id: string }) {
         {/* One run of text, so "Product of Frozen potatoes" is spaced like words. */}
         <span>
           🛒 Product
+          {food && " "}
           {food && (
             <span className="crumbs">
-              {" "}
               of <A href={pathOf("foods", food.id)}>{food.name}</A>
             </span>
           )}
