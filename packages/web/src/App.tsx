@@ -3,7 +3,7 @@ import { DevNotesDialog } from "./components/DevNotes";
 import { EatPage } from "./components/EatPage";
 import { FoodPage } from "./components/FoodPage";
 import { GroceriesPage } from "./components/GroceriesPage";
-import { FoodsList, ProductsList, RecipesList, StoresList } from "./components/ListPages";
+import { FoodsList, ProductsList, RecipesList, StoresList, TagsList } from "./components/ListPages";
 import { ProductPage } from "./components/ProductPage";
 import { closeQuickAddFromBack, fromShare, openQuickAdd, QuickAdd, useQuickAdd } from "./components/QuickAdd";
 import { RecipePage } from "./components/RecipePage";
@@ -25,6 +25,7 @@ const NAV = [
   { href: "/recipes", label: "Recipes", icon: "🍳" },
   { href: "/stores", label: "Stores", icon: "🏪" },
   { href: "/staples", label: "Staples", icon: "★" },
+  { href: "/tags", label: "Tags", icon: "🏷" },
 ] as const;
 
 /** The phone's tab bar, Search rightmost: the right thumb reaches the right end best. More opens the drawer. */
@@ -62,6 +63,8 @@ function Page() {
       return <StoresList />;
     case "/staples":
       return <StaplesPage />;
+    case "/tags":
+      return <TagsList />;
     default:
       void query;
       return <SearchPage />;

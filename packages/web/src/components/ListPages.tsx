@@ -1,9 +1,10 @@
-import { METHOD_LABEL, RATINGS, RATING_EMOJI, STATUSES, STATUS_LABEL, nameKey, productName, type Food, type FoodNode, type Product, type Rating } from "@foodlab/shared";
+import { METHOD_LABEL, RATINGS, RATING_EMOJI, STATUSES, STATUS_LABEL, nameKey, productName, type Food, type FoodNode, type Product, type Rating, type Tag } from "@foodlab/shared";
 import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
-import { ensureStore } from "../actions";
+import { deleteTag, ensureStore, mergeTag, renameTag } from "../actions";
 import { A, go, pathOf, setQuery, useRoute } from "../router";
 import { useData } from "../sync";
-import { KIND_ICON, Segmented } from "./controls";
+import { ConfirmDialog } from "./ConfirmDialog";
+import { DraftInput, KIND_ICON, Segmented } from "./controls";
 import { openQuickAdd } from "./QuickAdd";
 import { NotGF, Rating as RatingMark } from "./rows";
 
@@ -663,6 +664,115 @@ export function RecipesList() {
           <td className="hide-sm num">{(r.prepMin ?? 0) + (r.cookMin ?? 0) || ""}</td>
         </tr>
       ))}
+    </ListShell>
+  );
+}
+
+/** Tags (DESIGN.md §5.10): meal tags are fixed; personal ones rename, merge and delete here. */
+export function TagsList() {
+  const { view } = useData();
+  const { query } = useRoute();
+  const f = query.get("f") ?? "";
+  const rows = useMemo(() => view.tags.filter((t) => match(t.name, f)), [view, f]);
+  const uses = (t: Tag) => view.tagged(t.id).length;
+  const { sorted, th } = useSort(rows, {
+    name: { value: (t) => (t.kind === "meal" ? "" : t.name) }, // meal tags stay first, in their order
+    uses: { value: uses, desc: true },
+  });
+  const [merging, setMerging] = useState<{ tag: Tag; into: Tag } | null>(null);
+  // A rename that lands on another tag's name is a merge; cancelling it puts the old name back.
+  // Opened after the key: the Enter that committed the name would otherwise press Cancel.
+  const [reset, setReset] = useState(0);
+  const rename = (t: Tag, name: string) => {
+    const other = view.findTag(name);
+    if (other && other.id !== t.id) setTimeout(() => setMerging({ tag: t, into: other }));
+    else renameTag(t, name);
+  };
+  return (
+    <ListShell
+      title="Tags"
+      icon="🏷"
+      count={rows.length}
+      empty="No tags match."
+      head={
+        <tr>
+          {th("name", "Tag")}
+          {th("uses", "Used", "num", "Used on")}
+          <th className="tag-actions" aria-label="Merge or delete" />
+        </tr>
+      }
+    >
+      {sorted.map((t) => {
+        const n = uses(t);
+        const meal = t.kind === "meal";
+        return (
+          <tr key={t.id}>
+            <td>
+              {meal ? (
+                <span className="strong">
+                  {t.name} <span className="muted small">meal</span>
+                </span>
+              ) : (
+                <DraftInput key={`${t.id}-${reset}`} className="input cell-input" value={t.name} required aria-label="Tag name" onCommit={(name) => rename(t, name)} />
+              )}
+            </td>
+            <td className="num">
+              {n ? (
+                <A href={meal ? `/eat?tag=${t.id}` : `/?q=${encodeURIComponent(t.name)}`}>{n}</A>
+              ) : (
+                <span className="muted">0</span>
+              )}
+            </td>
+            <td className="tag-actions">
+              {!meal && (
+                <span className="inline">
+                  <select
+                    className="select small"
+                    value=""
+                    aria-label={`Merge “${t.name}” into`}
+                    onChange={(e) => {
+                      const into = view.tag(e.target.value);
+                      if (into) setMerging({ tag: t, into });
+                    }}
+                  >
+                    <option value="">Merge…</option>
+                    {view.tags
+                      .filter((o) => o.id !== t.id)
+                      .map((o) => (
+                        <option key={o.id} value={o.id}>
+                          {o.name}
+                        </option>
+                      ))}
+                  </select>
+                  <button className="btn icon subtle" aria-label={`Delete “${t.name}”`} title="Delete" onClick={() => deleteTag(t)}>
+                    ✕
+                  </button>
+                </span>
+              )}
+            </td>
+          </tr>
+        );
+      })}
+      {merging && (
+        <ConfirmDialog
+          title={`Merge “${merging.tag.name}” into “${merging.into.name}”?`}
+          confirm="Merge"
+          onCancel={() => {
+            setMerging(null);
+            setReset((r) => r + 1);
+          }}
+          onConfirm={() => {
+            mergeTag(merging.tag, merging.into);
+            setMerging(null);
+          }}
+        >
+          <p>
+            {uses(merging.tag)
+              ? `${uses(merging.tag)} thing${uses(merging.tag) === 1 ? "" : "s"} tagged “${merging.tag.name}” get “${merging.into.name}” instead.`
+              : `Nothing is tagged “${merging.tag.name}”, so it just goes.`}
+          </p>
+        </ConfirmDialog>
+      )}
     </ListShell>
   );
 }

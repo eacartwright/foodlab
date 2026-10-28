@@ -929,6 +929,28 @@ table.parsed th {
   padding: 6px 10px;
   border-bottom: 1.5px solid var(--border-strong);
 }
+/* A name edited right in its row (Tags): reads as text until hovered or focused. */
+.cell-input {
+  width: 100%;
+  max-width: 24em;
+  border-color: transparent;
+  background: transparent;
+  margin-left: -10px;
+  font-weight: 600;
+}
+.cell-input:hover {
+  border-color: var(--border);
+}
+.tag-actions {
+  width: 1%;
+  white-space: nowrap;
+}
+.tag-actions .inline {
+  flex-wrap: nowrap;
+}
+.tag-actions .select {
+  width: 6.5em;
+}
 /* A sortable header: looks like the header text, the whole cell is the button. */
 .sort-th {
   all: unset;

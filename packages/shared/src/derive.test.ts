@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { View } from "./derive";
+import { swapTag, View } from "./derive";
 import { blank, emptyState, MEAL_TAGS, productName, withoutBrand, WORK_LUNCH, type Food, type GroceryItem, type Product, type Recipe, type State } from "./types";
 
 // A small world: Lemon → Lemon juice (form) → Santa Cruz (product, Wegmans); Meat → Chicken thigh.
@@ -60,6 +60,14 @@ describe("View", () => {
     expect(v.prepsOf("lemon")).toEqual(["zested"]);
   });
 
+  it("finds what a tag is on", () => {
+    expect(v.tagged(WORK_LUNCH).map((x) => x.item.id).sort()).toEqual(["bad", "bowl", "lc"]);
+  });
+  it("swaps or drops a tag, without repeats", () => {
+    expect(swapTag(["a", "b", "c"], "b", "x")).toEqual(["a", "x", "c"]);
+    expect(swapTag(["a", "b", "x"], "b", "x")).toEqual(["a", "x"]);
+    expect(swapTag(["a", "b"], "b", null)).toEqual(["a"]);
+  });
   it("refuses loops", () => {
     expect(v.wouldLoop("fruit", "juice")).toBe(true);
     expect(v.wouldLoop("juice", "meat")).toBe(false);

@@ -223,7 +223,7 @@ Shared by everything, two kinds:
 - **Meal tags**, a fixed list so filters are reliable: Breakfast · Lunch · **Work lunch** ·
   Dinner · Snack · Dessert. Shown as chips, never misspelled.
 - **Personal tags**, free-form and autocompleted: quick, no-cook, meal prep, comfort food,
-  "good when I'm exhausted".
+  "good when I'm exhausted". Stored lowercase; tidied on the Tags page (§5.10).
 
 "Contains lemon" is **not** a tag: search derives it from ingredients (§5.1).
 
@@ -490,6 +490,16 @@ it the AI section says so and reading works as before. Refusal fallbacks (re-run
 declined request on another model) are left out: recipes don't trip them, and a fallback
 bills at another model's price, which the tracker would miss.
 
+### 5.10 Tags
+
+A list in the sidebar (and More on the phone): every tag, how many foods, products and recipes
+use it (a link to them: Eat for a meal tag, search for a personal one), sortable. Meal tags
+are fixed and listed first. A personal tag's name is edited in its row; a name that's already
+another tag's asks to **merge** instead. **Merge…** picks the tag to merge into: everything
+tagged with this one gets that one (no repeats) and this one goes. **✕** deletes a tag and takes
+it off everything. Merge and delete rewrite the tagged items, so nothing points at a gone tag,
+and both have Undo.
+
 ## 6. Later (designed for, not built)
 
 - **Scaling** in three layers: exact quantity → human measurement (3½ tbsp) → practical, using
@@ -591,6 +601,8 @@ rule; whether log entries need actual quantities (a recipe-instance object).
 
 Decided:
 
+- 2026-10-27: **Tags page** (§5.10, M3): rename, merge, delete; merge and delete take the tag
+  off (or swap it on) every item rather than leaving a tombstone behind them.
 - 2026-10-27: **scaling** a recipe's amounts for the view, rounded to kitchen measures (§5.4).
   It opens as written unless a size is saved for that recipe (`myYield`, migration 8).
   Lists don't mark want-to-try (most recipes will be); the rating marks tried, and Recipes

@@ -95,6 +95,15 @@ export class View {
   recipesUsing = (foodId: Id) => this.recipesByFood.get(foodId) ?? [];
   logOf = (itemId: Id) => this.logByItem.get(itemId) ?? [];
 
+  /** The live foods, products and recipes with this tag. */
+  tagged(tagId: Id): { kind: "foods" | "products" | "recipes"; item: Food | Product | Recipe }[] {
+    return [
+      ...this.foods.filter((f) => f.tagIds.includes(tagId)).map((item) => ({ kind: "foods" as const, item })),
+      ...this.products.filter((p) => p.tagIds.includes(tagId)).map((item) => ({ kind: "products" as const, item })),
+      ...this.recipes.filter((r) => r.tagIds.includes(tagId)).map((item) => ({ kind: "recipes" as const, item })),
+    ];
+  }
+
   /** Recipes using any of this food's forms (Lemon → recipes with lemon juice), not the food itself. */
   recipesUsingForms(foodId: Id): Recipe[] {
     const direct = new Set(this.recipesUsing(foodId).map((r) => r.id));
@@ -474,6 +483,16 @@ const PRODUCE = new Set(["produce", "fruit", "vegetable"]);
 
 export type FoodNode = { food: Food; form: boolean; kids: FoodNode[]; total: number };
 export type GroceryUsual ={ name: string; item?: GroceryItem; food?: Food; product?: Product };
+
+/** A tag list with `from` swapped for `to` (merge) or dropped (`to` null, delete); no repeats. */
+export function swapTag(tagIds: Id[], from: Id, to: Id | null): Id[] {
+  const out: Id[] = [];
+  for (const t of tagIds) {
+    const x = t === from ? to : t;
+    if (x && !out.includes(x)) out.push(x);
+  }
+  return out;
+}
 
 export const isWorkLunch = (tagIds: Id[]) => tagIds.includes(WORK_LUNCH);
 

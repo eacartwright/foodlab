@@ -4,6 +4,7 @@ import {
   newId,
   nameKey,
   productName,
+  swapTag,
   tidyName,
   today,
   type DevNote,
@@ -18,6 +19,7 @@ import {
   type Rating,
   type Recipe,
   type Records,
+  type Tag,
 } from "@foodlab/shared";
 import { go, pathOf } from "./router";
 import { data, put } from "./sync";
@@ -48,6 +50,40 @@ export function ensureTag(name: string): Id {
   const t = blank.tags(newId(), name.trim().replace(/\s+/g, " ").toLowerCase());
   put("tags", t);
   return t.id;
+}
+
+/**
+ * Merge (`to`) or delete (`to` null) a personal tag: every food, product and recipe with it
+ * gets `to` instead, or loses it, so nothing points at a gone tag. Undo puts them back.
+ */
+function retag(tag: Tag, to: Tag | null) {
+  const uses = data().view.tagged(tag.id).map(({ kind, item }) => ({ kind, id: item.id, hadTo: !!to && item.tagIds.includes(to.id) }));
+  for (const u of uses) {
+    const now = data().state[u.kind][u.id]!;
+    put(u.kind, { ...now, tagIds: swapTag(now.tagIds, tag.id, to?.id ?? null) });
+  }
+  put("tags", { ...(data().state.tags[tag.id] ?? tag), deleted: true });
+  const n = uses.length;
+  const what = `${n} thing${n === 1 ? "" : "s"}`;
+  showToast(to ? `Merged “${tag.name}” into “${to.name}” (${what})` : `Deleted “${tag.name}”${n ? ` from ${what}` : ""}`, {
+    label: "Undo",
+    run: () => {
+      put("tags", { ...(data().state.tags[tag.id] ?? tag), deleted: false });
+      for (const u of uses) {
+        const now = data().state[u.kind][u.id];
+        if (!now) continue;
+        const ids = to && !u.hadTo ? now.tagIds.filter((t) => t !== to.id) : now.tagIds;
+        put(u.kind, { ...now, tagIds: ids.includes(tag.id) ? ids : [...ids, tag.id] });
+      }
+    },
+  });
+}
+export const mergeTag = (tag: Tag, into: Tag) => retag(tag, into);
+export const deleteTag = (tag: Tag) => retag(tag, null);
+
+/** Personal tags are stored lowercase, like `ensureTag` makes them. */
+export function renameTag(tag: Tag, name: string) {
+  put("tags", { ...(data().state.tags[tag.id] ?? tag), name: name.trim().replace(/\s+/g, " ").toLowerCase() });
 }
 
 export function setIngredientFood(recipe: Recipe, ingredientId: Id, foodId: Id | null) {

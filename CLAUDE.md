@@ -147,5 +147,6 @@ tombstones (`deleted`), restorable with Undo or the page's Restore.
 - 2026-10-27: Lists: no ingredient line under recipes, no want-to-try pill (Recipes filters by
   tried). **Scaling** on the recipe view (DESIGN.md §5.4, `shared/scale.ts`): − servings +, kitchen
   rounding, Save keeps `myYield` (migration 8). 81 tests, browser-checked on a scratch DB.
-- **Next: M3**: a Tags page;
-  derived facts from the log and per-recipe product override wait for more log data.
+- 2026-10-27: **Tags page** (`/tags`, DESIGN.md §5.10): rename, merge, delete with Undo
+  (actions `mergeTag` / `deleteTag` / `renameTag`, `View.tagged`, `swapTag`). 86 tests, browser-checked.
+- **Next: M3**: derived facts from the log and per-recipe product override wait for more log data.
