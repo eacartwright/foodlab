@@ -9,7 +9,7 @@ import { AiStopped, aiRead, pagePrompt, usage, type AiResult } from "./ai";
 import { startBackups } from "./backup";
 import { openDb } from "./db";
 import { FileStore, MAX_FILE } from "./files";
-import { readRecipe } from "./readRecipe";
+import { fetchPhoto, readRecipe } from "./readRecipe";
 import { writeDevNotes } from "./devNotesFile";
 import { Store } from "./store";
 
@@ -112,15 +112,23 @@ app.put("/api/:kind/:id", async (c) => {
 app.get("/api/read-recipe", async (c) => {
   const url = c.req.query("url") ?? "";
   const r = await readRecipe(url);
-  if ("recipe" in r) return c.json({ recipe: r.recipe, via: "page" });
+  if ("recipe" in r) return c.json({ recipe: r.recipe, via: "page", photo: r.photo });
   if (r.error !== "none") return c.json(r);
   try {
     const ai = await aiRead(db, aiOf(store.state), pagePrompt(url, r.html), "read");
-    if (ai.recipe) return c.json({ ...aiReply(ai), via: "ai" });
+    if (ai.recipe) return c.json({ ...aiReply(ai), via: "ai", photo: r.photo });
     return c.json({ error: "none", message: "No recipe found on the page", ...aiReply(ai) });
   } catch (err) {
     return c.json({ error: "none", message: `No recipe data on the page${aiWhy(err)}` });
   }
+});
+
+// A read recipe's suggested photo (DESIGN.md §5.5), fetched here because sites often won't let
+// another page show their pictures. The app shrinks and uploads it like any photo.
+app.get("/api/fetch-photo", async (c) => {
+  const photo = await fetchPhoto(c.req.query("url") ?? "");
+  if (!photo) return c.json({ error: "No photo there" }, 404);
+  return new Response(photo.data, { headers: { "content-type": photo.type, "cache-control": "private, max-age=3600", "x-content-type-options": "nosniff" } });
 });
 
 // Pasted recipe text: Claude reads it when AI is on, else the plain reader (recipeFromText).

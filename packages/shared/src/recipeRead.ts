@@ -210,3 +210,41 @@ export function recipeFromText(pasted: string): ReadRecipe {
 
 /** Without a list's bullet or checkbox. */
 const bare = (l: string) => cleanLine(l.replace(BULLET, ""));
+
+/**
+ * The page's own picture of the dish, as a full link, or "": the recipe data's `image` (what the
+ * site gives Google), else the picture shown when the link is shared (og:image, twitter:image).
+ */
+export function photoFromHtml(html: string, pageUrl: string): string {
+  const abs = (u: string) => {
+    if (!u.trim()) return ""; // "" would be the page itself
+    try {
+      const url = new URL(decode(u.trim()), pageUrl);
+      return url.protocol === "https:" || url.protocol === "http:" ? url.href : "";
+    } catch {
+      return "";
+    }
+  };
+  for (const m of html.matchAll(/<script[^>]*application\/ld\+json[^>]*>([\s\S]*?)<\/script>/gi)) {
+    let data: unknown;
+    try {
+      data = JSON.parse(m[1]!.trim());
+    } catch {
+      continue;
+    }
+    const r = findRecipe(data);
+    // A link, a list of them, an ImageObject ({ url }) or a list of those: the first.
+    const first = (x: unknown): string => (Array.isArray(x) ? first(x[0]) : typeof x === "string" ? x : isObj(x) ? first(x.url ?? x.contentUrl) : "");
+    const u = r && abs(first(r.image));
+    if (u) return u;
+  }
+  for (const key of ["og:image", "og:image:url", "twitter:image"]) {
+    const k = key.replace(/:/g, "\:");
+    const m =
+      new RegExp(`<meta[^>]+(?:property|name)=["']${k}["'][^>]*content=["']([^"']+)["']`, "i").exec(html) ??
+      new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]*(?:property|name)=["']${k}["']`, "i").exec(html);
+    const u = m && abs(m[1]!);
+    if (u) return u;
+  }
+  return "";
+}

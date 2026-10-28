@@ -15,6 +15,8 @@ export interface ReadReply {
   message?: string;
   /** Why Claude wasn't used. */
   note?: string;
+  /** The page's own picture of the dish (a link), to suggest as the recipe's photo. */
+  photo?: string;
 }
 
 /** "0.31¢", "$1.20". */
@@ -37,6 +39,16 @@ export async function readLink(url: string): Promise<ReadReply> {
     return r;
   } catch {
     return { error: "failed", message: "Couldn't reach foodlab (offline?)" };
+  }
+}
+
+/** A read recipe's suggested photo, fetched through foodlab (sites often won't let another page show theirs). */
+export async function fetchPhoto(url: string): Promise<Blob | null> {
+  try {
+    const res = await fetch(`/api/fetch-photo?url=${encodeURIComponent(url)}`);
+    return res.ok ? await res.blob() : null;
+  } catch {
+    return null;
   }
 }
 

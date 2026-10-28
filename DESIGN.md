@@ -415,6 +415,14 @@ page with a recipe turns Quick add into a Recipe showing "✓ 12 ingredients · 
 makes it and opens it in **Edit** to check (the review is the Edit page, not a step before
 saving: deleting is a tombstone with Undo). Ingredient lines link foods the usual way (§4.5).
 
+**Suggested photo** (2026-10-27): the page's own picture of the dish, the recipe data's `image`
+(what the site gives Google), else the picture its link shows when shared (`og:image`,
+`twitter:image`): `photoFromHtml`. Quick add shows it under the summary with **Use this photo**,
+ticked. The server fetches it (`GET /api/fetch-photo`: images only, 15 MB, every redirect checked
+like the page, never the home network), since sites often won't let another page show theirs;
+on Add it's shrunk and uploaded like any photo (§5.11), after the recipe is saved. Paste has none.
+The picture is the site's: kept for my own reference in a private app, never shared on.
+
 Some sites refuse anything but a browser (Allrecipes, Serious Eats, Budget Bytes, Brown Eyed Baker: 403). foodlab
 doesn't disguise itself to get past that; Quick add says the site wouldn't let it read the
 page and offers **Paste**: copy the recipe on the phone, paste, **Read it**

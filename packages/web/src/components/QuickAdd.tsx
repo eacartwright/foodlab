@@ -2,7 +2,8 @@ import { MEAL_TAGS, blank, ingredientsFromText, newId, tidyName, withoutBrand, t
 import { useEffect, useId, useState, useSyncExternalStore } from "react";
 import { ensureFood, ensureStore } from "../actions";
 import { go, pathOf } from "../router";
-import { readLink as readFromLink, readText, viaText, type ReadReply } from "../ai";
+import { fetchPhoto, readLink as readFromLink, readText, viaText, type ReadReply } from "../ai";
+import { uploadPhoto } from "../uploads";
 import { data, put, useData } from "../sync";
 import { showToast } from "../toast";
 import { Dialog } from "./Dialog";
@@ -47,6 +48,17 @@ const KINDS: readonly AddKind[] = ["products", "recipes", "foods"];
 const LABELS: Record<AddKind, string> = { products: "🛒 Product", recipes: "🍳 Recipe", foods: "🥕 Food" };
 const LAST_KIND = "foodlab:add-kind";
 
+/** The page's photo onto the recipe just added: shrunk and uploaded like any (uploads.ts), then put on the latest copy. */
+async function addSuggested(recipeId: Id, name: string, blob: Blob) {
+  try {
+    const photo = await uploadPhoto(new File([blob], `${name.slice(0, 60)}.jpg`, { type: blob.type }));
+    const now = data().state.recipes[recipeId];
+    if (now) put("recipes", { ...now, photos: [...now.photos, photo] });
+  } catch (err) {
+    showToast(`The photo didn't come along: ${(err as Error).message}`);
+  }
+}
+
 export function QuickAdd({ init }: { init: QuickAddInit }) {
   const { view } = useData();
   const [kind, setKind] = useState<AddKind>(() => {
@@ -75,12 +87,26 @@ export function QuickAdd({ init }: { init: QuickAddInit }) {
   const [reading, setReading] = useState<"" | "busy" | "paste" | string>("");
   const [pasted, setPasted] = useState("");
   const [via, setVia] = useState("");
+  // The page's own photo of the dish, suggested for the new recipe (DESIGN.md §5.5).
+  const [photo, setPhoto] = useState<{ blob: Blob; src: string } | null>(null);
+  const [usePhoto, setUsePhoto] = useState(true);
+  const clearPhoto = () =>
+    setPhoto((p) => {
+      if (p) URL.revokeObjectURL(p.src);
+      return null;
+    });
 
   const applyRead = (reply: ReadReply) => {
     const r = reply.recipe;
     if (!r) return setReading(reply.message ?? "Couldn't read it");
     setRead(r);
     setVia(viaText(reply));
+    clearPhoto();
+    setUsePhoto(true);
+    if (reply.photo)
+      void fetchPhoto(reply.photo).then((blob) => {
+        if (blob) setPhoto({ blob, src: URL.createObjectURL(blob) });
+      });
     setKind("recipes");
     setReading("");
     // The page's own name beats a share title ("Easy Pancakes Recipe | BBC Good Food"), not a typed one.
@@ -143,6 +169,8 @@ export function QuickAdd({ init }: { init: QuickAddInit }) {
           }
         : {};
       put("recipes", { ...blank.recipes(id, n), ...fromRead, rating, tagIds, links, status });
+      // The suggested photo goes up after: the recipe is saved (and opens) without waiting for it.
+      if (read && photo && usePhoto) void addSuggested(id, n, photo.blob);
     }
     if (another) {
       setBrand("");
@@ -151,6 +179,7 @@ export function QuickAdd({ init }: { init: QuickAddInit }) {
       setRating(null);
       setRead(null);
       setVia("");
+      clearPhoto();
       setReading("");
       setPasted("");
       setAdded((a) => a + 1);
@@ -249,16 +278,34 @@ export function QuickAdd({ init }: { init: QuickAddInit }) {
               <Field label="Recipe">
                 <div className="stack-sm">
                   {read ? (
+                    <>
                     <div className="inline read-summary">
                       <span>
                         ✓ {read.ingredients.length} ingredients · {read.instructions.split("\n").filter((l) => /^\d+\./.test(l)).length} steps
                         {read.yieldQty !== null && ` · makes ${read.yieldQty}${read.yieldUnit ? ` ${read.yieldUnit}` : ""}`}
                         {via && <span className="muted small"> · {via}</span>}
                       </span>
-                      <button className="btn icon subtle" aria-label="Don't use it" title="Don't use it" onClick={() => setRead(null)}>
+                      <button
+                        className="btn icon subtle"
+                        aria-label="Don't use it"
+                        title="Don't use it"
+                        onClick={() => {
+                          setRead(null);
+                          clearPhoto();
+                        }}
+                      >
                         ✕
                       </button>
                     </div>
+                    {photo && (
+                      <label className="suggested-photo">
+                        <img src={photo.src} alt="" />
+                        <span className="check">
+                          <input type="checkbox" checked={usePhoto} onChange={(e) => setUsePhoto(e.target.checked)} /> Use this photo
+                        </span>
+                      </label>
+                    )}
+                    </>
                   ) : reading === "paste" || reading === "busy-paste" ? (
                     <>
                       <textarea className="input" rows={6} autoFocus value={pasted} onChange={(e) => setPasted(e.target.value)} aria-label="Pasted recipe" />

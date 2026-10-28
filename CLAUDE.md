@@ -155,4 +155,6 @@ tombstones (`deleted`), restorable with Undo or the page's Restore.
 - 2026-10-27: **M5 photos built** (DESIGN.md §5.11): `photos` on products and recipes, `files` on dev notes
   (migration 9), `server/files.ts` (sideshow's), `web/uploads.ts` (shrinks on the device),
   `components/Photos.tsx`. 89 tests, browser-checked on a scratch copy.
+- 2026-10-27: **suggested photo** on a read recipe (DESIGN.md §5.5): `photoFromHtml`, `GET /api/fetch-photo`,
+  Use this photo in Quick add. Checked with a real BBC Good Food link. 92 tests.
 - **Next: M4** (places & dishes) or M6 (weights).

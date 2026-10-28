@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { minutes, readYield, recipeFromHtml, recipeFromText } from "./recipeRead";
+import { minutes, photoFromHtml, readYield, recipeFromHtml, recipeFromText } from "./recipeRead";
 
 const page = (ld: unknown) => `<html><head><script type="application/ld+json">${JSON.stringify(ld)}</script></head><body>…</body></html>`;
 
@@ -146,5 +146,25 @@ Keeps 2 days.`);
     expect(r.name).toBe("Toast");
     expect(r.ingredients).toEqual(["2 slices bread", "1 tbsp butter"]);
     expect(r.instructions).toBe("1. Toast the bread until golden.\n2. Butter it while hot.");
+  });
+});
+
+describe("photoFromHtml", () => {
+  const ld = (x: unknown) => `<script type="application/ld+json">${JSON.stringify(x)}</script>`;
+  const page = "https://example.com/recipes/soup";
+  it("takes the recipe's own image, in any of its shapes", () => {
+    expect(photoFromHtml(ld({ "@type": "Recipe", image: "https://cdn.example.com/soup.jpg" }), page)).toBe("https://cdn.example.com/soup.jpg");
+    expect(photoFromHtml(ld({ "@type": "Recipe", image: ["/img/a.jpg", "/img/b.jpg"] }), page)).toBe("https://example.com/img/a.jpg");
+    expect(photoFromHtml(ld({ "@graph": [{ "@type": "Recipe", image: { "@type": "ImageObject", url: "https://x.com/c.jpg" } }] }), page)).toBe("https://x.com/c.jpg");
+    expect(photoFromHtml(ld({ "@type": "Recipe", image: [{ url: "https://x.com/d.jpg" }] }), page)).toBe("https://x.com/d.jpg");
+  });
+  it("falls back to the picture shown when the link is shared", () => {
+    expect(photoFromHtml(`<meta property="og:image" content="https://x.com/og.jpg?w=1200&amp;h=630">`, page)).toBe("https://x.com/og.jpg?w=1200&h=630");
+    expect(photoFromHtml(`<meta content="/share.png" name="twitter:image">`, page)).toBe("https://example.com/share.png");
+    expect(photoFromHtml(ld({ "@type": "Recipe", name: "No image" }) + `<meta property="og:image" content="https://x.com/og.jpg">`, page)).toBe("https://x.com/og.jpg");
+  });
+  it("nothing, or nothing usable", () => {
+    expect(photoFromHtml("<p>Hi</p>", page)).toBe("");
+    expect(photoFromHtml(`<meta property="og:image" content="javascript:alert(1)">`, page)).toBe("");
   });
 });

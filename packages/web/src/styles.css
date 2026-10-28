@@ -1942,3 +1942,18 @@ ul.notes li.done .note-text {
   border: 1px solid var(--border);
   display: block;
 }
+/* Quick add: the read page's photo, offered for the new recipe. */
+.suggested-photo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+}
+.suggested-photo img {
+  width: 96px;
+  height: 72px;
+  object-fit: cover;
+  border-radius: var(--radius);
+  border: 1.5px solid var(--border);
+  flex: none;
+}
