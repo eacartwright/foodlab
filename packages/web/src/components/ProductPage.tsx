@@ -5,7 +5,7 @@ import { A, go, pathOf } from "../router";
 import { data, put, useData } from "../sync";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { DraftInput, DraftTextarea, Field, MultiPicker, Picker, Segmented } from "./controls";
-import { EatingFields, LogSection } from "./eating";
+import { EatingFields, LogSection, doneText } from "./eating";
 import { Deleted, NotFound } from "./FoodPage";
 import { GroceryButton } from "./GroceriesPage";
 import { ItemRow, Section } from "./rows";
@@ -52,6 +52,11 @@ export function ProductPage({ id }: { id: string }) {
           ))}
         </datalist>
       </div>
+      {/* What the log says: Groceries writes "bought", the History box the rest. */}
+      {(() => {
+        const facts = [doneText(view, p.id, "bought"), doneText(view, p.id, "ate")].filter(Boolean);
+        return facts.length > 0 && <p className="lede muted">{facts.join(" · ")}</p>;
+      })()}
 
       <div className="fields">
         <Field label="Food">

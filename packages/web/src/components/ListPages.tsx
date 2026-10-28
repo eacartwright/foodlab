@@ -1,12 +1,14 @@
-import { METHOD_LABEL, RATINGS, RATING_EMOJI, STATUSES, STATUS_LABEL, nameKey, productName, type Food, type FoodNode, type Product, type Rating, type Tag } from "@foodlab/shared";
+import { METHOD_LABEL, RATINGS, RATING_EMOJI, STATUSES, STATUS_LABEL, nameKey, productName, type Food, type FoodNode, type Product, type Rating, type Tag, type View } from "@foodlab/shared";
 import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
-import { deleteTag, ensureStore, mergeTag, renameTag } from "../actions";
+import { deleteTag, ensureStore, ensureTag, mergeTag, renameTag } from "../actions";
+import { showToast } from "../toast";
 import { A, go, pathOf, setQuery, useRoute } from "../router";
 import { useData } from "../sync";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { DraftInput, KIND_ICON, Segmented } from "./controls";
 import { openQuickAdd } from "./QuickAdd";
 import { NotGF, Rating as RatingMark } from "./rows";
+import { fmtDate } from "./eating";
 
 // The database personality (DESIGN.md §5.3): every food, product, recipe or store, with a filter
 // and the columns that matter. Filters live in the address, so Back returns to the same list.
@@ -394,6 +396,7 @@ export function ProductsList() {
     // By the whole path, so kinds of the same food sort together (all the pickles, then …).
     food: { value: (p) => pathText(view.foodPath(p.foodId)) },
     stores: { value: (p) => p.storeIds.map((s) => view.store(s)?.name).filter(Boolean).join(", ") },
+    bought: { value: (p) => view.done(p.id, "bought").last, desc: true },
   });
   // Tree: foods as folding headings, each product under its food (DESIGN.md §5.3).
   const { tree, folded, fold, toggle } = useTreeState("products");
@@ -432,6 +435,7 @@ export function ProductsList() {
           {th("name", "Product")}
           {!tree && th("food", "Food", "hide-sm")}
           {th("stores", "Sold at", "hide-sm")}
+          {th("bought", "Last bought", "hide-sm")}
         </tr>
       }
     >
@@ -456,6 +460,9 @@ export function ProductsList() {
               <FoodPath path={path} />
             </td>
             <td className="hide-sm muted">{p.storeIds.map((s) => view.store(s)?.name).filter(Boolean).join(", ")}</td>
+            <td className="hide-sm muted">
+              <LastDone view={view} id={p.id} kind="bought" />
+            </td>
           </tr>
         );
         })
@@ -507,7 +514,7 @@ function ProductTreeRows({
   const heading = (id: string, name: ReactNode, label: string, n: number, depth: number, open: boolean) =>
     out.push(
       <tr key={`h:${id}`} className="group-row">
-        <td colSpan={3}>
+        <td colSpan={4}>
           <span className="tree-cell" style={{ "--depth": depth } as CSSProperties}>
             <TreeToggle name={label} open={open} can disabled={openAll} onClick={() => onFold(id)} />
             {name}
@@ -532,6 +539,9 @@ function ProductTreeRows({
             </span>
           </td>
           <td className="hide-sm muted">{p.storeIds.map((s) => view.store(s)?.name).filter(Boolean).join(", ")}</td>
+          <td className="hide-sm muted">
+            <LastDone view={view} id={p.id} kind="bought" />
+          </td>
         </tr>,
       );
   };
@@ -609,6 +619,7 @@ export function RecipesList() {
     ingredients: { value: (r) => r.ingredients.length, desc: true },
     method: { value: (r) => (r.method ? METHOD_LABEL[r.method] : null) },
     min: { value: (r) => (r.prepMin ?? 0) + (r.cookMin ?? 0) },
+    made: { value: (r) => view.done(r.id, "made").last, desc: true },
   });
   return (
     <ListShell
@@ -645,6 +656,7 @@ export function RecipesList() {
           {th("ingredients", "Ingredients", "hide-sm")}
           {th("method", "Method", "hide-sm")}
           {th("min", "Min", "hide-sm num", "Minutes")}
+          {th("made", "Last made", "hide-sm")}
         </tr>
       }
     >
@@ -662,6 +674,9 @@ export function RecipesList() {
           <td className="hide-sm muted small clip">{r.ingredients.length || ""}</td>
           <td className="hide-sm muted">{r.method ? METHOD_LABEL[r.method] : ""}</td>
           <td className="hide-sm num">{(r.prepMin ?? 0) + (r.cookMin ?? 0) || ""}</td>
+          <td className="hide-sm muted">
+            <LastDone view={view} id={r.id} kind="made" />
+          </td>
         </tr>
       ))}
     </ListShell>
@@ -688,11 +703,47 @@ export function TagsList() {
     if (other && other.id !== t.id) setTimeout(() => setMerging({ tag: t, into: other }));
     else renameTag(t, name);
   };
+  // A tag is just a name with no page, so + Add asks for it here and stays open for the next.
+  const [adding, setAdding] = useState(false);
+  const [name, setName] = useState("");
+  const create = () => {
+    if (!name.trim()) return;
+    const had = view.findTag(name);
+    ensureTag(name);
+    if (had) showToast(`“${had.name}” is already a tag`);
+    setName("");
+  };
   return (
     <ListShell
       title="Tags"
       icon="🏷"
       count={rows.length}
+      add={() => setAdding(true)}
+      filters={
+        adding && (
+          <span className="inline">
+            <input
+              className="input"
+              placeholder="Tag name"
+              aria-label="New tag"
+              autoFocus
+              value={name}
+              enterKeyHint="done"
+              onChange={(e) => setName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") create();
+                else if (e.key === "Escape") setAdding(false);
+              }}
+            />
+            <button className="btn primary" disabled={!name.trim()} onClick={create}>
+              Add
+            </button>
+            <button className="btn subtle" onClick={() => setAdding(false)}>
+              Done
+            </button>
+          </span>
+        )
+      }
       empty="No tags match."
       head={
         <tr>
@@ -774,6 +825,18 @@ export function TagsList() {
         </ConfirmDialog>
       )}
     </ListShell>
+  );
+}
+
+/** "Oct 20 (3×)": the last time, and how many times when more than once. */
+function LastDone({ view, id, kind }: { view: View; id: string; kind: "made" | "bought" }) {
+  const { count, last } = view.done(id, kind);
+  if (!last) return null;
+  return (
+    <span title={`${kind} ${count}×`}>
+      {fmtDate(last)}
+      {count > 1 && <span className="small"> ({count}×)</span>}
+    </span>
   );
 }
 

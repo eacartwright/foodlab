@@ -379,6 +379,12 @@ written with each food a link, instructions, notes and history. Tapping an ingre
 small card (other recipes using it, Open; the preferred product is hidden, see below). **Edit** switches to the fields
 and the ingredient lines. A new recipe opens in Edit.
 
+**What the log says** (`View.done`, `View.lastBought`): a recipe's meta line ends "made 3×,
+last Oct 25"; a product says "bought 2×, last Oct 26 · ate once, Oct 27" under its name; a food
+says "last bought Oct 26 (Bell & Evans Boneless Thighs)", counting its kinds' products and the
+food itself checked off Groceries. Recipes and Products lists have a sortable **Last made** /
+**Last bought** column (newest first, never-done last). Nothing shows until the log has it.
+
 **Scaling** (`shared/scale.ts`): with a yield, the view has **− 4 servings +** (whole steps, a
 half below one). Only what's shown changes; the lines keep their amounts as written. The
 instructions scale their measured amounts ("measure 2 cups", "1-cup rice"), never times,
@@ -492,7 +498,8 @@ bills at another model's price, which the tracker would miss.
 
 ### 5.10 Tags
 
-A list in the sidebar (and More on the phone): every tag, how many foods, products and recipes
+A list in the sidebar (and More on the phone): **+ Add** makes a personal tag (the box stays open
+for the next; they're also made from any item's Tags box). Every tag, how many foods, products and recipes
 use it (a link to them: Eat for a meal tag, search for a personal one), sortable. Meal tags
 are fixed and listed first. A personal tag's name is edited in its row; a name that's already
 another tag's asks to **merge** instead. **Merge…** picks the tag to merge into: everything
@@ -580,7 +587,7 @@ page counts as leaving the box (Done on a recipe too). Lines no longer make food
 |---|---|---|
 | **M1** | What can I eat (lunch first) | Foods (is a, form of, staple), products (stores, ratings, eating fields), stores, recipes with parsed ingredient lines, meal and personal tags, the `+` search, Eat with Work lunch filters, lists and pages, Quick add, Share to foodlab, Staples with suggestions, rating history and hand-written log notes, offline outbox. Deployed at foodlab.evans.tools, installed on the phone. **Done 2026-10-26**: deployed, installed from Chrome on the Pixel 8a, Share to foodlab working. |
 | **M2** | Groceries | A standing list that replaces Todoist (§4.10, §5.8): items made once and needed or not, check off with this trip's Undo, Usual (most bought + staples) one tap from the list, + Groceries on foods, products and staples, `bought` log entries for linked products. Works offline in the store. **Done 2026-10-26**: deployed and used for a shop; offline checked in airplane mode (revisit if a real store says otherwise). |
-| **M3** | Memory | Log entries' derived facts on pages (times made, last made, last bought); per-recipe product override; recipe card view; reading a shared recipe (§5.5); Tags page (rename, merge, delete). |
+| **M3** | Memory | Log entries' derived facts on pages (times made, last made, last bought; built 2026-10-27); per-recipe product override; recipe card view; reading a shared recipe (§5.5); Tags page (rename, merge, delete). |
 | **M4** | Places & dishes | Places (restaurants, stores with prepared food: address → Maps, phone, hours, Find Me Gluten Free link, been / want to try) and dishes with the eating fields, Tried / Want to try per place. Dishes join Eat. |
 | **M5** | Photos | On products, recipes and dishes (sideshow's file store), and photos or files on dev notes. |
 | **M6** | Scaling & weights | §6. |

@@ -22,7 +22,7 @@ import { data, put, useData } from "../sync";
 import { showToast } from "../toast";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { DraftInput, DraftTextarea, Field, NumberInput, Picker, RatingInput, Segmented } from "./controls";
-import { EatingFields, LogSection } from "./eating";
+import { EatingFields, LogSection, doneText } from "./eating";
 import { Deleted, NotFound } from "./FoodPage";
 import { lunchFacts, Section } from "./rows";
 
@@ -55,6 +55,7 @@ function RecipeView({ r }: { r: Recipe }) {
     r.yieldQty === null && r.yieldUnit ? `makes ${r.yieldUnit}` : null,
     ...time,
     r.glutenFree !== "unknown" ? GF_LABEL[r.glutenFree] : null,
+    doneText(view, r.id, "made") || null,
   ].filter(Boolean);
   const lunch = lunchFacts(r);
   const tags = r.tagIds.map((t) => view.tag(t)).filter((t) => t && !t.deleted);

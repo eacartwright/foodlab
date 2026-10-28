@@ -1,4 +1,4 @@
-import { type Food } from "@foodlab/shared";
+import { productName, type Food } from "@foodlab/shared";
 import { useState } from "react";
 import { duplicate, ensureFood, remove } from "../actions";
 import { A, go, pathOf } from "../router";
@@ -6,6 +6,7 @@ import { data, put, useData } from "../sync";
 import { DraftInput, DraftTextarea, Field, Picker, TagEditor } from "./controls";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { ItemRow, Section } from "./rows";
+import { fmtDate } from "./eating";
 import { openQuickAdd } from "./QuickAdd";
 import { GroceryButton } from "./GroceriesPage";
 import { showToast } from "../toast";
@@ -67,6 +68,21 @@ export function FoodPage({ id }: { id: string }) {
         </button>
         <GroceryButton name={food.name} foodId={food.id} />
       </div>
+      {(() => {
+        const last = view.lastBought(food.id);
+        if (!last) return null;
+        return (
+          <p className="lede muted">
+            last bought {fmtDate(last.date)}
+            {last.product && (
+              <>
+                {" "}
+                (<A href={pathOf("products", last.product.id)}>{productName(last.product)}</A>)
+              </>
+            )}
+          </p>
+        );
+      })()}
       <div className="fields">
         <Field label="Is a">
           <Picker value={food.parentId} options={options} placeholder="Nothing (top level)" onChange={(parentId) => save({ parentId })} onCreate={(n) => ensureFood(n)} />

@@ -60,6 +60,24 @@ describe("View", () => {
     expect(v.prepsOf("lemon")).toEqual(["zested"]);
   });
 
+  it("counts what the log says, and the last time a food was bought", () => {
+    const s = world();
+    const log = (id: string, itemKind: "recipes" | "products", itemId: string, kind: "made" | "bought", date: string) =>
+      (s.log[id] = { id, deleted: false, createdAt: 1, updatedAt: 1, rev: 0, itemKind, itemId, date, kind, rating: null, text: "" });
+    log("a", "recipes", "lc", "made", "2026-10-01");
+    log("b", "recipes", "lc", "made", "2026-10-20");
+    log("c", "products", "sc", "bought", "2026-10-05");
+    log("d", "products", "kerry", "bought", "2026-10-02");
+    // Lemon juice off the list as a food, later than the product.
+    s.groceries.g = { ...blank.groceries("g", "Lemon juice"), foodId: "juice", gotAt: new Date(2026, 9, 9, 12).getTime() };
+    const w = new View(s);
+    expect(w.done("lc", "made")).toEqual({ count: 2, last: "2026-10-20" });
+    expect(w.done("hash", "made")).toEqual({ count: 0, last: null });
+    expect(w.lastBought("juice")).toEqual({ date: "2026-10-09", product: null });
+    delete s.groceries.g;
+    expect(new View(s).lastBought("juice")).toMatchObject({ date: "2026-10-05", product: { id: "sc" } });
+    expect(new View(s).lastBought("garlic")).toBeNull();
+  });
   it("finds what a tag is on", () => {
     expect(v.tagged(WORK_LUNCH).map((x) => x.item.id).sort()).toEqual(["bad", "bowl", "lc"]);
   });

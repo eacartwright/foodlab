@@ -149,4 +149,7 @@ tombstones (`deleted`), restorable with Undo or the page's Restore.
   rounding, Save keeps `myYield` (migration 8). 81 tests, browser-checked on a scratch DB.
 - 2026-10-27: **Tags page** (`/tags`, DESIGN.md §5.10): rename, merge, delete with Undo
   (actions `mergeTag` / `deleteTag` / `renameTag`, `View.tagged`, `swapTag`). 86 tests, browser-checked.
-- **Next: M3**: derived facts from the log and per-recipe product override wait for more log data.
+- 2026-10-27: **log facts** (DESIGN.md §5.4): made / bought / ate counts and last dates on recipe,
+  product and food pages, Last made / Last bought columns (`View.done`, `View.lastBought`). 87 tests.
+- **Next: M3**: the recipe card view (not specified yet: ask Evan what it should be); per-recipe
+  product override waits until "Usually" is accurate.

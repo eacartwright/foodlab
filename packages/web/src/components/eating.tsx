@@ -15,6 +15,7 @@ import {
   type LogTarget,
   type Product,
   type Recipe,
+  type View,
 } from "@foodlab/shared";
 import { useState } from "react";
 import { addLog, removeLog } from "../actions";
@@ -75,12 +76,19 @@ export function EatingFields<T extends Product | Recipe>({ item, save }: { item:
   );
 }
 
-const fmtDate = (d: string) => {
+export const fmtDate = (d: string) => {
   const [y, m, day] = d.split("-").map(Number);
   const date = new Date(y!, m! - 1, day!);
   const sameYear = y === new Date().getFullYear();
   return date.toLocaleDateString(undefined, { month: "short", day: "numeric", ...(sameYear ? {} : { year: "numeric" }) });
 };
+
+/** "made 3×, last Oct 20", "bought once, Oct 24"; "" when the log has none. */
+export function doneText(view: View, itemId: string, kind: "made" | "ate" | "bought"): string {
+  const { count, last } = view.done(itemId, kind);
+  if (!count || !last) return "";
+  return count === 1 ? `${kind} once, ${fmtDate(last)}` : `${kind} ${count}×, last ${fmtDate(last)}`;
+}
 
 /** History: rating changes (automatic) and what I wrote down, newest first. */
 export function LogSection({ itemKind, itemId }: { itemKind: LogTarget; itemId: string }) {

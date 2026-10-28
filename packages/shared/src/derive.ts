@@ -3,6 +3,7 @@ import {
   GF_LABEL,
   WORK_LUNCH,
   nameOf,
+  today,
   type Effort,
   type Food,
   type GroceryItem,
@@ -94,6 +95,35 @@ export class View {
   formsOfFood = (foodId: Id) => this.formsOf.get(foodId) ?? [];
   recipesUsing = (foodId: Id) => this.recipesByFood.get(foodId) ?? [];
   logOf = (itemId: Id) => this.logByItem.get(itemId) ?? [];
+
+  // ---- what the log says (DESIGN.md §5.4): times made, last bought ----
+
+  /** How many times it was made / eaten / bought, and the latest date (YYYY-MM-DD). */
+  done(itemId: Id, kind: "made" | "ate" | "bought"): { count: number; last: string | null } {
+    const es = this.logOf(itemId).filter((e) => e.kind === kind); // newest first
+    return { count: es.length, last: es[0]?.date ?? null };
+  }
+
+  /**
+   * The last time this food (or a kind of it) was bought: a product's `bought` entry, or the
+   * food itself checked off the grocery list. `product` says which, when it was a product.
+   */
+  lastBought(foodId: Id): { date: string; product: Product | null } | null {
+    const foods = [foodId, ...this.descendants(foodId, "children").map((f) => f.id)];
+    let best: { date: string; product: Product | null } | null = null;
+    for (const id of foods) {
+      for (const p of this.productsOf(id)) {
+        const last = this.done(p.id, "bought").last;
+        if (last && (!best || last > best.date)) best = { date: last, product: p };
+      }
+      for (const g of this.groceries) {
+        if (g.foodId !== id || g.productId || !g.gotAt) continue;
+        const date = today(new Date(g.gotAt));
+        if (!best || date > best.date) best = { date, product: null };
+      }
+    }
+    return best;
+  }
 
   /** The live foods, products and recipes with this tag. */
   tagged(tagId: Id): { kind: "foods" | "products" | "recipes"; item: Food | Product | Recipe }[] {
