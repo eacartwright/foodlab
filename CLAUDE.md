@@ -37,7 +37,7 @@ aria-label (a page's title behind the Quick add dialog): scope selectors to `.qu
   in memory; `put(kind, id, body)` validates, checks links (no unknown ids, no food loops,
   meal tags fixed), writes a `rating` log entry when a rating changes, bumps `rev`.
   `index.ts`: `GET /api/state` (all of it, ETag = rev), `PUT /api/<kind>/<id>` (whole
-  record), `/api/health`, `GET /api/read-recipe?url=` (`readRecipe.ts`: fetches a shared page openly, never
+  record), `/api/health`, `GET` / `POST /api/files` (`files.ts`: photos and attachments in `data/files`), `GET /api/read-recipe?url=` (`readRecipe.ts`: fetches a shared page openly, never
   disguised as a browser; no recipe data → Claude), `POST /api/read-text`, `GET /api/ai`, `POST /api/ai/compare`
   (`ai.ts`: `@anthropic-ai/sdk` `messages.parse` + Zod, effort low, cost into `ai_usage`, monthly cap), and the built app with SPA fallback (`/share`, `/foods/<id>`…).
 - `packages/web` — React + Vite, installable PWA with a **share target** (`/share`,
@@ -151,5 +151,8 @@ tombstones (`deleted`), restorable with Undo or the page's Restore.
   (actions `mergeTag` / `deleteTag` / `renameTag`, `View.tagged`, `swapTag`). 86 tests, browser-checked.
 - 2026-10-27: **log facts** (DESIGN.md §5.4): made / bought / ate counts and last dates on recipe,
   product and food pages, Last made / Last bought columns (`View.done`, `View.lastBought`). 87 tests.
-- **Next: M3**: the recipe card view (not specified yet: ask Evan what it should be); per-recipe
-  product override waits until "Usually" is accurate.
+- 2026-10-27: **M3 done**; cook view and product override moved to "later" (DESIGN.md §10).
+- 2026-10-27: **M5 photos built** (DESIGN.md §5.11): `photos` on products and recipes, `files` on dev notes
+  (migration 9), `server/files.ts` (sideshow's), `web/uploads.ts` (shrinks on the device),
+  `components/Photos.tsx`. 89 tests, browser-checked on a scratch copy.
+- **Next: M4** (places & dishes) or M6 (weights).

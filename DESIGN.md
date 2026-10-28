@@ -507,11 +507,32 @@ tagged with this one gets that one (no repeats) and this one goes. **✕** delet
 it off everything. Merge and delete rewrite the tagged items, so nothing points at a gone tag,
 and both have Undo.
 
+### 5.11 Photos and files
+
+**Photos** on products and recipes (dishes too, with M4): `photos` on the eating fields, a list
+of `{ id, thumb }`, the first the main one. **📷 Add photo** (on the phone: the camera or the
+gallery, several at once) shrinks each on the device to 1600px (a JPEG of a few hundred KB, not a
+12 MP original) plus a 400px thumbnail, uploads both (`POST /api/files`), then saves the record
+through the outbox as usual. An upload needs the server: offline, it says so. A product shows its
+photos under its name; a recipe shows its main photo big under the title (Add photo beside Made it
+today, all of them in Edit); search, Eat and Recently changed rows show the main photo's thumbnail
+in place of the kind icon. Tapping a photo opens it big: ‹ ›, **Make main**, **Delete** (Undo).
+
+**Files on dev notes:** 📎 in the new note's box and on each note attaches any file as it is (a
+screenshot stays sharp), up to 25 MB; pictures show as small previews, everything opens in a new
+tab. `data/dev-notes.md` lists them as `files/<id>` beside it, so Claude can open them.
+
+**Storage** (`server/files.ts`, sideshow's): each file once, under its id, in `data/files`, its
+name and type in the `files` table; `GET /api/files/<id>` serves it, cached for good (it never
+changes). Backups copy new files to `<backups>/files`. Deleting a photo only takes it off the
+record; the file stays (small, and Undo works).
+
 ## 6. Later (designed for, not built)
 
 - **Scaling** in three layers: exact quantity → human measurement (3½ tbsp) → practical, using
   the measuring tools I own. Ingredient behavior (discrete: eggs, onions; sensitive: salt,
-  leavening) decides how to round.
+  leavening) decides how to round. *Built 2026-10-27 (§5.4)*: exact → kitchen measures, counted
+  things in halves; not yet "the tools I own" or salt and leavening rounded more carefully.
 - **Weight alongside volume** (`grams` on ingredients), with a volume/weight toggle.
 - **Techniques** as their own pages ("dicing an onion"), linked from instructions.
 - **Variants** (my version, small batch). Until then, log entries and notes cover it.
@@ -587,11 +608,11 @@ page counts as leaving the box (Done on a recipe too). Lines no longer make food
 |---|---|---|
 | **M1** | What can I eat (lunch first) | Foods (is a, form of, staple), products (stores, ratings, eating fields), stores, recipes with parsed ingredient lines, meal and personal tags, the `+` search, Eat with Work lunch filters, lists and pages, Quick add, Share to foodlab, Staples with suggestions, rating history and hand-written log notes, offline outbox. Deployed at foodlab.evans.tools, installed on the phone. **Done 2026-10-26**: deployed, installed from Chrome on the Pixel 8a, Share to foodlab working. |
 | **M2** | Groceries | A standing list that replaces Todoist (§4.10, §5.8): items made once and needed or not, check off with this trip's Undo, Usual (most bought + staples) one tap from the list, + Groceries on foods, products and staples, `bought` log entries for linked products. Works offline in the store. **Done 2026-10-26**: deployed and used for a shop; offline checked in airplane mode (revisit if a real store says otherwise). |
-| **M3** | Memory | Log entries' derived facts on pages (times made, last made, last bought; built 2026-10-27); per-recipe product override; recipe card view; reading a shared recipe (§5.5); Tags page (rename, merge, delete). |
+| **M3** | Memory | Log entries' derived facts on pages (times made, last made, last bought); reading a shared recipe (§5.5); Tags page (rename, merge, delete). **Done 2026-10-27** (card view and product override moved to later). |
 | **M4** | Places & dishes | Places (restaurants, stores with prepared food: address → Maps, phone, hours, Find Me Gluten Free link, been / want to try) and dishes with the eating fields, Tried / Want to try per place. Dishes join Eat. |
-| **M5** | Photos | On products, recipes and dishes (sideshow's file store), and photos or files on dev notes. |
+| **M5** | Photos | On products, recipes and dishes (sideshow's file store), and photos or files on dev notes (§5.11). **Built 2026-10-27** for products, recipes and dev notes; dishes get them with M4. |
 | **M6** | Scaling & weights | §6. |
-| later | — | Techniques, variants, substitutions, inventory, Groceries by store or aisle, then §3. |
+| later | — | **Cook view** of a recipe: only ingredients and steps, bigger text, screen kept awake (no rating, tags, notes or history). **Per-recipe product override**, once "Usually" is accurate (maybe from what's bought most among liked products). Techniques, variants, substitutions, inventory, Groceries by store or aisle, then §3. |
 
 ## 11. Open questions
 
@@ -608,6 +629,10 @@ rule; whether log entries need actual quantities (a recipe-instance object).
 
 Decided:
 
+- 2026-10-27: **M5 photos** (§5.11): shrunk on the device (1600px + a 400px thumbnail), files kept
+  forever in `data/files` like sideshow's; dev notes attach any file as it is.
+- 2026-10-27: **M3 done.** The recipe card view (now "cook view": ingredients and steps only,
+  bigger text, screen awake) and the per-recipe product override are low priority: moved to later.
 - 2026-10-27: **Tags page** (§5.10, M3): rename, merge, delete; merge and delete take the tag
   off (or swap it on) every item rather than leaving a tombstone behind them.
 - 2026-10-27: **scaling** a recipe's amounts for the view, rounded to kitchen measures (§5.4).

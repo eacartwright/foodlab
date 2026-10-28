@@ -1,5 +1,6 @@
 import {
   blank,
+  type Attachment,
   nameOf,
   newId,
   nameKey,
@@ -163,8 +164,8 @@ export function duplicate(kind: "foods" | "products" | "recipes", id: Id) {
 const pick = <T, K extends keyof T>(x: T, keys: K[]) => Object.fromEntries(keys.map((k) => [k, x[k]])) as Pick<T, K>;
 
 /** Note an idea or bug, with the page it was written on if asked. */
-export function addDevNote(text: string, withPage: boolean) {
-  put("devnotes", blank.devnotes(newId(), text, withPage ? location.pathname + location.search : ""));
+export function addDevNote(text: string, withPage: boolean, files: Attachment[] = []) {
+  put("devnotes", { ...blank.devnotes(newId(), text, withPage ? location.pathname + location.search : ""), files });
 }
 
 /** New text for a note; emptying it leaves the note as it was (✕ deletes). */

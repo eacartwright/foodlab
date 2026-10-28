@@ -846,7 +846,8 @@ textarea::placeholder {
 }
 .row-icon {
   font-size: 1.2rem;
-  width: 26px;
+  width: 40px; /* as wide as a photo, so names line up */
+  flex: none;
   text-align: center;
 }
 .row-main {
@@ -1838,4 +1839,106 @@ ul.notes li.done .note-text {
   table.parsed td:nth-child(3) {
     grid-column: 2;
   }
+}
+
+/* ---- photos (DESIGN.md §5.11) ---- */
+.photos,
+.recipe-photos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 14px;
+}
+.photo-thumb {
+  all: unset;
+  cursor: pointer;
+  width: 72px;
+  height: 72px;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1.5px solid var(--border);
+  background: var(--surface-2);
+}
+.photo-thumb:focus-visible,
+.recipe-hero:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+.photo-thumb img,
+.recipe-hero img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+/* A recipe's main photo reads like a cookbook's: wide, not too tall. */
+.recipe-hero {
+  all: unset;
+  cursor: pointer;
+  flex: 1 0 100%;
+  max-width: 640px;
+  aspect-ratio: 16 / 10;
+  max-height: 340px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--surface-2);
+}
+.dialog.photo-viewer {
+  max-width: min(1000px, 96vw);
+}
+.photo-big {
+  position: relative;
+  display: flex;
+  justify-content: center;
+}
+.photo-big img {
+  max-width: 100%;
+  max-height: 75vh;
+  border-radius: var(--radius);
+}
+.photo-prev,
+.photo-next {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1.6rem;
+  background: var(--bg);
+  opacity: 0.85;
+}
+.photo-prev {
+  left: 6px;
+}
+.photo-next {
+  right: 6px;
+}
+/* A row's main photo, in place of the kind icon. */
+.row-thumb {
+  width: 40px;
+  height: 40px;
+  margin: -4px 0;
+  border-radius: 8px;
+  object-fit: cover;
+  flex: none;
+  background: var(--surface-2);
+}
+/* A dev note's files. */
+.attached {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+.attached-file {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.attached-file img {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  display: block;
 }

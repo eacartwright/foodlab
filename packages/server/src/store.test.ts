@@ -2,8 +2,9 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { blank, Invalid, SETTINGS_ID, WORK_LUNCH } from "@foodlab/shared";
+import { blank, Invalid, newId, SETTINGS_ID, WORK_LUNCH } from "@foodlab/shared";
 import { loadState, openDb, type DB } from "./db";
+import { cleanName, FileStore } from "./files";
 import { Store } from "./store";
 
 let dir: string;
@@ -48,6 +49,27 @@ describe("Store", () => {
     expect(again.recipes.lc).toEqual(store.state.recipes.lc);
     expect(again.foods.juice?.formOfId).toBe("lemon");
     expect(again.rev).toBe(store.rev);
+  });
+
+  it("keeps photos on products and recipes, and files on dev notes", () => {
+    const photo = { id: newId(), thumb: newId() };
+    store.put("products", "p", { ...blank.products("p", "Boneless thighs"), photos: [photo] });
+    store.put("recipes", "r", { ...blank.recipes("r", "Soup"), photos: [photo, { id: newId(), thumb: newId() }] });
+    store.put("devnotes", "n", { ...blank.devnotes("n", "Look at this", ""), files: [{ id: photo.id, name: "shot.jpg", type: "image/jpeg" }] });
+    const again = loadState(db);
+    expect(again.products.p?.photos).toEqual([photo]);
+    expect(again.recipes.r?.photos).toHaveLength(2);
+    expect(again.devnotes.n?.files[0]).toMatchObject({ name: "shot.jpg" });
+    expect(() => store.put("products", "p", { ...blank.products("p", "X"), photos: [{ id: "../etc", thumb: photo.thumb }] })).toThrow(/file id/);
+  });
+
+  it("stores a file under its id and reads it back", () => {
+    const files = new FileStore(db, join(dir, "files"));
+    const info = files.save(new TextEncoder().encode("hello"), String.raw`C:\Users\Evan\label <1>.jpg`, "image/jpeg");
+    expect(info).toMatchObject({ name: "label 1.jpg", type: "image/jpeg", size: 5 });
+    expect(files.read(info.id)?.data.toString()).toBe("hello");
+    expect(files.read(newId())).toBeNull();
+    expect(cleanName("../../x")).toBe("x");
   });
 
   it("refuses links to nothing and loops", () => {

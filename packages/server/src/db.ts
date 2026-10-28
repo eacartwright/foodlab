@@ -1,7 +1,7 @@
 import { DatabaseSync } from "node:sqlite";
 import { existsSync, mkdirSync } from "node:fs";
 import { dirname } from "node:path";
-import { DEFAULT_AI, emptyState, type DevNote, type Settings, type Food, type GroceryItem, type Id, type LogEntry, type Product, type Recipe, type RecipeIngredient, type State, type Store, type Tag } from "@foodlab/shared";
+import { DEFAULT_AI, emptyState, type Attachment, type DevNote, type Photo, type Settings, type Food, type GroceryItem, type Id, type LogEntry, type Product, type Recipe, type RecipeIngredient, type State, type Store, type Tag } from "@foodlab/shared";
 
 // SQLite persistence: ordinary relational tables, one row per record, links in their own tables
 // (product_stores, recipe_ingredients, item_tags), so the file reads well in any SQLite browser
@@ -177,6 +177,20 @@ const MIGRATIONS: string[] = [
   `,
   // 2026-10-27: a recipe's usual size ("I make this for 2"); the page opens scaled to it.
   `ALTER TABLE recipes ADD COLUMN my_yield REAL;`,
+  // 2026-10-27 (M5): photos on products and recipes, files on dev notes; the files themselves
+  // are in data/files under their ids (files.ts).
+  `
+  CREATE TABLE files (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    type TEXT NOT NULL,
+    size INTEGER NOT NULL,
+    created_at INTEGER NOT NULL
+  );
+  ALTER TABLE products ADD COLUMN photos TEXT NOT NULL DEFAULT '[]';  -- JSON [{ id, thumb }], the first is the main one
+  ALTER TABLE recipes ADD COLUMN photos TEXT NOT NULL DEFAULT '[]';
+  ALTER TABLE dev_notes ADD COLUMN files TEXT NOT NULL DEFAULT '[]';  -- JSON [{ id, name, type }]
+  `,
 ];
 
 export type DB = DatabaseSync;
@@ -234,6 +248,7 @@ const eating = (r: Row, tags: Id[]) => ({
   travels: r.travels,
   keepsDays: r.keeps_days,
   effort: r.effort,
+  photos: JSON.parse(r.photos) as Photo[],
 });
 
 export function loadState(db: DB): State {
@@ -321,7 +336,7 @@ export function loadState(db: DB): State {
     } satisfies LogEntry;
   }
   for (const r of db.prepare("SELECT * FROM dev_notes").all() as Row[]) {
-    s.devnotes[r.id] = { ...base(r), text: r.text, path: r.path, done: !!r.done } satisfies DevNote;
+    s.devnotes[r.id] = { ...base(r), text: r.text, path: r.path, done: !!r.done, files: JSON.parse(r.files) as Attachment[] } satisfies DevNote;
   }
   for (const r of db.prepare("SELECT * FROM settings").all() as Row[]) {
     s.settings[r.id] = { ...base(r), mealTimes: JSON.parse(r.meal_times), ai: r.ai ? JSON.parse(r.ai) : DEFAULT_AI } satisfies Settings;
@@ -359,6 +374,7 @@ const eatingCols = (x: Product | Recipe) => ({
   travels: x.travels,
   keeps_days: x.keepsDays,
   effort: x.effort,
+  photos: JSON.stringify(x.photos),
 });
 
 function upsert(db: DB, table: string, cols: Record<string, unknown>) {
@@ -440,7 +456,7 @@ export const save = {
     });
   },
   devnotes(db: DB, x: DevNote) {
-    upsert(db, "dev_notes", { ...baseCols(x), text: x.text, path: x.path, done: x.done ? 1 : 0 });
+    upsert(db, "dev_notes", { ...baseCols(x), text: x.text, path: x.path, done: x.done ? 1 : 0, files: JSON.stringify(x.files) });
   },
   settings(db: DB, x: Settings) {
     upsert(db, "settings", { ...baseCols(x), meal_times: JSON.stringify(x.mealTimes), ai: JSON.stringify(x.ai) });

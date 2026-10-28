@@ -2,6 +2,7 @@ import {
   GF_LABEL,
   METHODS,
   METHOD_LABEL,
+  fileUrl,
   formatAmount,
   formatQuantity,
   ingredientsFromText,
@@ -23,6 +24,7 @@ import { showToast } from "../toast";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { DraftInput, DraftTextarea, Field, NumberInput, Picker, RatingInput, Segmented } from "./controls";
 import { EatingFields, LogSection, doneText } from "./eating";
+import { AddPhoto, PhotoViewer, Photos } from "./Photos";
 import { Deleted, NotFound } from "./FoodPage";
 import { lunchFacts, Section } from "./rows";
 
@@ -45,6 +47,11 @@ export function RecipePage({ id }: { id: string }) {
 function RecipeView({ r }: { r: Recipe }) {
   const { view } = useData();
   const [open, setOpen] = useState<Id | null>(null);
+  const [photo, setPhoto] = useState<number | null>(null);
+  const updatePhotos = (fn: (ps: Recipe["photos"]) => Recipe["photos"]) => {
+    const now = data().state.recipes[r.id] ?? r;
+    put("recipes", { ...now, photos: fn(now.photos) });
+  };
   // Opens at my usual size if I saved one, else as written. Scaling changes only what's shown.
   const [servings, setServings] = useState(r.myYield ?? r.yieldQty);
   const factor = r.yieldQty && servings ? servings / r.yieldQty : 1;
@@ -72,6 +79,19 @@ function RecipeView({ r }: { r: Recipe }) {
         </button>
       </div>
       <h1 className="recipe-title">{r.name}</h1>
+      {r.photos.length > 0 && (
+        <div className="recipe-photos">
+          <button className="recipe-hero" onClick={() => setPhoto(0)} aria-label="Main photo">
+            <img src={fileUrl(r.photos[0]!.id)} alt="" />
+          </button>
+          {r.photos.slice(1).map((p, i) => (
+            <button key={p.id} className="photo-thumb" onClick={() => setPhoto(i + 1)} aria-label={`Photo ${i + 2}`}>
+              <img src={fileUrl(p.thumb)} alt="" loading="lazy" />
+            </button>
+          ))}
+        </div>
+      )}
+      {photo !== null && r.photos[photo] && <PhotoViewer photos={r.photos} at={photo} setAt={setPhoto} update={updatePhotos} name={r.name} />}
       {meta.length > 0 && <p className="recipe-meta">{meta.join(" · ")}</p>}
       {r.yieldQty !== null && servings !== null && <Servings r={r} servings={servings} setServings={setServings} save={save} />}
       {(tags.length > 0 || lunch || r.status === "want") && (
@@ -98,6 +118,7 @@ function RecipeView({ r }: { r: Recipe }) {
         >
           {madeToday ? "✓ Made today" : "Made it today"}
         </button>
+        <AddPhoto update={updatePhotos} />
       </div>
 
       <div className="recipe-body">
@@ -347,6 +368,9 @@ function RecipeEdit({ r }: { r: Recipe }) {
           </div>
         </Field>
         <EatingFields item={r} save={save} />
+        <Field label="Photos">
+          <Photos photos={r.photos} name={r.name} update={(fn) => save({ photos: fn((data().state.recipes[r.id] ?? r).photos) })} />
+        </Field>
         <Field label="Notes">
           <DraftTextarea className="input" rows={3} value={r.notes} placeholder="What makes it work, what you'd change…" onCommit={(notes) => save({ notes })} />
         </Field>

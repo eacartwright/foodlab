@@ -1,5 +1,6 @@
 import {
   EFFORT_LABEL,
+  fileUrl,
   RATING_EMOJI,
   TRAVELS_LABEL,
   isWorkLunch,
@@ -87,10 +88,15 @@ export function ItemRow({
   const sub = subline(view, kind, item, hideFood);
   return (
     <A className={`row ${item.deleted ? "is-deleted" : ""}`} href={pathOf(kind, item.id)}>
-      {showKind && (
-        <span className="row-icon" title={KIND_ONE[kind]} aria-label={KIND_ONE[kind]}>
-          {KIND_ICON[kind]}
-        </span>
+      {/* Its main photo, when it has one: quicker to recognize than the name. */}
+      {rated?.photos[0] ? (
+        <img className="row-thumb" src={fileUrl(rated.photos[0].thumb)} alt="" loading="lazy" />
+      ) : (
+        showKind && (
+          <span className="row-icon" title={KIND_ONE[kind]} aria-label={KIND_ONE[kind]}>
+            {KIND_ICON[kind]}
+          </span>
+        )
       )}
       <span className="row-main">
         <span className="row-name">

@@ -10,12 +10,14 @@ import {
   STATUSES,
   TRAVELS,
   withoutBrand,
+  type Attachment,
   type DevNote,
   type Eating,
   type Food,
   type GroceryItem,
   type Kind,
   type LogEntry,
+  type Photo,
   type Product,
   type Recipe,
   type RecipeIngredient,
@@ -57,6 +59,27 @@ const ids = (x: unknown, field: string): string[] => {
   if (x === undefined || x === null) return [];
   if (!Array.isArray(x)) throw new Invalid(`${field}: expected a list`);
   return [...new Set(x.map((v) => id(v, field)).filter((v): v is string => !!v))];
+};
+const FILE_ID = /^[0-9a-f-]{36}$/;
+const fileId = (x: unknown, field: string): string => {
+  if (typeof x !== "string" || !FILE_ID.test(x)) throw new Invalid(`${field}: expected a file id`);
+  return x;
+};
+const photos = (x: unknown): Photo[] => {
+  if (x === undefined || x === null) return [];
+  if (!Array.isArray(x) || x.length > 50) throw new Invalid("photos: expected a list (up to 50)");
+  return x.map((p, i) => {
+    const b = obj(p);
+    return { id: fileId(b.id, `photos[${i}].id`), thumb: fileId(b.thumb, `photos[${i}].thumb`) };
+  });
+};
+const attachments = (x: unknown): Attachment[] => {
+  if (x === undefined || x === null) return [];
+  if (!Array.isArray(x) || x.length > 50) throw new Invalid("files: expected a list (up to 50)");
+  return x.map((f, i) => {
+    const b = obj(f);
+    return { id: fileId(b.id, `files[${i}].id`), name: str(b.name, `files[${i}].name`, 200) || "file", type: str(b.type, `files[${i}].type`, 200) };
+  });
 };
 /** 4 or 5 digits (5 = organic, a 9 in front), or blank. */
 const plu = (x: unknown): string => {
@@ -108,6 +131,7 @@ function eating(b: In): Eating {
     travels: oneOf(b.travels, TRAVELS, "travels"),
     keepsDays: num(b.keepsDays, "keepsDays", 0, 365),
     effort: oneOf(b.effort, EFFORTS, "effort"),
+    photos: photos(b.photos),
   };
 }
 
@@ -205,7 +229,7 @@ export const validators: { [K in Kind]: (body: unknown, id: string, now: number)
     const b = obj(body);
     const text = str(b.text, "text", 20_000).trim();
     if (!text) throw new Invalid("text: required");
-    return { ...base(b, rid, now), text, path: str(b.path, "path", 500), done: bool(b.done) };
+    return { ...base(b, rid, now), text, path: str(b.path, "path", 500), done: bool(b.done), files: attachments(b.files) };
   },
   groceries(body, rid, now): GroceryItem {
     const b = obj(body);

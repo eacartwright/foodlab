@@ -5,7 +5,8 @@ import type { DB } from "./db";
 // Daily copy of the database. VACUUM INTO writes a consistent, compact snapshot
 // even while the server is running. The first check after midnight (or at startup)
 // makes that day's file, so it holds everything up to the end of the previous day.
-// (Same as sideshow's backup.ts, which also copies attachments; foodlab has none until M4.)
+// Files (photos, attachments: files.ts) never change once saved, so they're copied to <dir>/files
+// once each. (Same as sideshow's backup.ts.)
 
 const KEEP = 30;
 

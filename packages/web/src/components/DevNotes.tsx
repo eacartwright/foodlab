@@ -1,11 +1,12 @@
-import { nameOf, type DevNote } from "@foodlab/shared";
-import { useState } from "react";
+import { fileUrl, nameOf, type Attachment, type DevNote } from "@foodlab/shared";
+import { useRef, useState } from "react";
 import { addDevNote, editDevNote, removeDevNote } from "../actions";
 import { A } from "../router";
 import { data, put, useData } from "../sync";
 import { showToast } from "../toast";
 import { DraftTextarea } from "./controls";
 import { Dialog } from "./Dialog";
+import { uploadFile } from "../uploads";
 
 // Ideas and bugs noticed while using the app, kept apart from the food (DESIGN.md §5.7). Each
 // can remember the page it was written on; Copy puts the open ones on the clipboard for a work
@@ -29,6 +30,61 @@ function pageLabel(path: string): string {
   return path === "/" ? "Search" : path;
 }
 
+/** 📎: pick files (on the phone, photos or the camera too); each is uploaded, then handed over. */
+function AttachButton({ onAttach }: { onAttach: (f: Attachment) => void }) {
+  const input = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(0);
+  const attach = async (files: File[]) => {
+    setBusy((n) => n + files.length);
+    for (const f of files) {
+      try {
+        onAttach(await uploadFile(f));
+      } catch (err) {
+        showToast((err as Error).message);
+      }
+      setBusy((n) => n - 1);
+    }
+  };
+  return (
+    <>
+      <button className="btn icon subtle" aria-label="Attach a photo or file" title="Attach a photo or file" disabled={busy > 0} onClick={() => input.current?.click()}>
+        {busy ? "…" : "📎"}
+      </button>
+      <input
+        ref={input}
+        type="file"
+        multiple
+        hidden
+        onChange={(e) => {
+          void attach([...(e.target.files ?? [])]);
+          e.target.value = "";
+        }}
+      />
+    </>
+  );
+}
+
+/** A note's files: pictures as small previews, the rest by name; each opens in a new tab. */
+function Attached({ files, onRemove }: { files: Attachment[]; onRemove?: (f: Attachment) => void }) {
+  if (!files.length) return null;
+  return (
+    <span className="attached">
+      {files.map((f) => (
+        <span key={f.id} className="attached-file">
+          <a href={fileUrl(f.id, f.name)} target="_blank" rel="noreferrer noopener" title={f.name}>
+            {f.type.startsWith("image/") ? <img src={fileUrl(f.id)} alt={f.name} loading="lazy" /> : `📄 ${f.name}`}
+          </a>
+          {onRemove && (
+            <button className="btn icon subtle" aria-label={`Remove ${f.name}`} onClick={() => onRemove(f)}>
+              ✕
+            </button>
+          )}
+        </span>
+      ))}
+    </span>
+  );
+}
+
 const fmt = (t: number) => new Date(t).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 
 export function DevNotesDialog({ onClose }: { onClose: () => void }) {
@@ -36,6 +92,7 @@ export function DevNotesDialog({ onClose }: { onClose: () => void }) {
   const [text, setText] = useState("");
   const [showDone, setShowDone] = useState(false);
   const [withPage, setWithPage] = useState(readWithPage);
+  const [files, setFiles] = useState<Attachment[]>([]);
   const notes = Object.values(state.devnotes)
     .filter((n) => !n.deleted)
     .sort((a, b) => b.createdAt - a.createdAt);
@@ -43,8 +100,9 @@ export function DevNotesDialog({ onClose }: { onClose: () => void }) {
   const done = notes.filter((n) => n.done);
   const add = () => {
     if (!text.trim()) return;
-    addDevNote(text.trim(), withPage);
+    addDevNote(text.trim(), withPage, files);
     setText("");
+    setFiles([]);
   };
   const copy = async () => {
     const md = open.map((n) => `- ${n.text.replace(/\n/g, "\n  ")} (${n.path ? `${pageLabel(n.path)}, ` : ""}${fmt(n.createdAt)})`).join("\n");
@@ -85,10 +143,12 @@ export function DevNotesDialog({ onClose }: { onClose: () => void }) {
             }}
             aria-label="New note"
           />
+          <AttachButton onAttach={(f) => setFiles((fs) => [...fs, f])} />
           <button className="btn primary" disabled={!text.trim()} onClick={add}>
             Add
           </button>
         </div>
+        <Attached files={files} onRemove={(f) => setFiles((fs) => fs.filter((x) => x.id !== f.id))} />
         <label className="inline small muted">
           <input
             type="checkbox"
@@ -128,6 +188,12 @@ export function DevNotesDialog({ onClose }: { onClose: () => void }) {
   );
 }
 
+/** Changes to the latest copy of a note (an upload can finish after other edits). */
+const saveNote = (n: DevNote, patch: (now: DevNote) => Partial<DevNote>) => {
+  const now = data().state.devnotes[n.id] ?? n;
+  put("devnotes", { ...now, ...patch(now) });
+};
+
 function NoteRow({ n, onNavigate }: { n: DevNote; onNavigate: () => void }) {
   const [editing, setEditing] = useState(false);
   return (
@@ -155,7 +221,9 @@ function NoteRow({ n, onNavigate }: { n: DevNote; onNavigate: () => void }) {
             </>
           )}
         </span>
+        <Attached files={n.files} onRemove={editing ? (f) => saveNote(n, (now) => ({ files: now.files.filter((x) => x.id !== f.id) })) : undefined} />
       </span>
+      <AttachButton onAttach={(f) => saveNote(n, (now) => ({ files: [...now.files, f] }))} />
       <button className="btn icon subtle" aria-label={editing ? "Done editing" : "Edit note"} onClick={() => setEditing(!editing)}>
         {editing ? "✓" : "✎"}
       </button>

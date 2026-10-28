@@ -6,6 +6,7 @@ import { data, put, useData } from "../sync";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { DraftInput, DraftTextarea, Field, MultiPicker, Picker, Segmented } from "./controls";
 import { EatingFields, LogSection, doneText } from "./eating";
+import { Photos } from "./Photos";
 import { Deleted, NotFound } from "./FoodPage";
 import { GroceryButton } from "./GroceriesPage";
 import { ItemRow, Section } from "./rows";
@@ -57,6 +58,14 @@ export function ProductPage({ id }: { id: string }) {
         const facts = [doneText(view, p.id, "bought"), doneText(view, p.id, "ate")].filter(Boolean);
         return facts.length > 0 && <p className="lede muted">{facts.join(" · ")}</p>;
       })()}
+      <Photos
+        photos={p.photos}
+        name={productName(p)}
+        update={(fn) => {
+          const now = data().state.products[id] ?? p;
+          put("products", { ...now, photos: fn(now.photos) });
+        }}
+      />
 
       <div className="fields">
         <Field label="Food">

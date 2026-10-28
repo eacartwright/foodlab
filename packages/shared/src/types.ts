@@ -59,6 +59,19 @@ export interface Base {
 }
 
 /** Recipes and products (and later dishes): the things that answer "what can I eat?". */
+/** A photo (DESIGN.md §5.11): the picture, and a small copy for lists. Both are files (/api/files/<id>). */
+export interface Photo {
+  id: Id;
+  thumb: Id;
+}
+/** A file attached to a dev note: a photo or anything else. */
+export interface Attachment {
+  id: Id;
+  name: string;
+  type: string;
+}
+export const fileUrl = (id: Id, name = "") => `/api/files/${id}${name ? `/${encodeURIComponent(name)}` : ""}`;
+
 export interface Eating {
   rating: Rating | null;
   status: Status;
@@ -69,6 +82,8 @@ export interface Eating {
   travels: Travels | null;
   keepsDays: number | null;
   effort: Effort | null;
+  /** The first is the main one. */
+  photos: Photo[];
 }
 
 export interface Food extends Base {
@@ -149,6 +164,7 @@ export interface DevNote extends Base {
   text: string;
   path: string;
   done: boolean;
+  files: Attachment[];
 }
 
 /**
@@ -229,6 +245,7 @@ const EMPTY_EATING = (): Eating => ({
   travels: null,
   keepsDays: null,
   effort: null,
+  photos: [],
 });
 
 export const DEFAULT_MEAL_TIMES: MealSlot[] = [
@@ -275,7 +292,7 @@ export const blank = {
     ingredients: [],
   }),
   tags: (id: Id, name: string, now = Date.now()): Tag => ({ ...EMPTY_BASE(id, now), name, kind: "personal" }),
-  devnotes: (id: Id, text: string, path: string, now = Date.now()): DevNote => ({ ...EMPTY_BASE(id, now), text, path, done: false }),
+  devnotes: (id: Id, text: string, path: string, now = Date.now()): DevNote => ({ ...EMPTY_BASE(id, now), text, path, done: false, files: [] }),
   settings: (now = Date.now()): Settings => ({ ...EMPTY_BASE(SETTINGS_ID, now), mealTimes: DEFAULT_MEAL_TIMES, ai: DEFAULT_AI }),
   groceries: (id: Id, name: string, now = Date.now()): GroceryItem => ({
     ...EMPTY_BASE(id, now),

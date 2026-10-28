@@ -59,6 +59,9 @@ setup); this file has only what's different. Legend: **[Evan]** = needs Evan.
 - **Health:** `Invoke-RestMethod http://127.0.0.1:8082/api/health`.
 - **Restore a backup:** `Stop-ScheduledTask foodlab`, copy the backup over `data\foodlab.db`,
   delete `data\foodlab.db-wal` and `-shm`, `Start-ScheduledTask foodlab`.
+- **Photos and files** (M5) are in `data\files`, one file per id; the nightly backup copies new
+  ones to `<backups>\files` (they never change). A restored database needs that folder too: copy
+  the backup's `files` back into `data\files` (it only adds; nothing there is ever rewritten).
 - **Signed out:** the status badge says **Signed out · Sign in**; changes wait on the device
   until then.
 
