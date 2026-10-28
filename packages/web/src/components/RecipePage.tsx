@@ -7,6 +7,7 @@ import {
   ingredientsFromText,
   parseLine,
   scaleLine,
+  scaleText,
   today,
   yieldText,
   type Id,
@@ -132,7 +133,7 @@ function RecipeView({ r }: { r: Recipe }) {
         </section>
         <section className="instructions">
           <h3>Instructions</h3>
-          {r.instructions ? <Markdown text={r.instructions} /> : <p className="empty-line">None yet.</p>}
+          {r.instructions ? <Markdown text={r.instructions} plain={factor !== 1 ? (t, k) => scaledText(t, k, factor) : undefined} /> : <p className="empty-line">None yet.</p>}
         </section>
       </div>
       {r.notes && (
@@ -210,6 +211,20 @@ function IngredientCard({ r, i }: { r: Recipe; i: RecipeIngredient }) {
         </button>
       )}
     </div>
+  );
+}
+
+/** Instructions with their measured amounts scaled, marked like the ingredient lines. */
+function scaledText(text: string, key: string, factor: number) {
+  return scaleText(text, factor).map((p, n) =>
+    typeof p === "string" ? (
+      p
+    ) : (
+      <span key={`${key}-s${n}`} className="scaled" title={p.approx ? "Rounded" : undefined}>
+        {p.approx && "≈ "}
+        {p.amount}
+      </span>
+    ),
   );
 }
 

@@ -88,14 +88,47 @@ export function scaleLine(line: string, factor: number): { before: string; amoun
     approx ||= hi.approx;
   }
   let after = line.slice(a.end);
-  // "2 eggs" at a quarter: "½ egg". (A unit says its own plural: "1 clove".)
-  if (!a.unit && a.quantity > 1 && a.quantity * factor <= 1) after = after.replace(/^(\s*)([a-z]+)/i, (_, sp: string, w: string) => sp + singular(w));
+  // "2 green onions, chopped" at half: "1 green onion, chopped". (A unit says its own plural: "1 clove".)
+  if (!a.unit && a.quantity > 1 && a.quantity * factor <= 1) after = after.replace(/^([^,(;]*?)([a-z]+)(?=\s*(?:[,(;]|$))/i, (_, head: string, w: string) => head + singular(w));
   return { before: line.slice(0, a.start), amount, after: after && !/^\s/.test(after) ? ` ${after}` : after, approx };
+}
+
+/** What instructions measure in; "2 minutes", "350°F", "9-inch pan" have none, so they stay. */
+const MEASURES = new Set(["tsp", "tbsp", "cup", "oz", "fl oz", "lb", "g", "kg", "ml", "l", "pint", "quart", "gallon"]);
+/** "a 10-ounce can" is the can's size, not an amount. */
+const PACKAGE = /^[\s-]*(?:\)\s*)?(?:cans?|jars?|packages?|pkgs?|bags?|box(?:es)?|bottles?|containers?|cartons?|tins?|sticks?)\b/i;
+const FRACS = "½⅓⅔¼¾⅛⅜⅝⅞⅕⅙⅚";
+
+/** Running text (a recipe's instructions) with its measured amounts scaled: "add 2 cups broth". */
+export function scaleText(text: string, factor: number): (string | { amount: string; approx: boolean })[] {
+  if (factor === 1) return [text];
+  const out: (string | { amount: string; approx: boolean })[] = [];
+  const start = new RegExp(`(?<![\\w/.,${FRACS}])[\\d${FRACS}]`, "g");
+  let last = 0;
+  let m: RegExpExecArray | null;
+  while ((m = start.exec(text))) {
+    // "1-cup rice" reads as "1 cup rice" (same length, so the span still lines up).
+    const rest = text.slice(m.index).replace(new RegExp(`^([\\d${FRACS}/. ]+)-(?=[a-z])`, "i"), "$1 ");
+    const a = amountIn(rest);
+    if (!a || a.start !== 0 || !MEASURES.has(a.unit) || PACKAGE.test(rest.slice(a.end))) continue;
+    let end = a.end;
+    while (end > 0 && /\s/.test(rest[end - 1]!)) end--;
+    if (rest[end - 1] === ".") end--; // "measure 2 cups." keeps its full stop
+    if (m.index > last) out.push(text.slice(last, m.index));
+    const lo = scaleAmount(a.quantity, a.unit, factor);
+    const hi = a.high !== null ? scaleAmount(a.high, a.unit, factor) : null;
+    out.push({ amount: hi ? `${lo.text} – ${hi.text}` : lo.text, approx: lo.approx || !!hi?.approx });
+    last = m.index + end;
+    start.lastIndex = last;
+  }
+  if (last < text.length) out.push(text.slice(last));
+  return out;
 }
 
 /** "4 servings" at 1 → "1 serving"; "1 loaf" at 2 → "2 loaves". */
 export function yieldText(qty: number, unit: string, writtenQty: number): string {
   let u = unit;
+  if (/\(s\)$/.test(u)) return `${formatQuantity(qty)} ${u.replace(/\(s\)$/, qty > 1 ? "s" : "")}`;
   if (qty <= 1 && writtenQty > 1) u = u.replace(/ies$/, "y").replace(/ves$/, "f").replace(/(?<=[^s])s$/, "");
   else if (qty > 1 && writtenQty <= 1 && u && !/s$/.test(u)) u = u.replace(/y$/, "ie").replace(/f$/, "ve") + "s";
   return `${formatQuantity(qty)}${u ? ` ${u}` : ""}`;

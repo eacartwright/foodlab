@@ -177,7 +177,7 @@ export function amountIn(line: string): { start: number; end: number; quantity: 
   const high = q.range ? (readQuantity(q.range)?.value ?? null) : null;
   let unit = "";
   const rest = line.slice(end);
-  const two = /^\s*(fl\.?\s*oz\.?|fluid ounces?)/i.exec(rest);
+  const two = /^\s*(fl\.?\s*oz\.?|fluid ounces?)\b/i.exec(rest);
   const w = /^\s*([^\s,(]+)/.exec(rest);
   if (two) {
     unit = "fl oz";

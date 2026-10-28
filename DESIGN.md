@@ -380,8 +380,9 @@ small card (other recipes using it, Open; the preferred product is hidden, see b
 and the ingredient lines. A new recipe opens in Edit.
 
 **Scaling** (`shared/scale.ts`): with a yield, the view has **− 4 servings +** (whole steps, a
-half below one). Only what's shown changes; the lines keep their amounts as written, and the
-instructions aren't scaled. A scaled amount is shown in the accent, rounded to what you'd
+half below one). Only what's shown changes; the lines keep their amounts as written. The
+instructions scale their measured amounts ("measure 2 cups", "1-cup rice"), never times,
+temperatures, pan sizes or a can's size ("a 10-ounce can"). A scaled amount is shown in the accent, rounded to what you'd
 measure: tsp / tbsp / cups switch to the handiest ("1 tbsp + 1 tsp", ¼ cup), spoons to ⅛–¾,
 cups to ¼ / ⅓ / ½ / ⅔ / ¾, under about ⅛ tsp "a pinch", lb ↔ oz, counted things in halves
 (quarters below a half). "≈" marks an amount rounded more than 3%. Lines without a number

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { scaleAmount, scaleLine, yieldText } from "./scale";
+import { scaleAmount, scaleLine, scaleText, yieldText } from "./scale";
 
 describe("scaleAmount", () => {
   it("rounds spoons to sizes the set has", () => {
@@ -35,8 +35,10 @@ describe("scaleAmount", () => {
 describe("scaleLine", () => {
   it("swaps only the amount", () => {
     expect(scaleLine("1½ cups cooked rice, rinsed", 1 / 2)).toEqual({ before: "", amount: "¾ cup", after: " cooked rice, rinsed", approx: false });
-    expect(scaleLine("2 large eggs", 1 / 2)).toMatchObject({ amount: "1", after: " large eggs" });
+    expect(scaleLine("2 large eggs", 1 / 2)).toMatchObject({ amount: "1", after: " large egg" });
     expect(scaleLine("2 eggs", 1 / 4)).toMatchObject({ amount: "½", after: " egg" });
+    expect(scaleLine("2 green onions, chopped", 1 / 2)).toMatchObject({ amount: "1", after: " green onion, chopped" });
+    expect(scaleLine("8 fl oz milk", 1 / 2)).toMatchObject({ amount: "4 fl oz", after: " milk" });
     expect(scaleLine("- 1/4 tsp salt", 2)).toMatchObject({ before: "- ", amount: "½ tsp", after: " salt" });
   });
   it("leaves lines without a number", () => {
@@ -48,10 +50,27 @@ describe("scaleLine", () => {
   });
 });
 
+describe("scaleText", () => {
+  const amounts = (t: string, f: number) => scaleText(t, f).map((p) => (typeof p === "string" ? p : `[${p.amount}]`)).join("");
+  it("scales measured amounts in instructions", () => {
+    expect(amounts("Add water to measure 2 cups.", 1 / 3)).toBe("Add water to measure [⅔ cup].");
+    expect(amounts("Add 1-cup rice and broth", 1 / 3)).toBe("Add [⅓ cup] rice and broth");
+  });
+  it("leaves times, temperatures, sizes, steps and can sizes", () => {
+    const t = "1. Bake at 350°F for 25 minutes in a 9-inch pan with a 10-ounce can of tomatoes.";
+    expect(amounts(t, 1 / 2)).toBe(t);
+  });
+  it("as written at 1", () => {
+    expect(scaleText("2 cups", 1)).toEqual(["2 cups"]);
+  });
+});
+
 describe("yieldText", () => {
   it("one serving, two loaves", () => {
     expect(yieldText(1, "servings", 4)).toBe("1 serving");
     expect(yieldText(2, "loaf", 1)).toBe("2 loaves");
     expect(yieldText(2, "servings", 4)).toBe("2 servings");
+    expect(yieldText(1, "serving(s)", 6)).toBe("1 serving");
+    expect(yieldText(2, "serving(s)", 6)).toBe("2 servings");
   });
 });
