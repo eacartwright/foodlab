@@ -65,6 +65,9 @@ function RecipeView({ r }: { r: Recipe }) {
     doneText(view, r.id, "made") || null,
   ].filter(Boolean);
   const lunch = lunchFacts(r);
+  // The first link is where the recipe came from: a button up top. Any others (a video, what it
+  // was adapted from) go at the bottom.
+  const [source, ...more] = r.links;
   const tags = r.tagIds.map((t) => view.tag(t)).filter((t) => t && !t.deleted);
   const madeToday = view.logOf(r.id).some((e) => e.kind === "made" && e.date === today());
 
@@ -117,6 +120,11 @@ function RecipeView({ r }: { r: Recipe }) {
         >
           {madeToday ? "✓ Made today" : "Made it today"}
         </button>
+        {source && (
+          <a className="btn subtle" href={source} target="_blank" rel="noreferrer noopener" title={source}>
+            🔗 {siteOf(source)} ↗
+          </a>
+        )}
       </div>
 
       <div className="recipe-body">
@@ -161,10 +169,10 @@ function RecipeView({ r }: { r: Recipe }) {
           <Markdown text={r.notes} />
         </Section>
       )}
-      {r.links.length > 0 && (
-        <Section title="Links">
+      {more.length > 0 && (
+        <Section title="More links">
           <ul className="plain">
-            {r.links.map((l) => (
+            {more.map((l) => (
               <li key={l}>
                 <a href={l} target="_blank" rel="noreferrer noopener">
                   {l.replace(/^https?:\/\/(www\.)?/, "")}
@@ -178,6 +186,15 @@ function RecipeView({ r }: { r: Recipe }) {
     </article>
   );
 }
+
+/** "bbcgoodfood.com" for a link to one of its pages; anything else as it is. */
+const siteOf = (link: string) => {
+  try {
+    return new URL(link).hostname.replace(/^www\./, "");
+  } catch {
+    return link;
+  }
+};
 
 /** Tapping an ingredient: where else it's used, and fixing the link. */
 function IngredientCard({ r, i }: { r: Recipe; i: RecipeIngredient }) {
