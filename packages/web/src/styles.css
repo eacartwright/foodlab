@@ -15,6 +15,8 @@
   --accent: #b4540f;
   --warn: #9c5a00;
   --danger: #b3261e;
+  --danger-hover: #8f1e18;
+  --danger-soft: #fbe9e7;
   --focus: #1d6b3f;
   --star: #b57d00;
   --lunch-bg: #fff6e0;
@@ -48,6 +50,8 @@
   --accent: #f2a35e;
   --warn: #ffb454;
   --danger: #ff8a80;
+  --danger-hover: #ffaaa2;
+  --danger-soft: #3a1f1d;
   --focus: #8fe2b2;
   --star: #ffcc4d;
   --lunch-bg: #2a2310;
@@ -208,6 +212,9 @@ ul.plain {
   border-color: var(--danger);
   background: transparent;
 }
+.btn.danger:hover {
+  background: var(--danger-soft);
+}
 /* A page's own actions (Duplicate…) outlined like Delete beside them, in green. */
 .page-foot .btn.subtle {
   border-color: var(--primary);
@@ -216,6 +223,10 @@ ul.plain {
   background: var(--danger);
   border-color: var(--danger);
   color: var(--surface);
+}
+.btn.danger-solid:hover {
+  background: var(--danger-hover);
+  border-color: var(--danger-hover);
 }
 .btn.staple {
   color: var(--muted);
