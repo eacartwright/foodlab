@@ -1,5 +1,6 @@
-import { fileUrl, type Photo } from "@foodlab/shared";
-import { useRef, useState } from "react";
+import { fileUrl, type Photo, type Recipe } from "@foodlab/shared";
+import { useRef, useState, type ReactNode } from "react";
+import { photoFromLink } from "../ai";
 import { showToast } from "../toast";
 import { uploadPhoto } from "../uploads";
 import { Dialog } from "./Dialog";
@@ -46,8 +47,31 @@ export function AddPhoto({ update, className = "btn" }: { update: Update; classN
   );
 }
 
-/** The thumbnails, then 📷 Add photo. */
-export function Photos({ photos, update, name }: { photos: Photo[]; update: Update; name: string }) {
+/** 🔗 Photo from link: a recipe saved without a photo gets its page's picture of the dish. */
+export function PhotoFromLink({ recipe, className = "btn" }: { recipe: Recipe; className?: string }) {
+  const [busy, setBusy] = useState(false);
+  if (recipe.photos.length || !recipe.links.some((l) => /^https?:\/\//i.test(l))) return null;
+  return (
+    <button
+      className={className}
+      disabled={busy}
+      onClick={async () => {
+        setBusy(true);
+        try {
+          if (!(await photoFromLink(recipe))) showToast("No photo on the recipe's page");
+        } catch (err) {
+          showToast((err as Error).message);
+        }
+        setBusy(false);
+      }}
+    >
+      {busy ? "Looking…" : "🔗 Photo from link"}
+    </button>
+  );
+}
+
+/** The thumbnails, then 📷 Add photo (and anything else that adds one). */
+export function Photos({ photos, update, name, children }: { photos: Photo[]; update: Update; name: string; children?: ReactNode }) {
   const [open, setOpen] = useState<number | null>(null);
   return (
     <div className="photos">
@@ -57,6 +81,7 @@ export function Photos({ photos, update, name }: { photos: Photo[]; update: Upda
         </button>
       ))}
       <AddPhoto update={update} className="btn subtle" />
+      {children}
       {open !== null && photos[open] && <PhotoViewer photos={photos} at={open} setAt={setOpen} update={update} name={name} />}
     </div>
   );

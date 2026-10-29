@@ -46,6 +46,12 @@ export async function readRecipe(raw: string): Promise<ReadResult> {
   return recipe ? { recipe, html, photo } : { error: "none", message: "No recipe found on the page", html, photo };
 }
 
+/** The page's own photo of the dish, for a recipe saved without one (DESIGN.md §5.5): no AI, just the page. */
+export async function pagePhoto(raw: string): Promise<{ type: string; data: Uint8Array } | null> {
+  const r = await readRecipe(raw);
+  return "photo" in r && r.photo ? fetchPhoto(r.photo) : null;
+}
+
 const MAX_PHOTO = 15_000_000;
 
 /**

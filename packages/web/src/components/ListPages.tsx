@@ -716,7 +716,7 @@ export function TagsList() {
   return (
     <ListShell
       title="Tags"
-      icon="🏷"
+      icon="🏷️"
       count={rows.length}
       add={() => setAdding(true)}
       filters={

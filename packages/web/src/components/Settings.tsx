@@ -15,9 +15,10 @@ import {
   type Settings,
 } from "@foodlab/shared";
 import { useEffect, useState } from "react";
-import { aiAlert, money, type ReadReply } from "../ai";
+import { aiAlert, money, photoFromLink, photoless, type ReadReply } from "../ai";
 import { Markdown } from "../markdown";
 import { data, put, refresh, useData } from "../sync";
+import { showToast } from "../toast";
 import { setThemePref, themePref, type ThemePref } from "../theme";
 import { Dialog } from "./Dialog";
 import { Field, NumberInput, Segmented } from "./controls";
@@ -26,10 +27,10 @@ import { Field, NumberInput, Segmented } from "./controls";
 // Meal times and AI are app-wide (the settings record); Colors is per device.
 
 const SECTIONS = [
-  { id: "general", label: "General", icon: "⚙" },
+  { id: "general", label: "General", icon: "⚙️" },
   { id: "meals", label: "Meal times", icon: "🕑" },
   { id: "ai", label: "AI", icon: "✨" },
-  { id: "data", label: "Data", icon: "🗄" },
+  { id: "data", label: "Data", icon: "🗄️" },
 ] as const;
 type Section = (typeof SECTIONS)[number]["id"];
 const LAST = "foodlab:settings-section";
@@ -157,7 +158,42 @@ function DataSection() {
           Reload from the server
         </button>
       </Field>
+      <FindPhotos />
     </div>
+  );
+}
+
+/** Recipes saved with a link and no photo get their page's picture of the dish, one at a time. */
+function FindPhotos() {
+  const { state } = useData();
+  const [run, setRun] = useState<{ done: number; of: number; found: number } | null>(null);
+  const todo = photoless(state.recipes);
+  if (!todo.length && !run) return null;
+  const start = async () => {
+    const list = photoless(data().state.recipes);
+    let found = 0;
+    for (const [i, r] of list.entries()) {
+      setRun({ done: i, of: list.length, found });
+      try {
+        if (await photoFromLink(r)) found++;
+      } catch (err) {
+        // Offline or signed out: the rest would fail the same way. A picture that won't read is just skipped.
+        if (/reach|connection|Signed out/.test((err as Error).message)) {
+          setRun(null);
+          return showToast(`${(err as Error).message} (${plural(found, "photo")} found)`);
+        }
+      }
+    }
+    setRun(null);
+    showToast(`Found ${plural(found, "photo")}${found < list.length ? `; ${list.length - found} without one` : ""}`);
+  };
+  return (
+    <Field label="Recipe photos">
+      <p className="small">{run ? `Looking: ${run.done + 1} of ${run.of} (${run.found} found)` : `${plural(todo.length, "recipe")} with a link and no photo`}</p>
+      <button className="btn" disabled={!!run} onClick={() => void start()}>
+        🔗 Find photos
+      </button>
+    </Field>
   );
 }
 

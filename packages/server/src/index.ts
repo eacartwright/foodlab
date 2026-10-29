@@ -9,7 +9,7 @@ import { AiStopped, aiRead, pagePrompt, usage, type AiResult } from "./ai";
 import { startBackups } from "./backup";
 import { openDb } from "./db";
 import { FileStore, MAX_FILE } from "./files";
-import { fetchPhoto, readRecipe } from "./readRecipe";
+import { fetchPhoto, pagePhoto, readRecipe } from "./readRecipe";
 import { writeDevNotes } from "./devNotesFile";
 import { Store } from "./store";
 
@@ -127,6 +127,13 @@ app.get("/api/read-recipe", async (c) => {
 // another page show their pictures. The app shrinks and uploads it like any photo.
 app.get("/api/fetch-photo", async (c) => {
   const photo = await fetchPhoto(c.req.query("url") ?? "");
+  if (!photo) return c.json({ error: "No photo there" }, 404);
+  return new Response(photo.data, { headers: { "content-type": photo.type, "cache-control": "private, max-age=3600", "x-content-type-options": "nosniff" } });
+});
+
+// A saved recipe's link, read again for its photo (Photo from link, Settings → Data → Find photos).
+app.get("/api/page-photo", async (c) => {
+  const photo = await pagePhoto(c.req.query("url") ?? "");
   if (!photo) return c.json({ error: "No photo there" }, 404);
   return new Response(photo.data, { headers: { "content-type": photo.type, "cache-control": "private, max-age=3600", "x-content-type-options": "nosniff" } });
 });

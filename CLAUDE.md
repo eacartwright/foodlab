@@ -157,4 +157,8 @@ tombstones (`deleted`), restorable with Undo or the page's Restore.
   `components/Photos.tsx`. 89 tests, browser-checked on a scratch copy.
 - 2026-10-27: **suggested photo** on a read recipe (DESIGN.md §5.5): `photoFromHtml`, `GET /api/fetch-photo`,
   Use this photo in Quick add. Checked with a real BBC Good Food link. 92 tests.
+- 2026-10-28, Evan's dev notes: **Photo from link** on a recipe without one and Settings → Data →
+  **Find photos** (`GET /api/page-photo`, `photoFromLink` in `web/ai.ts`); pasting a picture into Dev
+  Notes attaches it; sidebar icons are all emoji (🔍 Search, ⭐ Staples, 🏷️ with VS16, 🧪 Dev Notes, ⚙️). 92 tests,
+  browser-checked on a scratch DB.
 - **Next: M4** (places & dishes) or M6 (weights).

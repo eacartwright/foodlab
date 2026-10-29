@@ -24,7 +24,7 @@ import { showToast } from "../toast";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { DraftInput, DraftTextarea, Field, NumberInput, Picker, RatingInput, Segmented } from "./controls";
 import { EatingFields, LogSection, doneText } from "./eating";
-import { AddPhoto, PhotoViewer, Photos } from "./Photos";
+import { AddPhoto, PhotoFromLink, PhotoViewer, Photos } from "./Photos";
 import { Deleted, NotFound } from "./FoodPage";
 import { lunchFacts, Section } from "./rows";
 
@@ -119,6 +119,7 @@ function RecipeView({ r }: { r: Recipe }) {
           {madeToday ? "✓ Made today" : "Made it today"}
         </button>
         <AddPhoto update={updatePhotos} />
+        <PhotoFromLink recipe={r} />
       </div>
 
       <div className="recipe-body">
@@ -369,7 +370,9 @@ function RecipeEdit({ r }: { r: Recipe }) {
         </Field>
         <EatingFields item={r} save={save} />
         <Field label="Photos">
-          <Photos photos={r.photos} name={r.name} update={(fn) => save({ photos: fn((data().state.recipes[r.id] ?? r).photos) })} />
+          <Photos photos={r.photos} name={r.name} update={(fn) => save({ photos: fn((data().state.recipes[r.id] ?? r).photos) })}>
+            <PhotoFromLink recipe={r} className="btn subtle" />
+          </Photos>
         </Field>
         <Field label="Notes">
           <DraftTextarea className="input" rows={3} value={r.notes} placeholder="What makes it work, what you'd change…" onCommit={(notes) => save({ notes })} />

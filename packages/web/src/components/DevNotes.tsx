@@ -1,5 +1,5 @@
 import { fileUrl, nameOf, type Attachment, type DevNote } from "@foodlab/shared";
-import { useRef, useState } from "react";
+import { useRef, useState, type ClipboardEvent } from "react";
 import { addDevNote, editDevNote, removeDevNote } from "../actions";
 import { A } from "../router";
 import { data, put, useData } from "../sync";
@@ -30,9 +30,8 @@ function pageLabel(path: string): string {
   return path === "/" ? "Search" : path;
 }
 
-/** 📎: pick files (on the phone, photos or the camera too); each is uploaded, then handed over. */
-function AttachButton({ onAttach }: { onAttach: (f: Attachment) => void }) {
-  const input = useRef<HTMLInputElement>(null);
+/** Uploads files one by one, handing each over; `busy` counts the ones still going. */
+function useAttach(onAttach: (f: Attachment) => void) {
   const [busy, setBusy] = useState(0);
   const attach = async (files: File[]) => {
     setBusy((n) => n + files.length);
@@ -45,6 +44,19 @@ function AttachButton({ onAttach }: { onAttach: (f: Attachment) => void }) {
       setBusy((n) => n - 1);
     }
   };
+  /** A pasted picture (a screenshot) is attached; pasted text goes in as usual. */
+  const onPaste = (e: ClipboardEvent<HTMLTextAreaElement>) => {
+    const files = [...e.clipboardData.files];
+    if (!files.length) return;
+    e.preventDefault();
+    void attach(files);
+  };
+  return { busy, attach, onPaste };
+}
+
+/** 📎: pick files (on the phone, photos or the camera too); each is uploaded, then handed over. */
+function AttachButton({ busy, attach }: { busy: number; attach: (files: File[]) => Promise<void> }) {
+  const input = useRef<HTMLInputElement>(null);
   return (
     <>
       <button className="btn icon subtle" aria-label="Attach a photo or file" title="Attach a photo or file" disabled={busy > 0} onClick={() => input.current?.click()}>
@@ -93,13 +105,14 @@ export function DevNotesDialog({ onClose }: { onClose: () => void }) {
   const [showDone, setShowDone] = useState(false);
   const [withPage, setWithPage] = useState(readWithPage);
   const [files, setFiles] = useState<Attachment[]>([]);
+  const uploads = useAttach((f) => setFiles((fs) => [...fs, f]));
   const notes = Object.values(state.devnotes)
     .filter((n) => !n.deleted)
     .sort((a, b) => b.createdAt - a.createdAt);
   const open = notes.filter((n) => !n.done);
   const done = notes.filter((n) => n.done);
   const add = () => {
-    if (!text.trim()) return;
+    if (!text.trim() || uploads.busy) return;
     addDevNote(text.trim(), withPage, files);
     setText("");
     setFiles([]);
@@ -141,10 +154,11 @@ export function DevNotesDialog({ onClose }: { onClose: () => void }) {
                 add();
               }
             }}
+            onPaste={uploads.onPaste}
             aria-label="New note"
           />
-          <AttachButton onAttach={(f) => setFiles((fs) => [...fs, f])} />
-          <button className="btn primary" disabled={!text.trim()} onClick={add}>
+          <AttachButton {...uploads} />
+          <button className="btn primary" disabled={!text.trim() || uploads.busy > 0} onClick={add}>
             Add
           </button>
         </div>
@@ -196,6 +210,7 @@ const saveNote = (n: DevNote, patch: (now: DevNote) => Partial<DevNote>) => {
 
 function NoteRow({ n, onNavigate }: { n: DevNote; onNavigate: () => void }) {
   const [editing, setEditing] = useState(false);
+  const uploads = useAttach((f) => saveNote(n, (now) => ({ files: [...now.files, f] })));
   return (
     <li className={n.done ? "done" : ""}>
       <input
@@ -206,7 +221,7 @@ function NoteRow({ n, onNavigate }: { n: DevNote; onNavigate: () => void }) {
       />
       <span className="note-main">
         {editing ? (
-          <DraftTextarea className="input" autoFocus value={n.text} onCommit={(t) => editDevNote(n, t)} aria-label="Note" />
+          <DraftTextarea className="input" autoFocus value={n.text} onCommit={(t) => editDevNote(n, t)} onPaste={uploads.onPaste} aria-label="Note" />
         ) : (
           <span className="note-text">{n.text}</span>
         )}
@@ -223,7 +238,7 @@ function NoteRow({ n, onNavigate }: { n: DevNote; onNavigate: () => void }) {
         </span>
         <Attached files={n.files} onRemove={editing ? (f) => saveNote(n, (now) => ({ files: now.files.filter((x) => x.id !== f.id) })) : undefined} />
       </span>
-      <AttachButton onAttach={(f) => saveNote(n, (now) => ({ files: [...now.files, f] }))} />
+      <AttachButton {...uploads} />
       <button className="btn icon subtle" aria-label={editing ? "Done editing" : "Edit note"} onClick={() => setEditing(!editing)}>
         {editing ? "✓" : "✎"}
       </button>

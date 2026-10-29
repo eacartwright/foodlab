@@ -1,5 +1,7 @@
-import { modelLabel, recipeFromText, type ReadRecipe } from "@foodlab/shared";
+import { modelLabel, recipeFromText, type ReadRecipe, type Recipe } from "@foodlab/shared";
+import { data, put } from "./sync";
 import { showToast } from "./toast";
+import { uploadPhoto } from "./uploads";
 
 // Reading recipes through the server, which may ask Claude (DESIGN.md §5.5, §5.9).
 
@@ -51,6 +53,31 @@ export async function fetchPhoto(url: string): Promise<Blob | null> {
     return null;
   }
 }
+
+/**
+ * A saved recipe's photo from its link (the page's own picture of the dish), added to the latest
+ * copy. False when no link has one; throws when foodlab can't be reached or the upload fails.
+ */
+export async function photoFromLink(r: Recipe): Promise<boolean> {
+  for (const link of r.links.filter((l) => /^https?:\/\//i.test(l))) {
+    let res: Response;
+    try {
+      res = await fetch(`/api/page-photo?url=${encodeURIComponent(link)}`);
+    } catch {
+      throw new Error("Couldn't reach foodlab (offline?)");
+    }
+    if (!res.ok) continue;
+    const blob = await res.blob();
+    const photo = await uploadPhoto(new File([blob], `${r.name.slice(0, 60)}.jpg`, { type: blob.type }));
+    const now = data().state.recipes[r.id] ?? r;
+    put("recipes", { ...now, photos: [...now.photos, photo] });
+    return true;
+  }
+  return false;
+}
+
+/** Recipes with a link and no photo yet: Settings → Data → Find photos. */
+export const photoless = (recipes: Record<string, Recipe>) => Object.values(recipes).filter((r) => !r.deleted && !r.photos.length && r.links.some((l) => /^https?:\/\//i.test(l)));
 
 /** Pasted text: Claude on the server, or the plain reader here when offline. */
 export async function readText(text: string): Promise<ReadReply> {

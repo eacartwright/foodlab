@@ -307,7 +307,7 @@ Desktop                                         Phone
 
 **The phone's tab bar** (2026-10-26): the right thumb can't reach a menu at the top, so the
 most used pages sit at the bottom, most used rightmost: More · Recipes · Products · Groceries ·
-Search. **More** opens the drawer (every page, 📝 and ⚙), its items pushed to the bottom; the
+Search. **More** opens the drawer (every page, 🧪 and ⚙️), its items pushed to the bottom; the
 top bar is just the name and the sync status.
 
 ### 5.1 Search (home)
@@ -422,6 +422,10 @@ ticked. The server fetches it (`GET /api/fetch-photo`: images only, 15 MB, every
 like the page, never the home network), since sites often won't let another page show theirs;
 on Add it's shrunk and uploaded like any photo (§5.11), after the recipe is saved. Paste has none.
 The picture is the site's: kept for my own reference in a private app, never shared on.
+Recipes saved before this, or without a photo (2026-10-28): **🔗 Photo from link** on a recipe with
+a link and no photo, and **Settings → Data → Find photos** for all of them, one at a time with a
+count. `GET /api/page-photo?url=` reads the page again (no AI, so no cost) and answers with its
+photo; the app shrinks and adds it the same way.
 
 Some sites refuse anything but a browser (Allrecipes, Serious Eats, Budget Bytes, Brown Eyed Baker: 403). foodlab
 doesn't disguise itself to get past that; Quick add says the site wouldn't let it read the
@@ -441,7 +445,7 @@ Marked staples by store (the standing list, §4.7), then Suggested staples with 
 
 ### 5.7 Dev notes (while foodlab is being built)
 
-📝 at the bottom of the sidebar (and the phone's drawer), beside ⚙, opens **Dev Notes**: one box
+🧪 at the bottom of the sidebar (and the phone's drawer), beside ⚙️, opens **Dev Notes**: one box
 for an idea, a bug or something odd, and the open notes below with a Done box and ✎ to edit
 the text. **Link it to this page** (off to start, remembered per device; 2026-10-25) saves the
 page it was written on, which is often beside the point. **Copy** puts the open ones on the
@@ -527,7 +531,8 @@ today, all of them in Edit); search, Eat and Recently changed rows show the main
 in place of the kind icon. Tapping a photo opens it big: ‹ ›, **Make main**, **Delete** (Undo).
 
 **Files on dev notes:** 📎 in the new note's box and on each note attaches any file as it is (a
-screenshot stays sharp), up to 25 MB; pictures show as small previews, everything opens in a new
+screenshot stays sharp), up to 25 MB; pasting a picture into the new note's box (or a note being
+edited) attaches it the same way (2026-10-28); pictures show as small previews, everything opens in a new
 tab. `data/dev-notes.md` lists them as `files/<id>` beside it, so Claude can open them.
 
 **Storage** (`server/files.ts`, sideshow's): each file once, under its id, in `data/files`, its
@@ -657,7 +662,7 @@ Decided:
   (certified · labeled · no gluten ingredients · shared facility · not GF); Not GF never in Eat;
   "GF option" left for M4 dishes (§4.6). **Brand + name shown as one**, brand first (§4.3).
   **Duplicate** on foods, products, recipes (§5.4). **Dev notes** (§5.7). Sidebar foot: sync
-  status left, 📝 and ⚙ right.
+  status left, 🧪 and ⚙️ right.
 
 - 2026-10-23: **forms** (`formOfId`) beside **is a** (`parentId`); the form-vs-prep test (§4.2);
   "bottled" lives on products, not as a food. **Stores are objects.** **Staples** are marked and

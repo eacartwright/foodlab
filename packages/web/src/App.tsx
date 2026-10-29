@@ -16,16 +16,16 @@ import { signIn, useData } from "./sync";
 import { dismissToast, useToast } from "./toast";
 
 const NAV = [
-  { href: "/", label: "Search", icon: "⌕" },
-  { href: "/eat", label: "What can I eat?", icon: "🍽" },
+  { href: "/", label: "Search", icon: "🔍" },
+  { href: "/eat", label: "What can I eat?", icon: "🍽️" },
   { href: "/groceries", label: "Groceries", icon: "🧺" },
   null,
   { href: "/foods", label: "Foods", icon: "🥕" },
   { href: "/products", label: "Products", icon: "🛒" },
   { href: "/recipes", label: "Recipes", icon: "🍳" },
   { href: "/stores", label: "Stores", icon: "🏪" },
-  { href: "/staples", label: "Staples", icon: "★" },
-  { href: "/tags", label: "Tags", icon: "🏷" },
+  { href: "/staples", label: "Staples", icon: "⭐" },
+  { href: "/tags", label: "Tags", icon: "🏷️" },
 ] as const;
 
 /** The phone's tab bar, Search rightmost: the right thumb reaches the right end best. More opens the drawer. */
@@ -195,7 +195,7 @@ export function App() {
           setDevNotes(true);
         }}
       >
-        📝
+        🧪
       </button>
       <button
         className="btn icon subtle"
@@ -206,7 +206,7 @@ export function App() {
           setSettings(true);
         }}
       >
-        ⚙
+        ⚙️
       </button>
     </div>
   );
