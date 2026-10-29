@@ -378,14 +378,14 @@ function RecipeEdit({ r }: { r: Recipe }) {
 
       {/* Done on the right, where the eye ends; Delete kept away from it. */}
       <div className="page-foot">
-        <button className="btn subtle" onClick={() => duplicate("recipes", r.id)} title="A copy to make a version of it">
-          Duplicate
-        </button>
         {!r.deleted && (
           <button className="btn danger" onClick={() => setConfirm(true)}>
             Delete
           </button>
         )}
+        <button className="btn subtle" onClick={() => duplicate("recipes", r.id)} title="A copy to make a version of it">
+          Duplicate
+        </button>
         <span className="spacer" />
         <button className="btn primary" onClick={done}>
           Done
