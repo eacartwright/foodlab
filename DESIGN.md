@@ -525,7 +525,9 @@ and both have Undo.
 of `{ id, thumb }`, the first the main one. **📷 Add photo** (on the phone: the camera or the
 gallery, several at once) shrinks each on the device to 1600px (a JPEG of a few hundred KB, not a
 12 MP original) plus a 400px thumbnail, uploads both (`POST /api/files`), then saves the record
-through the outbox as usual. An upload needs the server: offline, it says so. A product shows its
+through the outbox as usual. An upload needs the server: offline, it says so. **Pasting** (2026-10-28): a
+picture pasted anywhere on the page (Ctrl+V; not while a dialog is open) is added the same way, and
+**📋 Paste photo** reads one from the clipboard (the phone has no Ctrl+V; the browser asks once). A product shows its
 photos under its name; a recipe shows its main photo big under the title (adding photos is in Edit only, 2026-10-28;
 the view has no "want to try" badge: Tried / Want to try is a filter and a column); search, Eat and Recently changed rows show the main photo's thumbnail
 in place of the kind icon. Tapping a photo opens it big: ‹ ›, **Make main**, **Delete** (Undo).
