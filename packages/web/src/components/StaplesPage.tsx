@@ -24,7 +24,7 @@ export function StaplesPage() {
 
   return (
     <div className="page">
-      <h1 className="page-title">★ Staples</h1>
+      <h1 className="page-title">⭐ Staples</h1>
       <p className="muted">What you want to keep in the house, with the product you like and where it's sold.</p>
       {list.length === 0 && <p className="empty-line">No staples yet. Mark a food ☆ Staple on its page, or pick from the suggestions below.</p>}
       {list.map((g) => (
