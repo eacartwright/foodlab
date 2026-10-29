@@ -169,18 +169,17 @@ export function FoodPage({ id }: { id: string }) {
       </Section>
 
       <div className="page-foot">
-        {kinds.length === 0 && adding !== "kind" && (
-          <button className="btn subtle" onClick={() => setAdding("kind")}>
-            + Kind of {food.name}
+        {!food.deleted && (
+          <button className="btn danger" onClick={() => setConfirm(true)}>
+            Delete
           </button>
         )}
         <button className="btn subtle" onClick={() => duplicate("foods", food.id)} title="A copy with the same is a, form of and tags">
           Duplicate
         </button>
-        <span className="spacer" />
-        {!food.deleted && (
-          <button className="btn danger" onClick={() => setConfirm(true)}>
-            Delete
+        {kinds.length === 0 && adding !== "kind" && (
+          <button className="btn subtle" onClick={() => setAdding("kind")}>
+            + Kind of {food.name}
           </button>
         )}
       </div>

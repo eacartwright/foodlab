@@ -57,7 +57,6 @@ export function StorePage({ id }: { id: string }) {
         )}
       </Section>
       <div className="page-foot">
-        <span className="spacer" />
         {!s.deleted && (
           <button className="btn danger" onClick={() => setConfirm(true)}>
             Delete

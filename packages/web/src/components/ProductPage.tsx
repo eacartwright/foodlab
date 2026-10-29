@@ -110,15 +110,14 @@ export function ProductPage({ id }: { id: string }) {
       )}
 
       <div className="page-foot">
-        <button className="btn subtle" onClick={() => duplicate("products", p.id)} title="A copy with the same food, brand, stores and tags">
-          Duplicate
-        </button>
-        <span className="spacer" />
         {!p.deleted && (
           <button className="btn danger" onClick={() => setConfirm(true)}>
             Delete
           </button>
         )}
+        <button className="btn subtle" onClick={() => duplicate("products", p.id)} title="A copy with the same food, brand, stores and tags">
+          Duplicate
+        </button>
       </div>
       {confirm && (
         <ConfirmDialog
