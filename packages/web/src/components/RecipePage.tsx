@@ -78,7 +78,7 @@ function RecipeView({ r }: { r: Recipe }) {
         🍳 Recipe
         <span className="spacer" />
         <button className="btn" onClick={() => setQuery({ edit: "1" })}>
-          ✎ Edit
+          ✏️ Edit
         </button>
       </div>
       <h1 className="recipe-title">{r.name}</h1>
