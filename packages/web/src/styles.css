@@ -208,6 +208,10 @@ ul.plain {
   border-color: var(--danger);
   background: transparent;
 }
+/* A page's own actions (Duplicate…) outlined like Delete beside them, in green. */
+.page-foot .btn.subtle {
+  border-color: var(--primary);
+}
 .btn.danger-solid {
   background: var(--danger);
   border-color: var(--danger);
