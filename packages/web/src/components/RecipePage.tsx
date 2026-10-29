@@ -24,7 +24,7 @@ import { showToast } from "../toast";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { DraftInput, DraftTextarea, Field, NumberInput, Picker, RatingInput, Segmented } from "./controls";
 import { EatingFields, LogSection, doneText } from "./eating";
-import { AddPhoto, PhotoFromLink, PhotoViewer, Photos } from "./Photos";
+import { PhotoFromLink, PhotoViewer, Photos } from "./Photos";
 import { Deleted, NotFound } from "./FoodPage";
 import { lunchFacts, Section } from "./rows";
 
@@ -94,9 +94,8 @@ function RecipeView({ r }: { r: Recipe }) {
       {photo !== null && r.photos[photo] && <PhotoViewer photos={r.photos} at={photo} setAt={setPhoto} update={updatePhotos} name={r.name} />}
       {meta.length > 0 && <p className="recipe-meta">{meta.join(" · ")}</p>}
       {r.yieldQty !== null && servings !== null && <Servings r={r} servings={servings} setServings={setServings} save={save} />}
-      {(tags.length > 0 || lunch || r.status === "want") && (
+      {(tags.length > 0 || lunch) && (
         <div className="chips">
-          {r.status === "want" && <span className="badge">want to try</span>}
           {tags.map((t) => (
             <A key={t!.id} className="tag" href={t!.kind === "meal" ? `/eat?tag=${t!.id}` : `/?q=${encodeURIComponent(t!.name)}`}>
               {t!.name}
@@ -118,8 +117,6 @@ function RecipeView({ r }: { r: Recipe }) {
         >
           {madeToday ? "✓ Made today" : "Made it today"}
         </button>
-        <AddPhoto update={updatePhotos} />
-        <PhotoFromLink recipe={r} />
       </div>
 
       <div className="recipe-body">

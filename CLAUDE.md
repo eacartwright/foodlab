@@ -161,4 +161,5 @@ tombstones (`deleted`), restorable with Undo or the page's Restore.
   **Find photos** (`GET /api/page-photo`, `photoFromLink` in `web/ai.ts`); pasting a picture into Dev
   Notes attaches it; sidebar icons are all emoji (🔍 Search, ⭐ Staples, 🏷️ with VS16, 🧪 Dev Notes, ⚙️). 92 tests,
   browser-checked on a scratch DB.
+- 2026-10-28: recipe view lost the "want to try" badge and its 📷 / 🔗 photo buttons (Edit only).
 - **Next: M4** (places & dishes) or M6 (weights).

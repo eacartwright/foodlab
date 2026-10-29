@@ -422,8 +422,8 @@ ticked. The server fetches it (`GET /api/fetch-photo`: images only, 15 MB, every
 like the page, never the home network), since sites often won't let another page show theirs;
 on Add it's shrunk and uploaded like any photo (§5.11), after the recipe is saved. Paste has none.
 The picture is the site's: kept for my own reference in a private app, never shared on.
-Recipes saved before this, or without a photo (2026-10-28): **🔗 Photo from link** on a recipe with
-a link and no photo, and **Settings → Data → Find photos** for all of them, one at a time with a
+Recipes saved before this, or without a photo (2026-10-28): **🔗 Photo from link** in Edit on a
+recipe with a link and no photo, and **Settings → Data → Find photos** for all of them, one at a time with a
 count. `GET /api/page-photo?url=` reads the page again (no AI, so no cost) and answers with its
 photo; the app shrinks and adds it the same way.
 
@@ -526,8 +526,8 @@ of `{ id, thumb }`, the first the main one. **📷 Add photo** (on the phone: th
 gallery, several at once) shrinks each on the device to 1600px (a JPEG of a few hundred KB, not a
 12 MP original) plus a 400px thumbnail, uploads both (`POST /api/files`), then saves the record
 through the outbox as usual. An upload needs the server: offline, it says so. A product shows its
-photos under its name; a recipe shows its main photo big under the title (Add photo beside Made it
-today, all of them in Edit); search, Eat and Recently changed rows show the main photo's thumbnail
+photos under its name; a recipe shows its main photo big under the title (adding photos is in Edit only, 2026-10-28;
+the view has no "want to try" badge: Tried / Want to try is a filter and a column); search, Eat and Recently changed rows show the main photo's thumbnail
 in place of the kind icon. Tapping a photo opens it big: ‹ ›, **Make main**, **Delete** (Undo).
 
 **Files on dev notes:** 📎 in the new note's box and on each note attaches any file as it is (a
