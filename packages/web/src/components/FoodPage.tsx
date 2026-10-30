@@ -1,12 +1,11 @@
-import { productName, type Food } from "@foodlab/shared";
+import type { Food } from "@foodlab/shared";
 import { useState } from "react";
 import { duplicate, ensureFood, remove } from "../actions";
-import { A, go, pathOf } from "../router";
+import { go, pathOf } from "../router";
 import { data, put, useData } from "../sync";
 import { DraftInput, DraftTextarea, Field, PageKind, Picker, TagEditor } from "./controls";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { ItemRow, Section } from "./rows";
-import { fmtDate } from "./eating";
 import { openQuickAdd } from "./QuickAdd";
 import { GroceryButton } from "./GroceriesPage";
 import { showToast } from "../toast";
@@ -54,21 +53,6 @@ export function FoodPage({ id }: { id: string }) {
         </button>
         <GroceryButton name={food.name} foodId={food.id} />
       </div>
-      {(() => {
-        const last = view.lastBought(food.id);
-        if (!last) return null;
-        return (
-          <p className="lede muted">
-            last bought {fmtDate(last.date)}
-            {last.product && (
-              <>
-                {" "}
-                (<A href={pathOf("products", last.product.id)}>{productName(last.product)}</A>)
-              </>
-            )}
-          </p>
-        );
-      })()}
       <div className="fields">
         <Field label="Kind of">
           <Picker value={food.parentId} options={options} placeholder="Nothing (top level)" onChange={(parentId) => save({ parentId })} onCreate={(n) => ensureFood(n)} />
@@ -96,7 +80,7 @@ export function FoodPage({ id }: { id: string }) {
           <DraftInput className="input" value={food.shelfLife} placeholder="e.g. 3 weeks opened, fridge" onCommit={(shelfLife) => save({ shelfLife })} />
         </Field>
         <Field label="Tags">
-          <TagEditor value={food.tagIds} onChange={(tagIds) => save({ tagIds })} />
+          <TagEditor value={food.tagIds} inherited={view.inheritedTags(food.id, food.tagIds, true)} onChange={(tagIds) => save({ tagIds })} />
         </Field>
         <Field label="Notes">
           <DraftTextarea className="input" rows={3} value={food.notes} placeholder="What it's like, substitutions, storage…" onCommit={(notes) => save({ notes })} />

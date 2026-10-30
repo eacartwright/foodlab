@@ -324,7 +324,9 @@ only: tag Soda `drink` once and "drinks" finds Diet soda and every soda product.
 of* (a tag on Lemon isn't one on Lemon juice), and not for recipes (beer-battered fish isn't a
 drink). This is how drinks are grouped: "drink" is how I have something, not what it is, so it's
 a tag, and the tree stays free to say Huel is a Protein powder. The Tags page's counts are
-still the directly tagged things.
+still the directly tagged things. A food's and a product's Tags show what they inherit (2026-10-30): faded,
+dashed chips under the tag box, not buttons, "From Beverage" on hover (`View.inheritedTags`);
+they're changed on the food they come from.
 
 Results are grouped Recipes · Products · Foods · Stores, ❤️ first. With several terms, things
 matching only some of them follow under **Partial matches**, most terms first. With nothing
@@ -389,9 +391,9 @@ button beside Made it today (2026-10-28). Any others (a video, what it was adapt
 from another site) are **More links** at the bottom; Edit still takes as many as wanted.
 
 **What the log says** (`View.done`, `View.lastBought`): a recipe's meta line ends "made 3×,
-last Oct 25"; a product says "bought 2×, last Oct 26 · ate once, Oct 27" under its name; a food
-says "last bought Oct 26 (Bell & Evans Boneless Thighs)", counting its kinds' products and the
-food itself checked off Groceries. Recipes and Products lists have a sortable **Last made** /
+last Oct 25". Food and product pages had a line like it under the name ("last bought Oct 26",
+"bought 2×"); dropped 2026-10-30 so every page goes title, then its fields (the History section
+still lists every entry). Recipes and Products lists have a sortable **Last made** /
 **Last bought** column (newest first, never-done last). Nothing shows until the log has it.
 
 **Scaling** (`shared/scale.ts`): with a yield, the view has **− 4 servings +** (whole steps, a

@@ -178,4 +178,6 @@ tombstones (`deleted`), restorable with Undo or the page's Restore.
 - 2026-10-30: "Is a" is labelled **Kind of** on screen (data unchanged, `parentId`); the "🥕 Food" /
   "🛒 Product" / "🍳 Recipe" / "🏪 Store" label above a page links to its list. One header for all four,
   `PageKind` in `controls.tsx`: KIND › crumb › crumb, every part a link, plain › between, nothing trailing.
+- 2026-10-30: inherited tags shown, faded and read-only, on food and product pages (`View.inheritedTags`,
+  `TagEditor` `inherited`, `.chip-inherited`). 94 tests, browser-checked.
 - **Next: M4** (places & dishes) or M6 (weights).

@@ -4,8 +4,10 @@ import {
   RATING_EMOJI,
   RATING_LABEL,
   nameKey,
+  type Food,
   type Id,
   type Rating,
+  type Tag,
 } from "@foodlab/shared";
 import { createContext, useContext, useEffect, useId, useRef, useState, type InputHTMLAttributes, type ReactNode, type TextareaHTMLAttributes } from "react";
 import { ensureTag } from "../actions";
@@ -399,7 +401,10 @@ export function Segmented<T extends string>({
 }
 
 /** Meal tags as chips, then personal tags. */
-export function TagEditor({ value, onChange }: { value: Id[]; onChange: (ids: Id[]) => void }) {
+/** A tag a thing gets from a food it's a kind of: shown, not edited here. */
+export type InheritedTag = { tag: Tag; from: Food };
+
+export function TagEditor({ value, onChange, inherited = [] }: { value: Id[]; onChange: (ids: Id[]) => void; inherited?: InheritedTag[] }) {
   const { view } = useData();
   const personal = view.tags.filter((t) => t.kind === "personal");
   const toggle = (id: Id) => onChange(value.includes(id) ? value.filter((v) => v !== id) : [...value, id]);
@@ -420,6 +425,16 @@ export function TagEditor({ value, onChange }: { value: Id[]; onChange: (ids: Id
         placeholder="Add a tag…"
         createLabel="New tag"
       />
+      {inherited.length > 0 && (
+        <div className="chips">
+          {inherited.map(({ tag, from }) => (
+            <span key={tag.id} className="chip chip-inherited" title={`From ${from.name}`}>
+              {tag.name}
+              <span className="sr-only"> (from {from.name})</span>
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

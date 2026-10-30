@@ -120,6 +120,20 @@ describe("View", () => {
     expect(r.full.recipes).toEqual([]); // a recipe using soda isn't a drink
   });
 
+  it("lists the tags a food or product inherits, nearest first, without its own", () => {
+    const s = world();
+    s.tags.drink = blank.tags("drink", "drink");
+    s.tags.cold = blank.tags("cold", "cold");
+    s.foods.bev = { ...blank.foods("bev", "Beverage"), tagIds: ["drink"] };
+    s.foods.juice2 = { ...blank.foods("juice2", "Juice"), parentId: "bev", tagIds: ["cold"] };
+    s.products.naked = { ...blank.products("naked", "Rainbow Machine"), foodId: "juice2", tagIds: ["cold"] };
+    const v = new View(s);
+    const names = (xs: { tag: { name: string }; from: { name: string } }[]) => xs.map((x) => `${x.tag.name} from ${x.from.name}`);
+    expect(names(v.inheritedTags("juice2", s.foods.juice2!.tagIds, true))).toEqual(["drink from Beverage"]);
+    expect(names(v.inheritedTags("juice2", s.products.naked!.tagIds, false))).toEqual(["drink from Beverage"]); // cold is its own
+    expect(v.inheritedTags("bev", ["drink"], true)).toEqual([]);
+  });
+
   it("builds the Eat list for work lunch", () => {
     const all = v.eat({ tagId: WORK_LUNCH });
     expect(all.map((e) => e.item.id)).toEqual(["lc", "bowl"]); // ❤️ before 👍; 👎 hidden

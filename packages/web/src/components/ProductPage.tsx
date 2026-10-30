@@ -1,11 +1,11 @@
 import { BUY_AGAIN, productName, withoutBrand, type Product } from "@foodlab/shared";
 import { useId, useState } from "react";
 import { duplicate, ensureFood, ensureStore, remove } from "../actions";
-import { A, go, pathOf } from "../router";
+import { go, pathOf } from "../router";
 import { data, put, useData } from "../sync";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { DraftInput, DraftTextarea, Field, MultiPicker, PageKind, Picker, Segmented } from "./controls";
-import { EatingFields, LogSection, doneText } from "./eating";
+import { EatingFields, LogSection } from "./eating";
 import { Photos } from "./Photos";
 import { Deleted, NotFound } from "./FoodPage";
 import { GroceryButton } from "./GroceriesPage";
@@ -42,11 +42,6 @@ export function ProductPage({ id }: { id: string }) {
           ))}
         </datalist>
       </div>
-      {/* What the log says: Groceries writes "bought", the History box the rest. */}
-      {(() => {
-        const facts = [doneText(view, p.id, "bought"), doneText(view, p.id, "ate")].filter(Boolean);
-        return facts.length > 0 && <p className="lede muted">{facts.join(" · ")}</p>;
-      })()}
       <Photos
         photos={p.photos}
         name={productName(p)}
@@ -80,7 +75,7 @@ export function ProductPage({ id }: { id: string }) {
         <Field label="Buy again">
           <Segmented value={p.buyAgain} options={BUY_AGAIN} labels={{ yes: "Yes", no: "No" }} onChange={(buyAgain) => save({ buyAgain })} />
         </Field>
-        <EatingFields item={p} save={save} />
+        <EatingFields item={p} save={save} inheritedTags={view.inheritedTags(p.foodId, p.tagIds, false)} />
         <Field label="Shelf life">
           <DraftInput className="input" value={p.shelfLife} onCommit={(shelfLife) => save({ shelfLife })} />
         </Field>

@@ -393,6 +393,26 @@ export class View {
 
   // ---- search (DESIGN.md §5.1) ----
 
+  /**
+   * The tags a thing gets from the foods it's a kind of (DESIGN.md §5.1), nearest first, each
+   * with the food it comes from; not the ones it has itself. A food passes its own id (it's
+   * skipped), a product its food's (that food's tags count too).
+   */
+  inheritedTags(foodId: Id | null, own: Id[], skipFirst: boolean): { tag: Tag; from: Food }[] {
+    const out: { tag: Tag; from: Food }[] = [];
+    const seen = new Set(own);
+    for (const from of this.kindsUp(foodId).slice(skipFirst ? 1 : 0)) {
+      for (const t of from.tagIds) {
+        const tag = this.tag(t);
+        if (tag && !tag.deleted && !seen.has(t)) {
+          seen.add(t);
+          out.push({ tag, from });
+        }
+      }
+    }
+    return out;
+  }
+
   /** The food and what it is, up the "is a" links only (not form of): Diet soda → Soda → Drink. */
   private kindsUp(foodId: Id | null): Food[] {
     const out: Food[] = [];

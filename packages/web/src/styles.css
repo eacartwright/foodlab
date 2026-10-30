@@ -353,6 +353,22 @@ textarea::placeholder {
   border-color: var(--primary);
   color: var(--on-primary);
 }
+/* Read out, not shown. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+/* A tag from a food this is a kind of: faded, not a button (it's changed on that food). */
+.chip-inherited {
+  cursor: default;
+  border-style: dashed;
+  color: var(--muted);
+  font-weight: 500;
+}
 .chip-set {
   border-radius: var(--control-radius);
   padding: 0 4px 0 10px;

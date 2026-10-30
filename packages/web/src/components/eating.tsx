@@ -20,12 +20,12 @@ import {
 import { useState } from "react";
 import { addLog, removeLog } from "../actions";
 import { useData } from "../sync";
-import { Field, LinksEditor, NumberInput, RatingInput, Segmented, TagEditor } from "./controls";
+import { Field, LinksEditor, NumberInput, RatingInput, Segmented, TagEditor, type InheritedTag } from "./controls";
 import { Section } from "./rows";
 
 // The fields recipes and products share (DESIGN.md §4.6), and their history.
 
-export function EatingFields<T extends Product | Recipe>({ item, save }: { item: T; save: (patch: Partial<T>) => void }) {
+export function EatingFields<T extends Product | Recipe>({ item, save, inheritedTags }: { item: T; save: (patch: Partial<T>) => void; inheritedTags?: InheritedTag[] }) {
   const lunch = isWorkLunch(item.tagIds);
   return (
     <>
@@ -53,7 +53,7 @@ export function EatingFields<T extends Product | Recipe>({ item, save }: { item:
         )}
       </Field>
       <Field label="Tags">
-        <TagEditor value={item.tagIds} onChange={(tagIds) => save({ tagIds } as Partial<T>)} />
+        <TagEditor value={item.tagIds} inherited={inheritedTags} onChange={(tagIds) => save({ tagIds } as Partial<T>)} />
       </Field>
       {lunch && (
         <div className="lunch-box">
