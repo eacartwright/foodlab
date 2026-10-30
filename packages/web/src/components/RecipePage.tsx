@@ -321,8 +321,8 @@ function RecipeEdit({ r }: { r: Recipe }) {
           <DraftTextarea
             className="input mono-ish"
             rows={5}
+            aria-label="Ingredients"
             value={r.ingredients.map((i) => i.line).join("\n")}
-            placeholder={"One per line:\n2 slices American cheese\n1 lemon, zested\n1½ cups cooked rice (optional)"}
             onCommit={(text) => save({ ingredients: ingredientsFromText(text, (data().state.recipes[r.id] ?? r).ingredients, (n) => data().view.findFood(n)?.id) })}
           />
           {r.ingredients.length > 0 && (
@@ -362,8 +362,8 @@ function RecipeEdit({ r }: { r: Recipe }) {
           <DraftTextarea
             className="input"
             rows={5}
+            aria-label="Instructions"
             value={r.instructions}
-            placeholder={"1. Toast the bread\n2. …\n\n**bold**, - bullets and links work"}
             onCommit={(instructions) => save({ instructions })}
           />
         </Field>
@@ -389,7 +389,7 @@ function RecipeEdit({ r }: { r: Recipe }) {
           </Photos>
         </Field>
         <Field label="Notes">
-          <DraftTextarea className="input" rows={3} value={r.notes} placeholder="What makes it work, what you'd change…" onCommit={(notes) => save({ notes })} />
+          <DraftTextarea className="input" rows={3} aria-label="Notes" value={r.notes} onCommit={(notes) => save({ notes })} />
         </Field>
       </div>
 

@@ -429,7 +429,7 @@ export function LinksEditor({ value, onChange }: { value: string[]; onChange: (v
       <input
         className="input"
         inputMode="url"
-        placeholder="Paste a link…"
+        aria-label="Add a link"
         value={text}
         onChange={(e) => setText(e.target.value)}
         onBlur={add}
