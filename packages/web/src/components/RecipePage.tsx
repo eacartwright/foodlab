@@ -232,6 +232,7 @@ function IngredientCard({ r, i }: { r: Recipe; i: RecipeIngredient }) {
       {relink ? (
         <Picker
           autoFocus
+          aria-label="Food"
           value={i.foodId}
           options={view.foods.map((f) => ({ id: f.id, label: f.name }))}
           placeholder="Which food?"
@@ -340,6 +341,7 @@ function RecipeEdit({ r }: { r: Recipe }) {
                     <td className="nowrap">{formatAmount(i.quantity, i.unit) || "—"}</td>
                     <td>
                       <Picker
+                        aria-label={`Food for ${i.line}`}
                         value={i.foodId}
                         options={view.foods.map((f) => ({ id: f.id, label: f.name }))}
                         placeholder="No food"

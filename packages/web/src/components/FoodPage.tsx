@@ -210,7 +210,7 @@ export function FoodPage({ id }: { id: string }) {
 function AddFood({ label, options, link, onDone }: { label: string; options: { id: string; label: string }[]; link: (id: string) => void; onDone: () => void }) {
   return (
     <div className="inline-add">
-      <Picker value={null} options={options} placeholder={label} autoFocus keepOpen createLabel="New food" onChange={(id) => id && link(id)} onCreate={(n) => ensureFood(n)} />
+      <Picker value={null} options={options} placeholder={label} aria-label={label} autoFocus keepOpen createLabel="New food" onChange={(id) => id && link(id)} onCreate={(n) => ensureFood(n)} />
       <button className="btn" onClick={onDone}>
         Done
       </button>

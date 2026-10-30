@@ -68,6 +68,9 @@ tombstones (`deleted`), restorable with Undo or the page's Restore.
   script in `index.html` sets it before first paint. No `prefers-color-scheme` in CSS directly.
 - Buttons `--tap` (36px), fields `--control` (34px), shared height and radius; inputs 16px text.
   Focus states always visible. foodlab's accent is green (`--primary`).
+- A placeholder is never a box's name (Evan removes them freely). Inside a `Field` the controls
+  (`DraftInput`, `DraftTextarea`, `NumberInput`, `Picker`, `MultiPicker`) take the Field's label
+  (`aria-labelledby`, via context); a box outside one needs its own `aria-label`.
 - Two personalities: lists and food/product/store pages look like a database editor; a recipe
   reads like a recipe until ✏️ Edit. Under 860px: top bar, bottom tab bar (☰ More opens the drawer), floating + (Quick add).
 - The phone's Back closes the drawer, Quick add and Settings (`App.tsx` pushes a history entry).

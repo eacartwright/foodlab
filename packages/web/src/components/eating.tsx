@@ -115,6 +115,7 @@ export function LogSection({ itemKind, itemId }: { itemKind: LogTarget; itemId: 
         <input className="input" type="date" value={date} max={today()} onChange={(e) => setDate(e.target.value)} aria-label="Date" />
         <input
           className="input grow"
+          aria-label="Note"
           placeholder={itemKind === "recipes" ? "What changed, how it went…" : "What you thought…"}
           value={text}
           onChange={(e) => setText(e.target.value)}

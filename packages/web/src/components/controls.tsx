@@ -7,12 +7,21 @@ import {
   type Id,
   type Rating,
 } from "@foodlab/shared";
-import { useEffect, useId, useRef, useState, type InputHTMLAttributes, type ReactNode, type TextareaHTMLAttributes } from "react";
+import { createContext, useContext, useEffect, useId, useRef, useState, type InputHTMLAttributes, type ReactNode, type TextareaHTMLAttributes } from "react";
 import { ensureTag } from "../actions";
 import { A } from "../router";
 import { useData } from "../sync";
 
 // Inputs that edit a record in place and save as you go.
+
+/** The id of the label of the Field a control is in: its name, so no box needs a placeholder to have one. */
+const FieldLabel = createContext<string | undefined>(undefined);
+
+/** A control's name from its Field's label, unless it has its own (aria-label wins). */
+function useFieldName(own: { "aria-label"?: string; "aria-labelledby"?: string }) {
+  const labelId = useContext(FieldLabel);
+  return own["aria-label"] || own["aria-labelledby"] || !labelId ? {} : { "aria-labelledby": labelId };
+}
 
 /**
  * A text box that saves on Enter or when it loses focus (Esc puts it back). Its draft resets
@@ -35,8 +44,10 @@ export function DraftInput({
     if (required && !v) return setDraft(value);
     if (v !== value) onCommit(v);
   };
+  const name = useFieldName(rest);
   return (
     <input
+      {...name}
       {...rest}
       value={draft}
       onChange={(e) => setDraft(e.target.value)}
@@ -112,9 +123,11 @@ export function DraftTextarea({
     el.style.height = "auto";
     el.style.height = `${el.scrollHeight + 2}px`;
   }, [draft]);
+  const name = useFieldName(rest);
   return (
     <textarea
       ref={ref}
+      {...name}
       {...rest}
       value={draft}
       onChange={(e) => setDraft(e.target.value)}
@@ -162,6 +175,7 @@ export function Picker({
   keepOpen,
   startText = "",
   id,
+  "aria-label": ariaLabel,
 }: {
   value: Id | null;
   options: Option[];
@@ -176,7 +190,10 @@ export function Picker({
   /** Typed in already when an empty picker opens (an ingredient line's food name), selected to type over. */
   startText?: string;
   id?: string;
+  /** Its name when it isn't in a Field (in one, the Field's label is). */
+  "aria-label"?: string;
 }) {
+  const name = useFieldName({ "aria-label": ariaLabel });
   const selected = options.find((o) => o.id === value);
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
@@ -202,6 +219,8 @@ export function Picker({
     <div className={`picker ${open ? "open" : ""}`}>
       <input
         id={id}
+        aria-label={ariaLabel}
+        {...name}
         ref={input}
         autoFocus={autoFocus}
         className={`input ${!selected && !open ? "unset" : ""}`}
@@ -441,12 +460,15 @@ export function LinksEditor({ value, onChange }: { value: string[]; onChange: (v
 
 /** A labeled row on a page: label left on desktop, above on the phone. */
 export function Field({ label, children, htmlFor }: { label: string; children: ReactNode; htmlFor?: string }) {
+  const labelId = useId();
   return (
     <div className="field">
-      <label className="field-label" htmlFor={htmlFor}>
+      <label className="field-label" id={labelId} htmlFor={htmlFor}>
         {label}
       </label>
-      <div className="field-control">{children}</div>
+      <div className="field-control">
+        <FieldLabel.Provider value={labelId}>{children}</FieldLabel.Provider>
+      </div>
     </div>
   );
 }
