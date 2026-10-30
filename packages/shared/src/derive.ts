@@ -1,7 +1,6 @@
 import { nameKey } from "./ingredients";
 import {
   GF_LABEL,
-  WORK_LUNCH,
   nameOf,
   today,
   type Effort,
@@ -524,6 +523,7 @@ export class View {
         if (f.tagId && !item.tagIds.includes(f.tagId)) return false;
         if (!f.showDown && item.rating === "down") return false;
         if (f.status && item.status !== f.status) return false;
+        // Shelved with the Work lunch box (2026-10-30): nothing filters on these now.
         if (f.travels?.length && (!item.travels || !f.travels.includes(item.travels))) return false;
         if (f.minKeepsDays && (item.keepsDays ?? 0) < f.minKeepsDays) return false;
         if (f.effort?.length && (!item.effort || !f.effort.includes(item.effort))) return false;
@@ -561,8 +561,6 @@ export function swapTag(tagIds: Id[], from: Id, to: Id | null): Id[] {
   }
   return out;
 }
-
-export const isWorkLunch = (tagIds: Id[]) => tagIds.includes(WORK_LUNCH);
 
 export interface EatFilter {
   tagId?: Id | null;

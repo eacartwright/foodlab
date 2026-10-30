@@ -19,8 +19,6 @@
   --danger-soft: #fbe9e7;
   --focus: #1d6b3f;
   --star: #b57d00;
-  --lunch-bg: #fff6e0;
-  --lunch-edge: #e3c26f;
   --scrim: rgb(10 14 11 / 0.45);
   --radius: 10px;
   /* Buttons, and the fields beside them. Same sizes as sideshow (denser than 44px, Evan's call). */
@@ -55,8 +53,6 @@
   --danger-soft: #3a1f1d;
   --focus: #8fe2b2;
   --star: #ffcc4d;
-  --lunch-bg: #2a2310;
-  --lunch-edge: #6d5a26;
   --scrim: rgb(0 0 0 / 0.6);
 }
 
@@ -809,21 +805,6 @@ textarea::placeholder {
 .fields.compact .field {
   grid-template-columns: 80px 1fr;
 }
-.lunch-box {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 12px;
-  border-radius: var(--radius);
-  background: var(--lunch-bg);
-  border: 1.5px solid var(--lunch-edge);
-}
-.lunch-title {
-  font-weight: 800;
-}
-.lunch {
-  color: var(--accent);
-}
 .section {
   margin-top: 26px;
 }
@@ -918,9 +899,6 @@ textarea::placeholder {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-.row-sub.lunch {
-  color: var(--accent);
 }
 .is-deleted .row-name {
   text-decoration: line-through;

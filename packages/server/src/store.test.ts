@@ -22,7 +22,7 @@ afterEach(() => {
 
 describe("Store", () => {
   it("starts with the meal tags", () => {
-    expect(store.state.tags[WORK_LUNCH]?.name).toBe("Work lunch");
+    expect(store.state.tags[WORK_LUNCH]).toMatchObject({ name: "work lunch", kind: "personal" }); // migration 10
   });
 
   it("saves whole records with their links, and reads them back the same", () => {
@@ -77,7 +77,7 @@ describe("Store", () => {
     store.put("foods", "a", blank.foods("a", "A"));
     store.put("foods", "b", { ...blank.foods("b", "B"), parentId: "a" });
     expect(() => store.put("foods", "a", { ...blank.foods("a", "A"), formOfId: "b" })).toThrow(/itself/);
-    expect(() => store.put("tags", WORK_LUNCH, { name: "Lunchies", kind: "meal" })).toThrow(/fixed/);
+    expect(() => store.put("tags", "meal-lunch", { name: "Lunchies", kind: "meal" })).toThrow(/fixed/);
     expect(() => store.put("foods", "c", { name: "  " })).toThrow(/required/);
   });
 

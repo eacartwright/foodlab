@@ -1,7 +1,7 @@
 # foodlab — notes for Claude
 
 Evan's external memory for food: foods (with is-a and form-of links), the products he buys,
-the stores that sell them, recipes built on foods, tags (Work lunch first) and a history log,
+the stores that sell them, recipes built on foods, tags (meal tags first) and a history log,
 on desktop and his Android phone. Principle: rich data underneath, a few fields on the everyday
 path. **[DESIGN.md](DESIGN.md) is the spec**; read the relevant section before changing behavior,
 and update it when a decision changes. Same stack and conventions as sideshow
@@ -180,4 +180,7 @@ tombstones (`deleted`), restorable with Undo or the page's Restore.
   `PageKind` in `controls.tsx`: KIND › crumb › crumb, every part a link, plain › between, nothing trailing.
 - 2026-10-30: inherited tags shown, faded and read-only, on food and product pages (`View.inheritedTags`,
   `TagEditor` `inherited`, `.chip-inherited`). 94 tests, browser-checked.
+- 2026-10-30: **Work lunch is a personal tag**, not a meal (migration 10: `work lunch`, same id
+  `WORK_LUNCH`; meal times on it → Lunch; rev bumped). Its lunch box (travels / keeps / effort) is
+  shelved: hidden and unfiltered, data kept (DESIGN.md §4.6). 94 tests, migration checked on a v9 DB.
 - **Next: M4** (places & dishes) or M6 (weights).

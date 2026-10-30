@@ -1,15 +1,10 @@
 import {
-  EFFORTS,
-  EFFORT_LABEL,
   GF,
   GF_LABEL,
   LOG_LABEL,
   RATING_EMOJI,
   STATUSES,
   STATUS_LABEL,
-  TRAVELS,
-  TRAVELS_LABEL,
-  isWorkLunch,
   today,
   type LogKind,
   type LogTarget,
@@ -20,13 +15,12 @@ import {
 import { useState } from "react";
 import { addLog, removeLog } from "../actions";
 import { useData } from "../sync";
-import { Field, LinksEditor, NumberInput, RatingInput, Segmented, TagEditor, type InheritedTag } from "./controls";
+import { Field, LinksEditor, RatingInput, Segmented, TagEditor, type InheritedTag } from "./controls";
 import { Section } from "./rows";
 
 // The fields recipes and products share (DESIGN.md §4.6), and their history.
 
 export function EatingFields<T extends Product | Recipe>({ item, save, inheritedTags }: { item: T; save: (patch: Partial<T>) => void; inheritedTags?: InheritedTag[] }) {
-  const lunch = isWorkLunch(item.tagIds);
   return (
     <>
       <Field label="Rating">
@@ -55,20 +49,6 @@ export function EatingFields<T extends Product | Recipe>({ item, save, inherited
       <Field label="Tags">
         <TagEditor value={item.tagIds} inherited={inheritedTags} onChange={(tagIds) => save({ tagIds } as Partial<T>)} />
       </Field>
-      {lunch && (
-        <div className="lunch-box">
-          <div className="lunch-title">Work lunch</div>
-          <Field label="Travels">
-            <Segmented value={item.travels} options={TRAVELS} labels={TRAVELS_LABEL} onChange={(travels) => save({ travels } as Partial<T>)} />
-          </Field>
-          <Field label="Keeps (days)">
-            <NumberInput className="input narrow" value={item.keepsDays} placeholder="?" onCommit={(keepsDays) => save({ keepsDays } as Partial<T>)} />
-          </Field>
-          <Field label="Effort">
-            <Segmented value={item.effort} options={EFFORTS} labels={EFFORT_LABEL} onChange={(effort) => save({ effort } as Partial<T>)} />
-          </Field>
-        </div>
-      )}
       <Field label="Links">
         <LinksEditor value={item.links} onChange={(links) => save({ links } as Partial<T>)} />
       </Field>

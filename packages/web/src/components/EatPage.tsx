@@ -1,4 +1,4 @@
-import { EFFORTS, EFFORT_LABEL, MEAL_TAGS, mealNow, mealTimes, TRAVELS, TRAVELS_LABEL, WORK_LUNCH, type Effort, type Travels } from "@foodlab/shared";
+import { MEAL_TAGS, mealNow, mealTimes } from "@foodlab/shared";
 import { useMemo } from "react";
 import { A, setQuery, useRoute } from "../router";
 import { useData } from "../sync";
@@ -8,37 +8,21 @@ import { ItemRow } from "./rows";
 // What can I eat? (DESIGN.md §5.2): recipes and products for a meal, best first. It opens on
 // the meal for the time of day (Settings → Meal times); a picked meal stays in the address.
 
-const list = <T extends string>(s: string | null, ok: readonly T[]) => (s ? (s.split(",").filter((x) => ok.includes(x as T)) as T[]) : []);
-
 export function EatPage() {
   const { view } = useData();
   const { query } = useRoute();
   let tag = query.get("tag");
   if (!tag || !MEAL_TAGS.some((t) => t.id === tag)) tag = mealNow(mealTimes(view.state));
-  const travels = list<Travels>(query.get("travels"), TRAVELS);
-  const effort = list<Effort>(query.get("effort"), EFFORTS);
-  const keeps = Number(query.get("keeps")) || null;
   const want = query.get("status");
   const showDown = query.get("down") === "1";
-  const lunch = tag === WORK_LUNCH;
 
   const items = useMemo(
-    () =>
-      view.eat({
-        tagId: tag,
-        travels: lunch ? travels : [],
-        effort: lunch ? effort : [],
-        minKeepsDays: lunch ? keeps : null,
-        status: want === "want" || want === "tried" ? want : null,
-        showDown,
-      }),
-    [view, tag, lunch, travels.join(), effort.join(), keeps, want, showDown], // eslint-disable-line react-hooks/exhaustive-deps
+    () => view.eat({ tagId: tag, status: want === "want" || want === "tried" ? want : null, showDown }),
+    [view, tag, want, showDown],
   );
 
   const setTag = (t: string) => setQuery({ tag: t });
-  const toggle = (key: string, values: string[], v: string) =>
-    setQuery({ [key]: (values.includes(v) ? values.filter((x) => x !== v) : [...values, v]).join(",") || null });
-  const filtered = travels.length || effort.length || keeps || want;
+  const filtered = !!want;
 
   return (
     <div className="page">
@@ -52,32 +36,6 @@ export function EatPage() {
       </div>
 
       <div className="filters">
-        {lunch && (
-          <>
-            <div className="chips">
-              {TRAVELS.map((t) => (
-                <button key={t} className={`chip small ${travels.includes(t) ? "chip-on" : ""}`} onClick={() => toggle("travels", travels, t)}>
-                  {TRAVELS_LABEL[t]}
-                </button>
-              ))}
-            </div>
-            <div className="chips">
-              {EFFORTS.map((e) => (
-                <button key={e} className={`chip small ${effort.includes(e) ? "chip-on" : ""}`} onClick={() => toggle("effort", effort, e)}>
-                  {EFFORT_LABEL[e]}
-                </button>
-              ))}
-              <select className="select small" value={keeps ?? ""} onChange={(e) => setQuery({ keeps: e.target.value || null })} aria-label="Keeps at least">
-                <option value="">Keeps any time</option>
-                {[2, 3, 4, 5, 7].map((d) => (
-                  <option key={d} value={d}>
-                    Keeps {d}+ days
-                  </option>
-                ))}
-              </select>
-            </div>
-          </>
-        )}
         <div className="chips">
           <button className={`chip small ${want === "want" ? "chip-on" : ""}`} onClick={() => setQuery({ status: want === "want" ? null : "want" })}>
             Want to try
@@ -89,7 +47,7 @@ export function EatPage() {
             Show 👎
           </button>
           {filtered && (
-            <button className="btn subtle" onClick={() => setQuery({ travels: null, effort: null, keeps: null, status: null })}>
+            <button className="btn subtle" onClick={() => setQuery({ status: null })}>
               Clear filters
             </button>
           )}

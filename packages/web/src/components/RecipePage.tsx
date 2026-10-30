@@ -26,7 +26,7 @@ import { DraftInput, DraftTextarea, Field, NumberInput, PageKind, Picker, Rating
 import { EatingFields, LogSection, doneText } from "./eating";
 import { PhotoFromLink, PhotoViewer, Photos } from "./Photos";
 import { Deleted, NotFound } from "./FoodPage";
-import { lunchFacts, Section } from "./rows";
+import { Section } from "./rows";
 
 // A recipe has two faces (DESIGN.md §5.4): it reads like a recipe, and Edit shows its fields.
 
@@ -64,7 +64,6 @@ function RecipeView({ r }: { r: Recipe }) {
     r.glutenFree !== "unknown" ? GF_LABEL[r.glutenFree] : null,
     doneText(view, r.id, "made") || null,
   ].filter(Boolean);
-  const lunch = lunchFacts(r);
   // The first link is where the recipe came from: a button up top. Any others (a video, what it
   // was adapted from) go at the bottom.
   const [source, ...more] = r.links;
@@ -96,14 +95,13 @@ function RecipeView({ r }: { r: Recipe }) {
       {photo !== null && r.photos[photo] && <PhotoViewer photos={r.photos} at={photo} setAt={setPhoto} update={updatePhotos} name={r.name} />}
       {meta.length > 0 && <p className="recipe-meta">{meta.join(" · ")}</p>}
       {r.yieldQty !== null && servings !== null && <Servings r={r} servings={servings} setServings={setServings} save={save} />}
-      {(tags.length > 0 || lunch) && (
+      {tags.length > 0 && (
         <div className="chips">
           {tags.map((t) => (
             <A key={t!.id} className="tag" href={t!.kind === "meal" ? `/eat?tag=${t!.id}` : `/?q=${encodeURIComponent(t!.name)}`}>
               {t!.name}
             </A>
           ))}
-          {lunch && <span className="muted small">{lunch}</span>}
         </div>
       )}
       <div className="recipe-actions">

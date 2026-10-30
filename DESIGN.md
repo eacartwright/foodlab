@@ -183,9 +183,14 @@ prep keeps the food it was linked to.
 | `glutenFree` | Products: `certified` · `labeled` · `ingredients` (no gluten ingredients) · `facility` (shared facility) · `no`, blank by default. Recipes: only `no`. |
 | `notes` | |
 | `links` | URLs (recipe source, product page, Find Me Gluten Free). |
-| `travels` | `packs cold` · `needs microwave` · `eat as-is`. Shown when tagged Work lunch. |
-| `keepsDays` | Days it lasts in the fridge. |
-| `effort` | `grab` (buy it) · `quick` (< 15 min) · `prep` (cook ahead). |
+| `travels` | `packs cold` · `needs microwave` · `eat as-is`. **Shelved** 2026-10-30 (below). |
+| `keepsDays` | Days it lasts in the fridge. Shelved. |
+| `effort` | `grab` (buy it) · `quick` (< 15 min) · `prep` (cook ahead). Shelved. |
+
+**The Work lunch box is shelved** (2026-10-30): splitting Lunch and Work lunch wasn't as
+intuitive as it looked; Lunch covers it. Travels, keeps and effort aren't shown or filtered on
+any more, but stay in the tables (and in `View.eat`'s filter) with what was entered, to bring
+back if a lunch view wants them.
 
 **Gluten-free** (2026-10-23): everything in foodlab is gluten-free, because I have celiac and
 never knowingly eat anything else; a product I find isn't GF gets marked, not kept as an
@@ -220,8 +225,9 @@ One dated record on a recipe or product: `date` (today by default), `kind` (`mad
 
 Shared by everything, two kinds:
 
-- **Meal tags**, a fixed list so filters are reliable: Breakfast · Lunch · **Work lunch** ·
-  Dinner · Snack · Dessert. Shown as chips, never misspelled.
+- **Meal tags**, a fixed list so filters are reliable: Breakfast · Lunch · Dinner · Snack ·
+  Dessert. Shown as chips, never misspelled. Work lunch was one until 2026-10-30; it's a
+  personal tag now, `work lunch` (migration 10 kept everything tagged; meal times on it moved to Lunch).
 - **Personal tags**, free-form and autocompleted: quick, no-cook, meal prep, comfort food,
   "good when I'm exhausted". Stored lowercase; tidied on the Tags page (§5.10).
 
@@ -335,10 +341,10 @@ highlighted, §5.2), and recently changed things.
 
 ### 5.2 Eat (what can I eat?)
 
-Meal chips (Breakfast · Lunch · Work lunch · Dinner · Snack · Dessert) over one mixed list of
+Meal chips (Breakfast · Lunch · Dinner · Snack · Dessert) over one mixed list of
 recipes and products with that tag: ❤️, then 👍, then not rated; 👎 hidden unless asked; Not GF
-never. Filters: tried / want to try, and for **Work lunch**: travels, keeps ≥ N days,
-effort. Each row shows what matters for the decision (rating, travels, keeps, effort).
+never. Filters: tried / want to try, show 👎. (Work lunch's travels / keeps / effort filters
+were shelved with it, 2026-10-30.)
 
 **Opens on the meal for the time of day** (2026-10-25): four slots in Settings → Meal times,
 each a start time and a meal, running until the next (defaults 4:00 Breakfast, 10:30

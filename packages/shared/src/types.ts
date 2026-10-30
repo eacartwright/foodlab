@@ -227,11 +227,11 @@ export const emptyState = (): State => ({ rev: 0, foods: {}, products: {}, store
 export const MEAL_TAGS: { id: Id; name: string }[] = [
   { id: "meal-breakfast", name: "Breakfast" },
   { id: "meal-lunch", name: "Lunch" },
-  { id: "meal-work-lunch", name: "Work lunch" },
   { id: "meal-dinner", name: "Dinner" },
   { id: "meal-snack", name: "Snack" },
   { id: "meal-dessert", name: "Dessert" },
 ];
+/** The "work lunch" tag: a meal until 2026-10-30, a personal tag since (migration 10); keeps its id. */
 export const WORK_LUNCH = "meal-work-lunch";
 
 const EMPTY_BASE = (id: Id, now: number): Base => ({ id, deleted: false, createdAt: now, updatedAt: now, rev: 0 });

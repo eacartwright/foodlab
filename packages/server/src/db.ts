@@ -191,6 +191,18 @@ const MIGRATIONS: string[] = [
   ALTER TABLE recipes ADD COLUMN photos TEXT NOT NULL DEFAULT '[]';
   ALTER TABLE dev_notes ADD COLUMN files TEXT NOT NULL DEFAULT '[]';  -- JSON [{ id, name, type }]
   `,
+  // 2026-10-30: Work lunch is no longer a meal (Lunch covers it): a personal tag, "work lunch",
+  // on everything it was on. Meal times that pointed at it point at Lunch. Its travels / keeps /
+  // effort fields are shelved: kept in the tables, not shown. Rev bumps so every device reloads.
+  `
+  UPDATE meta SET value = CAST(value AS INTEGER) + 1 WHERE key = 'rev';
+  UPDATE tags SET kind = 'personal', name = 'work lunch',
+    rev = (SELECT CAST(value AS INTEGER) FROM meta WHERE key = 'rev'), updated_at = CAST(unixepoch('subsec') * 1000 AS INTEGER)
+    WHERE id = 'meal-work-lunch';
+  UPDATE settings SET meal_times = replace(meal_times, '"meal-work-lunch"', '"meal-lunch"'),
+    rev = (SELECT CAST(value AS INTEGER) FROM meta WHERE key = 'rev')
+    WHERE meal_times LIKE '%meal-work-lunch%';
+  `,
 ];
 
 export type DB = DatabaseSync;

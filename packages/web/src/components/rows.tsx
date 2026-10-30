@@ -1,9 +1,6 @@
 import {
-  EFFORT_LABEL,
   fileUrl,
   RATING_EMOJI,
-  TRAVELS_LABEL,
-  isWorkLunch,
   nameOf,
   type Food,
   type Product,
@@ -56,18 +53,6 @@ export function subline(view: View, kind: SearchKind, item: Item, hideFood = fal
   return n ? `${n} product${n === 1 ? "" : "s"}` : "";
 }
 
-/** Lunch facts, when it's a work lunch. */
-export function lunchFacts(x: Product | Recipe): string {
-  if (!isWorkLunch(x.tagIds)) return "";
-  return [
-    x.travels ? TRAVELS_LABEL[x.travels] : null,
-    x.keepsDays !== null ? `keeps ${x.keepsDays} day${x.keepsDays === 1 ? "" : "s"}` : null,
-    x.effort ? EFFORT_LABEL[x.effort].replace(/ \(.*\)/, "") : null,
-  ]
-    .filter(Boolean)
-    .join(" · ");
-}
-
 export function ItemRow({
   view,
   kind,
@@ -84,7 +69,6 @@ export function ItemRow({
   hideFood?: boolean;
 }) {
   const rated = kind === "recipes" || kind === "products" ? (item as Product | Recipe) : null;
-  const lunch = rated ? lunchFacts(rated) : "";
   const sub = subline(view, kind, item, hideFood);
   return (
     <A className={`row ${item.deleted ? "is-deleted" : ""}`} href={pathOf(kind, item.id)}>
@@ -109,7 +93,6 @@ export function ItemRow({
           {rated?.glutenFree === "no" && <NotGF />}
         </span>
         {sub && <span className="row-sub">{sub}</span>}
-        {lunch && <span className="row-sub lunch">{lunch}</span>}
         {extra}
       </span>
       {rated && <Rating value={rated.rating} />}
