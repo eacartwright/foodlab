@@ -1,7 +1,7 @@
 import { type Product, type Store } from "@foodlab/shared";
 import { useState } from "react";
 import { remove } from "../actions";
-import { go } from "../router";
+import { A, go } from "../router";
 import { data, put, useData } from "../sync";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { DraftInput, DraftTextarea, Field } from "./controls";
@@ -28,7 +28,11 @@ export function StorePage({ id }: { id: string }) {
   return (
     <article className="page">
       {s.deleted && <Deleted onRestore={() => save({ deleted: false })} />}
-      <div className="page-kind">🏪 Store</div>
+      <div className="page-kind">
+        <A className="kind-link" href="/stores">
+          🏪 Store
+        </A>
+      </div>
       <div className="title-row">
         <DraftInput className="title-input" value={s.name} required aria-label="Name" onCommit={(name) => save({ name })} />
       </div>

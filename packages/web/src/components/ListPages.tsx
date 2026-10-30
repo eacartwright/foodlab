@@ -185,7 +185,7 @@ export function FoodsList() {
       head={
         <tr>
           {th("name", "Food")}
-          {!tree && th("up", "Is a / form of", "hide-sm")}
+          {!tree && th("up", "Kind of / form of", "hide-sm")}
           {th("products", "Products", "num")}
           {th("recipes", "Recipes", "num")}
         </tr>

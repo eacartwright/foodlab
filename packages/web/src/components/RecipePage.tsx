@@ -75,7 +75,9 @@ function RecipeView({ r }: { r: Recipe }) {
     <article className="page recipe">
       {r.deleted && <Deleted onRestore={() => save({ deleted: false })} />}
       <div className="page-kind">
-        🍳 Recipe
+        <A className="kind-link" href="/recipes">
+          🍳 Recipe
+        </A>
         <span className="spacer" />
         <button className="btn" onClick={() => setQuery({ edit: "1" })}>
           ✏️ Edit
@@ -307,7 +309,12 @@ function RecipeEdit({ r }: { r: Recipe }) {
     <article className="page">
       {r.deleted && <Deleted onRestore={() => save({ deleted: false })} />}
       <div className="page-kind">
-        🍳 Recipe · editing
+        <span>
+          <A className="kind-link" href="/recipes">
+            🍳 Recipe
+          </A>{" "}
+          · editing
+        </span>
         <span className="spacer" />
         <button className="btn primary" onClick={done}>
           Done

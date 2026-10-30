@@ -33,7 +33,9 @@ export function ProductPage({ id }: { id: string }) {
       <div className="page-kind">
         {/* One run of text, so "Product of Frozen potatoes" is spaced like words. */}
         <span>
-          🛒 Product
+          <A className="kind-link" href="/products">
+            🛒 Product
+          </A>
           {food && " "}
           {food && (
             <span className="crumbs">

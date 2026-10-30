@@ -48,7 +48,9 @@ export function FoodPage({ id }: { id: string }) {
       {food.deleted && <Deleted onRestore={() => save({ deleted: false })} />}
       <div className="page-kind">
         <span>
-          🥕 Food
+          <A className="kind-link" href="/foods">
+            🥕 Food
+          </A>
           {path.length > 0 && " "}
           {path.length > 0 && (
             <span className="crumbs">
@@ -84,7 +86,7 @@ export function FoodPage({ id }: { id: string }) {
         );
       })()}
       <div className="fields">
-        <Field label="Is a">
+        <Field label="Kind of">
           <Picker value={food.parentId} options={options} placeholder="Nothing (top level)" onChange={(parentId) => save({ parentId })} onCreate={(n) => ensureFood(n)} />
         </Field>
         <Field label="Form of">
@@ -174,7 +176,7 @@ export function FoodPage({ id }: { id: string }) {
             Delete
           </button>
         )}
-        <button className="btn subtle" onClick={() => duplicate("foods", food.id)} title="A copy with the same is a, form of and tags">
+        <button className="btn subtle" onClick={() => duplicate("foods", food.id)} title="A copy with the same kind of, form of and tags">
           Duplicate
         </button>
         {kinds.length === 0 && adding !== "kind" && (

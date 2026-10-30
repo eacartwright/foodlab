@@ -99,7 +99,7 @@ by rating), **potential staple** (§4.7), **times made / last made** (log entrie
 | Field | Notes |
 |---|---|
 | `name` | Required. "American cheese", "lemon juice", "GF sandwich bread". |
-| `parentId` | **Is a**, optional, any depth, for browsing (Cheese → American cheese). |
+| `parentId` | **Is a**, optional, any depth, for browsing (Cheese → American cheese). Labelled **Kind of** on screen (2026-10-30), so a group can be named singular or plural ("Kind of: Spices and seasonings"). |
 | `formOfId` | **Form of**, optional: a derived food (Lemon juice → Lemon). |
 | `staple` | Something I want to keep in the house. Not inventory. |
 | `shelfLife` | Optional text ("3 weeks opened, fridge"). Belongs on a form or product, not on Lemon. |
