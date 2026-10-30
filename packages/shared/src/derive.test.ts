@@ -106,6 +106,20 @@ describe("View", () => {
     expect(v.search("ham").full.recipes).toEqual([]);
   });
 
+  it("counts a food's tags for its kinds and their products, down is-a only", () => {
+    const s = world();
+    s.tags.drink = blank.tags("drink", "drink");
+    s.foods.soda = { ...blank.foods("soda", "Soda"), tagIds: ["drink"] };
+    s.foods.diet = { ...blank.foods("diet", "Diet soda"), parentId: "soda" };
+    s.foods.syrup = { ...blank.foods("syrup", "Soda syrup"), formOfId: "soda" };
+    s.products.zero = { ...blank.products("zero", "Coke Zero"), foodId: "diet" };
+    s.recipes.float = { ...blank.recipes("float", "Root beer float"), ingredients: [{ id: "i", line: "1 can soda", foodId: "diet", quantity: 1, unit: "can", prep: "", optional: false, note: "" }] };
+    const r = new View(s).search("drinks");
+    expect(r.full.foods.map((h) => h.item.id).sort()).toEqual(["diet", "soda"]); // not the form (syrup)
+    expect(r.full.products.map((h) => h.item.id)).toEqual(["zero"]);
+    expect(r.full.recipes).toEqual([]); // a recipe using soda isn't a drink
+  });
+
   it("builds the Eat list for work lunch", () => {
     const all = v.eat({ tagId: WORK_LUNCH });
     expect(all.map((e) => e.item.id)).toEqual(["lc", "bowl"]); // ❤️ before 👍; 👎 hidden

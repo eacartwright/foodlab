@@ -173,4 +173,6 @@ tombstones (`deleted`), restorable with Undo or the page's Restore.
 - 2026-10-29: **OpenAI beside Claude** (as in sideshow, DESIGN.md §5.9): GPT-6 Luna, GPT-6.1 Terra / Sol;
   each provider on with its key (`OPENAI_API_KEY`); Model is a dropdown by provider; Compare runs the
   models with a key. Checked against a stand-in OpenAI server (`OPENAI_BASE_URL`). 92 tests.
+- 2026-10-29: a food's tags count in search for its kinds (is-a only) and their products, not
+  recipes (`View.kindsUp`; DESIGN.md §5.1): how drinks are grouped (tag Soda `drink`). 93 tests.
 - **Next: M4** (places & dishes) or M6 (weights).

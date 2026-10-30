@@ -393,6 +393,17 @@ export class View {
 
   // ---- search (DESIGN.md §5.1) ----
 
+  /** The food and what it is, up the "is a" links only (not form of): Diet soda → Soda → Drink. */
+  private kindsUp(foodId: Id | null): Food[] {
+    const out: Food[] = [];
+    const seen = new Set<Id>();
+    for (let f = this.food(foodId); f && !f.deleted && !seen.has(f.id); f = this.food(f.parentId)) {
+      seen.add(f.id);
+      out.push(f);
+    }
+    return out;
+  }
+
   /** The words a thing can be found by, lowercased. */
   private haystack(kind: SearchKind, x: Food | Product | Recipe | Store): string[] {
     const out: string[] = [x.name];
@@ -407,16 +418,23 @@ export class View {
         if (tag && !tag.deleted) out.push(tag.name);
       }
     };
+    // A tag on a food counts for its kinds and their products ("drink" on Soda finds Diet soda
+    // and every soda bought), down the "is a" links only. Not for recipes: a recipe with beer
+    // in it isn't a drink.
+    const kindTags = (foodId: Id | null) => {
+      for (const f of this.kindsUp(foodId)) tagWords(f.tagIds);
+    };
     if (kind === "foods") {
       const f = x as Food;
       out.push(f.notes, f.plu, ...this.ancestors(f.id).map((a) => a.name));
-      tagWords(f.tagIds);
+      kindTags(f.id);
       if (f.staple) out.push("staple");
     } else if (kind === "products") {
       const p = x as Product;
       out.push(nameOf(p), p.brand, p.notes, GF_LABEL[p.glutenFree]);
       foodWords(p.foodId);
       tagWords(p.tagIds);
+      kindTags(p.foodId);
       for (const s of p.storeIds) if (this.store(s) && !this.store(s)!.deleted) out.push(this.store(s)!.name);
     } else if (kind === "recipes") {
       const r = x as Recipe;

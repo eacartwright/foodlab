@@ -319,6 +319,13 @@ parents and forms, a recipe's ingredient foods (and their parents: "meat" finds 
 chicken thigh when Chicken thigh is a Meat), and its stores ("wegmans" finds what's sold there).
 Plurals match ("potatoes" = "potato").
 
+**A food's tags count for its kinds and their products** (2026-10-29), down the *is a* links
+only: tag Soda `drink` once and "drinks" finds Diet soda and every soda product. Not down *form
+of* (a tag on Lemon isn't one on Lemon juice), and not for recipes (beer-battered fish isn't a
+drink). This is how drinks are grouped: "drink" is how I have something, not what it is, so it's
+a tag, and the tree stays free to say Huel is a Protein powder. The Tags page's counts are
+still the directly tagged things.
+
 Results are grouped Recipes · Products · Foods · Stores, ❤️ first. With several terms, things
 matching only some of them follow under **Partial matches**, most terms first. With nothing
 typed: Add buttons, meal shortcuts into Eat (the one for the time of day
