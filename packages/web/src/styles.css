@@ -703,12 +703,20 @@ textarea::placeholder {
   outline-offset: 2px;
 }
 .crumbs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 0;
+}
+.crumb {
   text-transform: none;
   letter-spacing: 0;
-  /* Beside the spaced-out capitals, a plain space looked missing ("of Mayonnaise"). The space
-     before the crumbs stays outside them, at its plain width. */
-  word-spacing: 0.15em;
   font-weight: 500;
+}
+/* Plain, not a link: the same grey whatever's beside it. */
+.crumb-sep {
+  margin: 0 7px;
+  color: var(--muted);
 }
 .title-row {
   display: flex;

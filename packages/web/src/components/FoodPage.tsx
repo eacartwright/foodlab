@@ -3,7 +3,7 @@ import { useState } from "react";
 import { duplicate, ensureFood, remove } from "../actions";
 import { A, go, pathOf } from "../router";
 import { data, put, useData } from "../sync";
-import { DraftInput, DraftTextarea, Field, Picker, TagEditor } from "./controls";
+import { DraftInput, DraftTextarea, Field, PageKind, Picker, TagEditor } from "./controls";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { ItemRow, Section } from "./rows";
 import { fmtDate } from "./eating";
@@ -46,23 +46,7 @@ export function FoodPage({ id }: { id: string }) {
   return (
     <article className="page">
       {food.deleted && <Deleted onRestore={() => save({ deleted: false })} />}
-      <div className="page-kind">
-        <span>
-          <A className="kind-link" href="/foods">
-            🥕 Food
-          </A>
-          {path.length > 0 && " "}
-          {path.length > 0 && (
-            <span className="crumbs">
-              {path.map((f) => (
-                <span key={f.id}>
-                  <A href={pathOf("foods", f.id)}>{f.name}</A> ›{" "}
-                </span>
-              ))}
-            </span>
-          )}
-        </span>
-      </div>
+      <PageKind kind="foods" trail={path.map((f) => ({ href: pathOf("foods", f.id), label: f.name }))} />
       <div className="title-row">
         <DraftInput className="title-input" value={food.name} required aria-label="Name" onCommit={(name) => save({ name })} />
         <button className={`btn staple ${food.staple ? "on" : ""}`} aria-pressed={food.staple} onClick={() => save({ staple: !food.staple })} title="Something I want to keep in the house">

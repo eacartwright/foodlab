@@ -1,10 +1,10 @@
 import { type Product, type Store } from "@foodlab/shared";
 import { useState } from "react";
 import { remove } from "../actions";
-import { A, go } from "../router";
+import { go } from "../router";
 import { data, put, useData } from "../sync";
 import { ConfirmDialog } from "./ConfirmDialog";
-import { DraftInput, DraftTextarea, Field } from "./controls";
+import { DraftInput, DraftTextarea, Field, PageKind } from "./controls";
 import { Deleted, NotFound } from "./FoodPage";
 import { openQuickAdd } from "./QuickAdd";
 import { ItemRow, Section } from "./rows";
@@ -28,11 +28,7 @@ export function StorePage({ id }: { id: string }) {
   return (
     <article className="page">
       {s.deleted && <Deleted onRestore={() => save({ deleted: false })} />}
-      <div className="page-kind">
-        <A className="kind-link" href="/stores">
-          🏪 Store
-        </A>
-      </div>
+      <PageKind kind="stores" />
       <div className="title-row">
         <DraftInput className="title-input" value={s.name} required aria-label="Name" onCommit={(name) => save({ name })} />
       </div>

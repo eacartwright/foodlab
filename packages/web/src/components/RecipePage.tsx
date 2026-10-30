@@ -22,7 +22,7 @@ import { A, go, pathOf, setQuery, useRoute } from "../router";
 import { data, put, useData } from "../sync";
 import { showToast } from "../toast";
 import { ConfirmDialog } from "./ConfirmDialog";
-import { DraftInput, DraftTextarea, Field, NumberInput, Picker, RatingInput, Segmented } from "./controls";
+import { DraftInput, DraftTextarea, Field, NumberInput, PageKind, Picker, RatingInput, Segmented } from "./controls";
 import { EatingFields, LogSection, doneText } from "./eating";
 import { PhotoFromLink, PhotoViewer, Photos } from "./Photos";
 import { Deleted, NotFound } from "./FoodPage";
@@ -74,15 +74,12 @@ function RecipeView({ r }: { r: Recipe }) {
   return (
     <article className="page recipe">
       {r.deleted && <Deleted onRestore={() => save({ deleted: false })} />}
-      <div className="page-kind">
-        <A className="kind-link" href="/recipes">
-          🍳 Recipe
-        </A>
+      <PageKind kind="recipes">
         <span className="spacer" />
         <button className="btn" onClick={() => setQuery({ edit: "1" })}>
           ✏️ Edit
         </button>
-      </div>
+      </PageKind>
       <h1 className="recipe-title">{r.name}</h1>
       {r.photos.length > 0 && (
         <div className="recipe-photos">
@@ -308,18 +305,13 @@ function RecipeEdit({ r }: { r: Recipe }) {
   return (
     <article className="page">
       {r.deleted && <Deleted onRestore={() => save({ deleted: false })} />}
-      <div className="page-kind">
-        <span>
-          <A className="kind-link" href="/recipes">
-            🍳 Recipe
-          </A>{" "}
-          · editing
-        </span>
+      <PageKind kind="recipes">
+        <span className="editing-note">· editing</span>
         <span className="spacer" />
         <button className="btn primary" onClick={done}>
           Done
         </button>
-      </div>
+      </PageKind>
       <div className="title-row">
         <DraftInput className="title-input" value={r.name} required aria-label="Name" onCommit={(name) => save({ name })} />
       </div>

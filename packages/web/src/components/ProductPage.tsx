@@ -4,7 +4,7 @@ import { duplicate, ensureFood, ensureStore, remove } from "../actions";
 import { A, go, pathOf } from "../router";
 import { data, put, useData } from "../sync";
 import { ConfirmDialog } from "./ConfirmDialog";
-import { DraftInput, DraftTextarea, Field, MultiPicker, Picker, Segmented } from "./controls";
+import { DraftInput, DraftTextarea, Field, MultiPicker, PageKind, Picker, Segmented } from "./controls";
 import { EatingFields, LogSection, doneText } from "./eating";
 import { Photos } from "./Photos";
 import { Deleted, NotFound } from "./FoodPage";
@@ -30,20 +30,7 @@ export function ProductPage({ id }: { id: string }) {
   return (
     <article className="page">
       {p.deleted && <Deleted onRestore={() => save({ deleted: false })} />}
-      <div className="page-kind">
-        {/* One run of text, so "Product of Frozen potatoes" is spaced like words. */}
-        <span>
-          <A className="kind-link" href="/products">
-            🛒 Product
-          </A>
-          {food && " "}
-          {food && (
-            <span className="crumbs">
-              of <A href={pathOf("foods", food.id)}>{food.name}</A>
-            </span>
-          )}
-        </span>
-      </div>
+      <PageKind kind="products" trail={food ? [{ href: pathOf("foods", food.id), label: food.name }] : []} />
       {/* Brand, then name: reads as the whole name ("Bell & Evans" "Gluten Free Chicken Breasts"). */}
       <div className="title-row product-title">
         <DraftInput className="title-input brand-input" value={p.brand} placeholder="Brand" aria-label="Brand" list={brands} onCommit={(brand) => save({ brand })} />

@@ -475,3 +475,29 @@ export function Field({ label, children, htmlFor }: { label: string; children: R
 
 export const KIND_ICON = { recipes: "🍳", products: "🛒", foods: "🥕", stores: "🏪" } as const;
 export const KIND_ONE = { recipes: "Recipe", products: "Product", foods: "Food", stores: "Store" } as const;
+
+/**
+ * The line above a page: "🥕 FOOD › Condiment › Mustard". The kind goes to its list, each crumb
+ * to its page; the › between them are plain, and nothing trails (the page's name is the title
+ * below). `children` go after it (a spacer and ✏️ Edit).
+ */
+export function PageKind({ kind, trail = [], children }: { kind: keyof typeof KIND_ONE; trail?: { href: string; label: string }[]; children?: ReactNode }) {
+  return (
+    <div className="page-kind">
+      <nav className="crumbs" aria-label="Breadcrumb">
+        <A className="kind-link" href={`/${kind}`}>
+          {KIND_ICON[kind]} {KIND_ONE[kind]}
+        </A>
+        {trail.map((t) => (
+          <span key={t.href} className="crumb">
+            <span className="crumb-sep" aria-hidden>
+              ›
+            </span>
+            <A href={t.href}>{t.label}</A>
+          </span>
+        ))}
+      </nav>
+      {children}
+    </div>
+  );
+}

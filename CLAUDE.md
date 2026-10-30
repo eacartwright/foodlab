@@ -176,5 +176,6 @@ tombstones (`deleted`), restorable with Undo or the page's Restore.
 - 2026-10-29: a food's tags count in search for its kinds (is-a only) and their products, not
   recipes (`View.kindsUp`; DESIGN.md §5.1): how drinks are grouped (tag Soda `drink`). 93 tests.
 - 2026-10-30: "Is a" is labelled **Kind of** on screen (data unchanged, `parentId`); the "🥕 Food" /
-  "🛒 Product" / "🍳 Recipe" / "🏪 Store" label above a page links to its list (`.kind-link`).
+  "🛒 Product" / "🍳 Recipe" / "🏪 Store" label above a page links to its list. One header for all four,
+  `PageKind` in `controls.tsx`: KIND › crumb › crumb, every part a link, plain › between, nothing trailing.
 - **Next: M4** (places & dishes) or M6 (weights).
