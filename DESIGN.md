@@ -487,12 +487,24 @@ signal: checking off goes through the outbox like any save).
 ### 5.9 Settings and AI
 
 ⚙ opens Settings with its **sections down the side** (2026-10-26; sideshow's tabs across the
-top got crowded): General (Colors, per device) · Meal times · **AI** · Data. On the phone the
-side column is narrow, icon over label. The last section opened is remembered per device.
+top got crowded): General (Colors, per device) · Meal times · **AI** · Data · Experimental. On
+the phone the side column is narrow, icon over label. The last section opened is remembered per device.
+
+**Experimental** (2026-10-29, sideshow's font tester): Header font and App font, per device,
+from any Google Fonts sans-serif (`web/fonts.ts`, `fonts-sans.ts`); arrowing through the list
+applies each live, and Settings doesn't dim the app meanwhile. Temporary: the defaults stay
+Unbounded / Bricolage Grotesque; delete the tester (and restore the dimming) when done.
 
 **AI** (app-wide, in the settings record's `ai`):
 
-- **Model**: Off · Haiku · Sonnet · Opus (5.5 each). Opus 5.5 until testing says otherwise.
+- **Two providers** (2026-10-29, as in sideshow; Evan wants to try both): Anthropic (Claude)
+  and OpenAI (GPT), each on when the server has its key. Under the Model box, a dot per
+  provider says which keys the server has.
+- **Model**: a dropdown, Off or a model grouped by provider, with its list price (`shared/ai.ts`,
+  sideshow's prices, checked 2026-10-29): Claude Haiku / Sonnet / Opus 5.5, GPT-6 Luna,
+  GPT-6.1 Terra / Sol. A provider without a key has its models greyed out. Opus 5.5 until
+  testing says otherwise. Both read with low effort into the same recipe shape (Zod; Anthropic
+  `messages.parse`, OpenAI `responses.parse`).
 - **This month**: estimated cost (from token counts × list prices, `shared/ai.ts`), a meter
   against the cap with a tick per alert level (green, warn past an alert, danger at the cap),
   calls and tokens, a bar per day, a table by model, the recent calls (`GET /api/ai`, from
@@ -502,11 +514,12 @@ side column is narrow, icon over label. The last section opened is remembered pe
   little over.
 - **Alerts at** 50 / 75 / 90% of the cap (default 75 and 90; 100% always): a call that
   crosses one shows a toast, and the meter turns. No push notifications (yet).
-- **Compare**: a link or pasted text through every model and the plain reader, side by side
+- **Compare**: a link or pasted text through every model with a key and the plain reader, side by side
   (cost, time, tokens, what each read), counted in the month's use. For choosing the model.
 
-The key is `ANTHROPIC_API_KEY` in `.env` on the mini PC (runbook), never in the app. Without
-it the AI section says so and reading works as before. Refusal fallbacks (re-running a
+The keys are `ANTHROPIC_API_KEY` and `OPENAI_API_KEY` in `.env` on the mini PC (runbook),
+either or both, never in the app. Without either the AI section says so and reading works as
+before; a picked model whose provider has no key falls back to the plain reader with a note. Refusal fallbacks (re-running a
 declined request on another model) are left out: recipes don't trip them, and a fallback
 bills at another model's price, which the tracker would miss.
 

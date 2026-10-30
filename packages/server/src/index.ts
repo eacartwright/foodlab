@@ -4,8 +4,8 @@ import { Hono } from "hono";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { AI_MODELS, aiOf, Invalid, KINDS, recipeFromText, type Kind, type ReadRecipe } from "@foodlab/shared";
-import { AiStopped, aiRead, pagePrompt, usage, type AiResult } from "./ai";
+import { aiOf, Invalid, KINDS, recipeFromText, type Kind, type ReadRecipe } from "@foodlab/shared";
+import { AiStopped, aiRead, availableModels, pagePrompt, usage, type AiResult } from "./ai";
 import { startBackups } from "./backup";
 import { openDb } from "./db";
 import { FileStore, MAX_FILE } from "./files";
@@ -107,7 +107,7 @@ app.put("/api/:kind/:id", async (c) => {
   }
 });
 
-// A shared recipe page, read (DESIGN.md §5.5): its recipe data, else Claude reads its text.
+// A shared recipe page, read (DESIGN.md §5.5): its recipe data, else the AI model reads its text.
 // Nothing is saved but the AI's cost: the app makes the recipe.
 app.get("/api/read-recipe", async (c) => {
   const url = c.req.query("url") ?? "";
@@ -138,7 +138,7 @@ app.get("/api/page-photo", async (c) => {
   return new Response(photo.data, { headers: { "content-type": photo.type, "cache-control": "private, max-age=3600", "x-content-type-options": "nosniff" } });
 });
 
-// Pasted recipe text: Claude reads it when AI is on, else the plain reader (recipeFromText).
+// Pasted recipe text: the AI model reads it when AI is on, else the plain reader (recipeFromText).
 app.post("/api/read-text", async (c) => {
   const body = await jsonBody(c);
   const text = typeof body?.text === "string" ? body.text.slice(0, 60_000) : "";
@@ -155,7 +155,7 @@ app.post("/api/read-text", async (c) => {
 // Settings → AI: this month's use.
 app.get("/api/ai", (c) => c.json(usage(db)));
 
-// Settings → AI → Compare: the same recipe through every model, and the plain reader.
+// Settings → AI → Compare: the same recipe through every model with a key, and the plain reader.
 app.post("/api/ai/compare", async (c) => {
   const body = await jsonBody(c);
   let text = typeof body?.text === "string" ? body.text.slice(0, 60_000) : "";
@@ -164,14 +164,14 @@ app.post("/api/ai/compare", async (c) => {
   if (url) {
     const r = await readRecipe(url);
     if (!("html" in r)) return c.json({ error: r.error, message: r.message });
-    // With recipe data or without, Claude gets the page's text, to compare.
+    // With recipe data or without, the models get the page's text, to compare.
     plain = "recipe" in r ? r.recipe : null;
     text = pagePrompt(url, r.html);
   }
   if (!text.trim()) return c.json({ error: "failed", message: "Nothing to read" }, 400);
   const ai = aiOf(store.state);
   const results = await Promise.all(
-    AI_MODELS.map(async (m) => {
+    availableModels().map(async (m) => {
       try {
         return aiReply(await aiRead(db, { ...ai, model: m.id }, text, "compare", m.id));
       } catch (err) {
@@ -186,7 +186,7 @@ app.all("/api/*", (c) => c.json({ error: "Not found" }, 404));
 
 const aiReply = (a: AiResult) => ({ recipe: a.recipe, model: a.model, costUsd: a.costUsd, tokens: a.tokens, ms: a.ms, alerts: a.alerts, limitUsd: aiOf(store.state).monthlyLimitUsd });
 
-/** Why Claude wasn't used, for the app to show: " (AI: …)". */
+/** Why AI wasn't used, for the app to show: " (AI: …)". */
 function aiWhy(err: unknown): string {
   if (err instanceof AiStopped) return ` (AI: ${err.message})`;
   console.error(err);

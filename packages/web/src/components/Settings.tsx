@@ -1,13 +1,15 @@
 import {
   AI_MODELS,
+  AI_PROVIDERS,
   aiOf,
   blank,
   DEFAULT_MEAL_TIMES,
+  KEY_NAMES,
   MEAL_TAGS,
   mealTimes,
   modelLabel,
+  PROVIDER_NAMES,
   SETTINGS_ID,
-  type AiModel,
   type AiSettings,
   type AiUsage,
   type MealSlot,
@@ -16,6 +18,8 @@ import {
 } from "@foodlab/shared";
 import { useEffect, useState } from "react";
 import { aiAlert, money, photoFromLink, photoless, type ReadReply } from "../ai";
+import { FONTS, fontChoice, loaded, setFont, type FontSlot } from "../fonts";
+import { ALL_SANS } from "../fonts-sans";
 import { Markdown } from "../markdown";
 import { data, put, refresh, useData } from "../sync";
 import { showToast } from "../toast";
@@ -24,13 +28,15 @@ import { Dialog } from "./Dialog";
 import { Field, NumberInput, Segmented } from "./controls";
 
 // Settings (DESIGN.md §5.9): sections down the side, so there's room for more of them.
-// Meal times and AI are app-wide (the settings record); Colors is per device.
+// Meal times and AI are app-wide (the settings record); Colors is per device. Things being
+// tried out go under Experimental.
 
 const SECTIONS = [
   { id: "general", label: "General", icon: "⚙️" },
   { id: "meals", label: "Meal times", icon: "🕑" },
   { id: "ai", label: "AI", icon: "✨" },
   { id: "data", label: "Data", icon: "🗄️" },
+  { id: "experimental", label: "Experimental", icon: "🔬" },
 ] as const;
 type Section = (typeof SECTIONS)[number]["id"];
 const LAST = "foodlab:settings-section";
@@ -76,7 +82,7 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
           ))}
         </nav>
         <div id="settings-panel" role="tabpanel" aria-labelledby={`settings-tab-${section}`} className="settings-panel">
-          {section === "general" ? <General /> : section === "meals" ? <MealTimes /> : section === "ai" ? <AiSection /> : <DataSection />}
+          {section === "general" ? <General /> : section === "meals" ? <MealTimes /> : section === "ai" ? <AiSection /> : section === "data" ? <DataSection /> : <Experimental />}
         </div>
       </div>
     </Dialog>
@@ -102,6 +108,60 @@ function General() {
         <p className="muted small">This device only.</p>
       </Field>
     </div>
+  );
+}
+
+/** Being tried out: may change or go away. */
+function Experimental() {
+  return (
+    <div className="fields">
+      <p className="muted small">Things being tried out. They may change or go away.</p>
+      <FontSetting slot="header" label="Header font" />
+      <FontSetting slot="app" label="App font" />
+    </div>
+  );
+}
+
+/** TEMPORARY: try Google Fonts (fonts.ts, as in sideshow). Arrow keys in the dropdown apply each one live. */
+function FontSetting({ slot, label }: { slot: FontSlot; label: string }) {
+  const [family, setFamily] = useState(() => fontChoice(slot));
+  const [missing, setMissing] = useState(false);
+  return (
+    <Field label={label} htmlFor={`font-${slot}`}>
+      <select
+        id={`font-${slot}`}
+        className="select"
+        value={family}
+        onChange={async (e) => {
+          const f = e.target.value;
+          setFamily(f);
+          setMissing(false);
+          const ok = await setFont(slot, f);
+          if (fontChoice(slot) === f) setMissing(!ok);
+        }}
+      >
+        <option value="">{slot === "app" ? "Bricolage Grotesque (default)" : "Unbounded (default)"}</option>
+        <option value="system-ui">System font</option>
+        <optgroup label="Picks (from sideshow)">
+          {FONTS.map((f) => (
+            <option key={f} value={f}>
+              {f}
+              {loaded.get(f) === false ? " (not on Google Fonts)" : ""}
+            </option>
+          ))}
+        </optgroup>
+        <optgroup label={`All ${ALL_SANS.length} sans-serif, most popular first`}>
+          {ALL_SANS.filter((f) => !FONTS.includes(f)).map((f) => (
+            <option key={f} value={f}>
+              {f}
+              {loaded.get(f) === false ? " (couldn't load)" : ""}
+            </option>
+          ))}
+        </optgroup>
+      </select>
+      {missing && <p className="warn small">Google Fonts doesn't have “{family}”; showing the system font.</p>}
+      {slot === "app" && <p className="muted small">This device only. Focus the list and use the arrow keys to flip through them.</p>}
+    </Field>
   );
 }
 
@@ -199,9 +259,6 @@ function FindPhotos() {
 
 // ---- AI (DESIGN.md §5.9) ----
 
-const MODEL_OPTIONS = ["off", ...AI_MODELS.map((m) => m.id)] as AiModel[];
-// Short, so the four fit across a phone: "Haiku", not "Haiku 5.5".
-const MODEL_LABELS = Object.fromEntries(MODEL_OPTIONS.map((m) => [m, m === "off" ? "Off" : modelLabel(m).replace(/ [\d.]+$/, "")])) as Record<AiModel, string>;
 const ALERT_CHOICES = [50, 75, 90];
 const tokensK = (n: number) => (n >= 10_000 ? `${Math.round(n / 1000)}K` : n >= 1000 ? `${(n / 1000).toFixed(1)}K` : String(n));
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
@@ -224,14 +281,39 @@ function AiSection() {
 
   return (
     <div className="fields ai-settings">
-      {use && !use.configured && (
+      {use && !use.providers.length && (
         <p className="notice">
-          No API key on the server yet: add <code>ANTHROPIC_API_KEY=…</code> to <code>.env</code> and restart (runbook). Until then recipes are read without AI.
+          No API key on the server yet: add <code>ANTHROPIC_API_KEY=…</code> or <code>OPENAI_API_KEY=…</code> to <code>.env</code> and restart (runbook). Until then
+          recipes are read without AI.
         </p>
       )}
       {error && <p className="notice">{error}</p>}
-      <Field label="Model">
-        <Segmented value={ai.model} options={MODEL_OPTIONS} labels={MODEL_LABELS} clearable={false} onChange={(model) => model && saveAi({ model })} />
+      <Field label="Model" htmlFor="ai-model">
+        <select id="ai-model" className="select" value={ai.model} onChange={(e) => saveAi({ model: e.target.value })}>
+          <option value="off">Off</option>
+          {AI_PROVIDERS.map((p) => {
+            const on = !use || use.providers.includes(p);
+            return (
+              <optgroup key={p} label={`${PROVIDER_NAMES[p]}${on ? "" : " (no key)"}`}>
+                {AI_MODELS.filter((m) => m.provider === p).map((m) => (
+                  <option key={m.id} value={m.id} disabled={!on && m.id !== ai.model}>
+                    {m.label} · ${m.input} in / ${m.output} out per M tokens
+                  </option>
+                ))}
+              </optgroup>
+            );
+          })}
+        </select>
+        {use && (
+          <p className="small ai-keys">
+            {AI_PROVIDERS.map((p) => (
+              <span key={p} className={use.providers.includes(p) ? "" : "muted"}>
+                {use.providers.includes(p) ? "●" : "○"} {PROVIDER_NAMES[p]}
+                {use.providers.includes(p) ? "" : ` (no ${KEY_NAMES[p]})`}
+              </span>
+            ))}
+          </p>
+        )}
       </Field>
       <Field label="This month">{use ? <Spend use={use} ai={ai} /> : !error && <p className="muted small">Loading…</p>}</Field>
       <Field label="Monthly cap">
@@ -349,7 +431,7 @@ function Spend({ use, ai }: { use: AiUsage; ai: AiSettings }) {
 
 type CompareResult = ReadReply & { model: string; ms?: number; tokens?: { input: number; output: number } };
 
-/** The same recipe through every model and the plain reader, side by side. */
+/** The same recipe through every model with a key and the plain reader, side by side. */
 function Compare({ onDone }: { onDone: () => void }) {
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);

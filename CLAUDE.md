@@ -39,7 +39,8 @@ aria-label (a page's title behind the Quick add dialog): scope selectors to `.qu
   `index.ts`: `GET /api/state` (all of it, ETag = rev), `PUT /api/<kind>/<id>` (whole
   record), `/api/health`, `GET` / `POST /api/files` (`files.ts`: photos and attachments in `data/files`), `GET /api/read-recipe?url=` (`readRecipe.ts`: fetches a shared page openly, never
   disguised as a browser; no recipe data → Claude), `POST /api/read-text`, `GET /api/ai`, `POST /api/ai/compare`
-  (`ai.ts`: `@anthropic-ai/sdk` `messages.parse` + Zod, effort low, cost into `ai_usage`, monthly cap), and the built app with SPA fallback (`/share`, `/foods/<id>`…).
+  (`ai.ts`: Claude via `@anthropic-ai/sdk` `messages.parse`, GPT via `openai` `responses.parse`, both + Zod,
+  effort low, each provider on with its key, cost into `ai_usage`, monthly cap), and the built app with SPA fallback (`/share`, `/foods/<id>`…).
 - `packages/web` — React + Vite, installable PWA with a **share target** (`/share`,
   `manifest.webmanifest`). `sync.ts`: server state cached in localStorage + an **outbox** of
   whole records (latest version per record, in first-changed order; a `seq` stops a reply
@@ -87,7 +88,7 @@ tombstones (`deleted`), restorable with Undo or the page's Restore.
 
 - Commit and push only when asked.
 - Prefers the Claude desktop app / claude.ai over the terminal; give GUI steps where possible.
-- Develops on NOSTROMO (`C:\Dev\foodlab`). Personal phone: **Android** (always); the iPhone 13
+- Develops on NOSTROMO, his desktop, and sometimes HPBROBOOK, his laptop (`C:\Dev\foodlab` on both). Personal phone: **Android** (always); the iPhone 13
   is sideshow's. The mini PC hosts the real app at `C:\Apps\foodlab`, port 8082
   ([docs/runbook.md](docs/runbook.md)).
 
@@ -134,7 +135,7 @@ tombstones (`deleted`), restorable with Undo or the page's Restore.
   Products · Groceries · Search). Pushed (`951c25e`). Placeholder text: Evan is listing which to cut.
 - `Z:` on Evan's laptop is the mini PC's `C:` (`\\ripley\C`), so `Z:\Apps\foodlab` is the
   **live clone**: never edit, build or `npm install` there, and never open its `data/foodlab.db`
-  over the share (copy it with its `-wal` to scratch to look). Develop in the laptop's
+  over the share (copy it with its `-wal` to scratch to look). Develop in
   `C:\Dev\foodlab`; read the live dev notes at `Z:\Apps\foodlab\data\dev-notes.md`.
 - 2026-10-26: **M1 and M2 done** (deployed, installed from Chrome on the Pixel 8a, Share working,
   Groceries offline checked in airplane mode).
@@ -164,4 +165,9 @@ tombstones (`deleted`), restorable with Undo or the page's Restore.
 - 2026-10-28: recipe view lost the "want to try" badge and its 📷 / 🔗 photo buttons (Edit only).
 - 2026-10-28: photos can be pasted (Ctrl+V on the page, or 📋 Paste photo via `navigator.clipboard.read`), on
   recipes in Edit and on products. Browser-checked.
+- 2026-10-29: Settings → **Experimental**: sideshow's font tester (header and app font, per device,
+  `fonts.ts` / `fonts-sans.ts`, Settings undimmed). Browser-checked.
+- 2026-10-29: **OpenAI beside Claude** (as in sideshow, DESIGN.md §5.9): GPT-6 Luna, GPT-6.1 Terra / Sol;
+  each provider on with its key (`OPENAI_API_KEY`); Model is a dropdown by provider; Compare runs the
+  models with a key. Checked against a stand-in OpenAI server (`OPENAI_BASE_URL`). 92 tests.
 - **Next: M4** (places & dishes) or M6 (weights).

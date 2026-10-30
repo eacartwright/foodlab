@@ -26,7 +26,7 @@ import {
   type Store,
   type Tag,
 } from "./types";
-import { AI_MODELS, DEFAULT_AI, type AiModel, type AiSettings } from "./ai";
+import { DEFAULT_AI, modelInfo, type AiModel, type AiSettings } from "./ai";
 
 // Turns a request body into a clean record, or says what's wrong. The server runs these on
 // every save; references to other records are checked separately (server), since that needs state.
@@ -109,7 +109,7 @@ function aiSettings(x: unknown): AiSettings {
   if (x === undefined || x === null) return DEFAULT_AI;
   const b = obj(x);
   const model = b.model as AiModel;
-  if (model !== "off" && !AI_MODELS.some((m) => m.id === model)) throw new Invalid("ai.model: off or a Claude model");
+  if (typeof model !== "string" || (model !== "off" && !modelInfo(model))) throw new Invalid("ai.model: off or a known model");
   if (!Array.isArray(b.alertsAt) || b.alertsAt.length > 6) throw new Invalid("ai.alertsAt: up to 6 percentages");
   const alertsAt = [...new Set(b.alertsAt.map((p, n) => Math.round(num(p, `ai.alertsAt[${n}]`, 1, 100) ?? 0)))].filter(Boolean).sort((p, q) => p - q);
   return { model, monthlyLimitUsd: num(b.monthlyLimitUsd, "ai.monthlyLimitUsd", 0, 1000), alertsAt };

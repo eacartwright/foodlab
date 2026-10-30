@@ -1,18 +1,39 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
+import OpenAI from "openai";
+import { zodTextFormat } from "openai/helpers/zod";
 import { z } from "zod";
-import { costUsd, crossed, monthOf, type AiSettings, type AiTokens, type AiUsage, type ReadRecipe } from "@foodlab/shared";
+import {
+  AI_MODELS,
+  costUsd,
+  crossed,
+  KEY_NAMES,
+  modelInfo,
+  monthOf,
+  type AiProvider,
+  type AiSettings,
+  type AiTokens,
+  type AiUsage,
+  type ReadRecipe,
+} from "@foodlab/shared";
 import type { DB } from "./db";
 
-// Claude reads a recipe the plain reader can't: a page without recipe data, or pasted text
-// (DESIGN.md §5.5, §5.9). The key comes from ANTHROPIC_API_KEY in .env and never leaves the
-// server. Every call is recorded in ai_usage with its estimated cost; past the monthly cap the
-// server makes no more calls.
+// Claude or GPT reads a recipe the plain reader can't: a page without recipe data, or pasted
+// text (DESIGN.md §5.5, §5.9). The keys come from ANTHROPIC_API_KEY and OPENAI_API_KEY in .env
+// (either or both, as in sideshow) and never leave the server. Every call is recorded in
+// ai_usage with its estimated cost; past the monthly cap the server makes no more calls.
 
-export const hasKey = () => !!(process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN);
+/** Which providers have a key: their models can be picked. */
+export const providers = (env: NodeJS.ProcessEnv = process.env): AiProvider[] => [
+  ...(env.ANTHROPIC_API_KEY || env.ANTHROPIC_AUTH_TOKEN ? (["anthropic"] as const) : []),
+  ...(env.OPENAI_API_KEY ? (["openai"] as const) : []),
+];
 
-let client: Anthropic | undefined;
-const claude = () => (client ??= new Anthropic());
+/** The models that can be used now (their provider has a key). */
+export const availableModels = () => AI_MODELS.filter((m) => providers().includes(m.provider));
+
+let anthropic: Anthropic | undefined;
+let openai: OpenAI | undefined;
 
 const Recipe = z.object({
   name: z.string(),
@@ -46,14 +67,58 @@ export interface AiResult {
   alerts: number[];
 }
 
+type Parsed = z.infer<typeof Recipe>;
+/** One provider's call: the recipe it read (null when it declined), its tokens, and anything odd. */
+type Ask = (model: string, text: string) => Promise<{ out: Parsed | null; tokens: AiTokens; note: string }>;
+
+const askAnthropic: Ask = async (model, text) => {
+  const res = await (anthropic ??= new Anthropic()).messages.parse({
+    model,
+    max_tokens: 16000,
+    system: SYSTEM,
+    messages: [{ role: "user", content: text }],
+    // Copying a recipe out of text needs little thinking.
+    output_config: { effort: "low", format: zodOutputFormat(Recipe) },
+  });
+  const tokens = { input: res.usage.input_tokens, output: res.usage.output_tokens, cacheRead: res.usage.cache_read_input_tokens ?? 0 };
+  const out = res.stop_reason === "refusal" ? null : res.parsed_output;
+  return { out, tokens, note: res.stop_reason === "refusal" ? "declined" : out ? "" : `no recipe (${res.stop_reason})` };
+};
+
+const askOpenAi: Ask = async (model, text) => {
+  const res = await (openai ??= new OpenAI()).responses.parse({
+    model,
+    instructions: SYSTEM,
+    input: text,
+    reasoning: { effort: "low" },
+    max_output_tokens: 16000,
+    text: { format: zodTextFormat(Recipe, "recipe") },
+  });
+  // OpenAI counts cached input inside input_tokens; the bill (and costUsd) counts them apart.
+  const cached = res.usage?.input_tokens_details?.cached_tokens ?? 0;
+  const tokens = { input: (res.usage?.input_tokens ?? 0) - cached, output: res.usage?.output_tokens ?? 0, cacheRead: cached };
+  const out = res.output_parsed;
+  return { out, tokens, note: out ? "" : `no recipe (${res.status})` };
+};
+
+const ASK: Record<AiProvider, Ask> = { anthropic: askAnthropic, openai: askOpenAi };
+
+/** A provider's error, short enough to show and log. */
+function errorNote(err: unknown): string {
+  if (err instanceof Anthropic.APIError || err instanceof OpenAI.APIError) return `${err.status ?? ""} ${err.message}`.trim().slice(0, 200);
+  return "Couldn't reach the AI service";
+}
+
 export function monthSpend(db: DB, month = monthOf(Date.now())): number {
   return (db.prepare("SELECT COALESCE(SUM(cost_usd), 0) AS c FROM ai_usage WHERE month = ?").get(month) as { c: number }).c;
 }
 
-/** Ask Claude for the recipe in `text`. Throws AiStopped when there's no key, AI is off or the month's cap is spent. */
+/** Ask the model for the recipe in `text`. Throws AiStopped when AI is off, its provider has no key or the month's cap is spent. */
 export async function aiRead(db: DB, ai: AiSettings, text: string, purpose: "read" | "paste" | "compare", model: string = ai.model): Promise<AiResult> {
-  if (!hasKey()) throw new AiStopped("No API key on the server");
   if (model === "off") throw new AiStopped("AI is off in Settings");
+  const info = modelInfo(model);
+  if (!info) throw new AiStopped(`Not a model foodlab knows: ${model}`);
+  if (!providers().includes(info.provider)) throw new AiStopped(`No ${KEY_NAMES[info.provider]} on the server`);
   const before = monthSpend(db);
   if (ai.monthlyLimitUsd !== null && before >= ai.monthlyLimitUsd) throw new AiStopped(`This month's $${ai.monthlyLimitUsd} cap is spent`);
   const started = Date.now();
@@ -66,21 +131,13 @@ export async function aiRead(db: DB, ai: AiSettings, text: string, purpose: "rea
   };
   let res;
   try {
-    res = await claude().messages.parse({
-      model,
-      max_tokens: 16000,
-      system: SYSTEM,
-      messages: [{ role: "user", content: text }],
-      // Copying a recipe out of text needs little thinking.
-      output_config: { effort: "low", format: zodOutputFormat(Recipe) },
-    });
+    res = await ASK[info.provider](model, text);
   } catch (err) {
-    record({ input: 0, output: 0, cacheRead: 0 }, false, err instanceof Anthropic.APIError ? `${err.status ?? ""} ${err.message}`.trim().slice(0, 200) : "Couldn't reach Claude");
+    record({ input: 0, output: 0, cacheRead: 0 }, false, errorNote(err));
     throw err;
   }
-  const tokens = { input: res.usage.input_tokens, output: res.usage.output_tokens, cacheRead: res.usage.cache_read_input_tokens ?? 0 };
-  const out = res.stop_reason === "refusal" ? null : res.parsed_output;
-  const cost = record(tokens, !!out, res.stop_reason === "refusal" ? "declined" : out ? "" : `no recipe (${res.stop_reason})`);
+  const { out, tokens } = res;
+  const cost = record(tokens, !!out, res.note);
   return { recipe: out ? toRecipe(out) : null, model, costUsd: cost, tokens, ms: Date.now() - started, alerts: crossed(ai, before, before + cost) };
 }
 
@@ -105,10 +162,10 @@ function toRecipe(r: z.infer<typeof Recipe>): ReadRecipe | null {
   };
 }
 
-/** What Claude is sent for a page. */
+/** What the model is sent for a page. */
 export const pagePrompt = (url: string, html: string) => `A recipe page (${url}):\n\n${pageText(html)}`;
 
-/** A page's readable text, for Claude: no scripts, styles or markup; one line per block. */
+/** A page's readable text, for the model: no scripts, styles or markup; one line per block. */
 export function pageText(html: string, max = 60_000): string {
   const t = html
     .replace(/<(script|style|noscript|svg|head|iframe|template)\b[\s\S]*?<\/\1>/gi, " ")
@@ -146,7 +203,7 @@ export function usage(db: DB): AiUsage {
     byDay.set(day, (byDay.get(day) ?? 0) + r.cost_usd);
   }
   return {
-    configured: hasKey(),
+    providers: providers(),
     month,
     costUsd: cost,
     tokens,

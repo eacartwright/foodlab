@@ -11,6 +11,7 @@
     "@foodlab/shared": "*",
     "@hono/node-server": "^2.1.1",
     "hono": "^4.13.9",
+    "openai": "^7.45.1",
     "zod": "^4.6.7"
   },
   "devDependencies": {

@@ -65,16 +65,23 @@ setup); this file has only what's different. Legend: **[Evan]** = needs Evan.
 - **Signed out:** the status badge says **Signed out · Sign in**; changes wait on the device
   until then.
 
-## Claude API key (AI reading, DESIGN.md §5.9)
+## AI keys: Claude and OpenAI (AI reading, DESIGN.md §5.9)
+
+Either or both; each turns its provider's models on in Settings → AI. Read at startup, so
+restart after adding one. Never sent to the browser.
 
 1. **[Evan]** platform.claude.com: Billing → add a little credit; Limits → a low monthly
    spend limit (a second stop behind foodlab's own cap); API Keys → **Create key** "foodlab
    mini PC", copy it (shown once).
 2. **[Evan]** On the mini PC itself (Remote Desktop, not `Z:`): open `C:\Apps\foodlab\.env` in
    Notepad, add `ANTHROPIC_API_KEY=sk-ant-…`, save. `install.ps1` keeps lines it doesn't own.
-3. Task Scheduler → **foodlab** → End, then Run. Settings → AI no longer says there's no key.
-4. Laptop testing: its own key in `C:\Dev\foodlab\.env` (git-ignored; `npm run dev` reads it).
-   Never paste a key into chat, a dev note or git.
+3. **[Evan]** OpenAI, the same way: platform.openai.com → Billing (a little credit) and
+   Limits (a low monthly budget); API keys → **Create new secret key** "foodlab mini PC";
+   add `OPENAI_API_KEY=sk-…` to the same `.env`.
+4. Task Scheduler → **foodlab** → End, then Run. Settings → AI shows a filled dot for each
+   provider with a key.
+5. Testing on a dev machine (NOSTROMO, HPBROBOOK): its own keys in `C:\Dev\foodlab\.env`
+   (git-ignored; `npm run dev` reads it). Never paste a key into chat, a dev note or git.
 
 ## Importing foods and products from Markdown
 

@@ -31,6 +31,7 @@
   --tabbar: 58px;
   --font: "Bricolage Grotesque", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-brand: "Unbounded", var(--font);
+  /* Settings › Experimental can try others, per device (fonts.ts). */
 }
 
 /* Dark: chosen in Settings, or following the system (theme.ts sets data-theme either way). */
@@ -1518,6 +1519,14 @@ ul.notes li.done .note-text {
 .dialog.settings {
   max-width: 820px;
 }
+/* TEMPORARY, with the font tester (as in sideshow): Settings doesn't dim the app, so fonts can
+   be judged while flipping through them. Restore the dimming when the tester goes. */
+.backdrop:has(> .dialog.settings) {
+  background: none;
+}
+.dialog.settings {
+  box-shadow: 0 8px 40px rgb(0 0 0 / 0.45);
+}
 .settings-layout {
   display: grid;
   grid-template-columns: 150px minmax(0, 1fr);
@@ -1633,6 +1642,11 @@ ul.notes li.done .note-text {
 .recent-calls {
   margin: 6px 0 0;
   padding-left: 18px;
+}
+.ai-keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
 }
 .compare-grid {
   display: grid;
