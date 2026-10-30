@@ -84,7 +84,6 @@ export function ProductPage({ id }: { id: string }) {
             options={view.stores.map((s) => ({ id: s.id, label: s.name }))}
             onChange={(storeIds) => save({ storeIds })}
             onCreate={ensureStore}
-            placeholder="Add a store…"
             createLabel="New store"
             linkTo={(s) => pathOf("stores", s)}
           />
@@ -94,10 +93,10 @@ export function ProductPage({ id }: { id: string }) {
         </Field>
         <EatingFields item={p} save={save} />
         <Field label="Shelf life">
-          <DraftInput className="input" value={p.shelfLife} placeholder="e.g. 2 weeks after opening" onCommit={(shelfLife) => save({ shelfLife })} />
+          <DraftInput className="input" value={p.shelfLife} onCommit={(shelfLife) => save({ shelfLife })} />
         </Field>
         <Field label="Notes">
-          <DraftTextarea className="input" rows={3} value={p.notes} placeholder="Why you like it or don't (too salty, doesn't melt…)" onCommit={(notes) => save({ notes })} />
+          <DraftTextarea className="input" rows={3} value={p.notes} onCommit={(notes) => save({ notes })} />
         </Field>
       </div>
 
