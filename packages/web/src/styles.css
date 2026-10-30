@@ -1529,7 +1529,7 @@ ul.notes li.done .note-text {
 }
 .settings-layout {
   display: grid;
-  grid-template-columns: 150px minmax(0, 1fr);
+  grid-template-columns: 176px minmax(0, 1fr);
   gap: 18px;
   min-height: 360px;
 }
