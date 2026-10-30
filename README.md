@@ -1,4 +1,4 @@
-# foodlab
+# Foodlab
 
 My external memory for food: foods, the products I buy and what I think of them, where they're
 sold, recipes built on foods, and what I've learned. It answers "what can I eat?", starting
@@ -16,4 +16,4 @@ npm run dev      # http://localhost:5174 (server on 8788)
 npm test
 ```
 
-Same stack and conventions as sideshow: TypeScript, React + Vite, Node + Hono, SQLite.
+Same stack and conventions as Sideshow: TypeScript, React + Vite, Node + Hono, SQLite.
