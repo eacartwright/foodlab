@@ -1,6 +1,8 @@
 import {
-  GF,
+  DISH_GF,
   GF_LABEL,
+  PRODUCT_GF,
+  type Dish,
   LOG_LABEL,
   RATING_EMOJI,
   STATUSES,
@@ -20,7 +22,7 @@ import { Section } from "./rows";
 
 // The fields recipes and products share (DESIGN.md §4.6), and their history.
 
-export function EatingFields<T extends Product | Recipe>({ item, save, inheritedTags }: { item: T; save: (patch: Partial<T>) => void; inheritedTags?: InheritedTag[] }) {
+export function EatingFields<T extends Product | Recipe | Dish>({ item, save, inheritedTags }: { item: T; save: (patch: Partial<T>) => void; inheritedTags?: InheritedTag[] }) {
   return (
     <>
       <Field label="Rating">
@@ -29,13 +31,14 @@ export function EatingFields<T extends Product | Recipe>({ item, save, inherited
       <Field label="Status">
         <Segmented value={item.status} options={STATUSES} labels={STATUS_LABEL} clearable={false} onChange={(v) => save({ status: v ?? "tried" } as Partial<T>)} />
       </Field>
-      {/* A product: how I know it's safe, or that it's someone else's. A recipe is gluten-free by
-          what goes in it; a non-GF version will be a variant (DESIGN.md §10). */}
-      {"brand" in item && (
+      {/* A product: how I know it's safe, or that it's someone else's; a dish: on the GF menu, GF
+          if modified, or ask. A recipe is gluten-free by what goes in it; a non-GF version will be
+          a variant (DESIGN.md §10). */}
+      {("brand" in item || "placeId" in item) && (
         <Field label="Gluten-free">
           <Segmented
             value={item.glutenFree === "unknown" ? null : item.glutenFree}
-            options={GF.filter((g) => g !== "unknown")}
+            options={"placeId" in item ? DISH_GF : PRODUCT_GF}
             labels={GF_LABEL}
             onChange={(v) => save({ glutenFree: v ?? "unknown" } as Partial<T>)}
           />
@@ -69,7 +72,7 @@ export function doneText(view: View, itemId: string, kind: "made" | "ate" | "bou
 export function LogSection({ itemKind, itemId }: { itemKind: LogTarget; itemId: string }) {
   const { view } = useData();
   const entries = view.logOf(itemId);
-  const kinds: LogKind[] = itemKind === "recipes" ? ["made", "note"] : ["ate", "bought", "note"];
+  const kinds: LogKind[] = itemKind === "recipes" ? ["made", "note"] : itemKind === "dishes" ? ["ate", "note"] : ["ate", "bought", "note"];
   const [kind, setKind] = useState<LogKind>(kinds[0]!);
   const [text, setText] = useState("");
   const [date, setDate] = useState(today());

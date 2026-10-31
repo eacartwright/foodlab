@@ -6,6 +6,7 @@ import {
   today,
   validators,
   type AnyRecord,
+  type Dish,
   type Id,
   type Kind,
   type LogEntry,
@@ -39,9 +40,9 @@ export class Store {
     this.check(kind, rec, prev);
 
     const log: LogEntry[] = [];
-    if ((kind === "products" || kind === "recipes") && !rec.deleted) {
-      const before = (prev as Product | Recipe | undefined)?.rating ?? null;
-      const after = (rec as Product | Recipe).rating;
+    if ((kind === "products" || kind === "recipes" || kind === "dishes") && !rec.deleted) {
+      const before = (prev as Product | Recipe | Dish | undefined)?.rating ?? null;
+      const after = (rec as Product | Recipe | Dish).rating;
       if (after && after !== before) {
         log.push({
           id: newId(),
@@ -49,7 +50,7 @@ export class Store {
           createdAt: now,
           updatedAt: now,
           rev: 0,
-          itemKind: kind,
+          itemKind: kind as "products" | "recipes" | "dishes",
           itemId: id,
           date: today(new Date(now)),
           kind: "rating",
@@ -107,6 +108,15 @@ export class Store {
           seen.add(i.id);
         }
         tags(r.tagIds);
+        break;
+      }
+      case "stores":
+        tags((rec as Records["stores"]).tagIds);
+        break;
+      case "dishes": {
+        const d = rec as Dish;
+        need(s.stores, d.placeId, "place");
+        tags(d.tagIds);
         break;
       }
       case "tags": {

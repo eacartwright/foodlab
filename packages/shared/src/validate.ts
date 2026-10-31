@@ -1,6 +1,10 @@
 import {
   BUY_AGAIN,
+  COSTS,
   EFFORTS,
+  PLACE_TYPES,
+  SPEEDS,
+  type Dish,
   GF,
   MEAL_TAGS,
   SETTINGS_ID,
@@ -182,7 +186,27 @@ export const validators: { [K in Kind]: (body: unknown, id: string, now: number)
   },
   stores(body, rid, now): Store {
     const b = obj(body);
-    return { ...base(b, rid, now), name: name(b.name), notes: str(b.notes, "notes") };
+    const types = b.types === undefined || b.types === null ? [] : b.types;
+    if (!Array.isArray(types)) throw new Invalid("types: expected a list");
+    return {
+      ...base(b, rid, now),
+      name: name(b.name),
+      notes: str(b.notes, "notes"),
+      types: [...new Set(types.map((t) => oneOf(t, PLACE_TYPES, "types")!))].filter(Boolean),
+      speed: oneOf(b.speed, SPEEDS, "speed"),
+      cost: oneOf(b.cost, COSTS, "cost"),
+      status: oneOf(b.status, STATUSES, "status"),
+      rating: oneOf(b.rating, RATINGS, "rating"),
+      address: str(b.address, "address", 500).trim(),
+      phone: str(b.phone, "phone", 60).trim(),
+      hours: str(b.hours, "hours", 2000),
+      links: strs(b.links, "links"),
+      tagIds: ids(b.tagIds, "tagIds"),
+    };
+  },
+  dishes(body, rid, now): Dish {
+    const b = obj(body);
+    return { ...base(b, rid, now), ...eating(b), name: name(b.name), placeId: id(b.placeId, "placeId") };
   },
   recipes(body, rid, now): Recipe {
     const b = obj(body);
@@ -211,7 +235,7 @@ export const validators: { [K in Kind]: (body: unknown, id: string, now: number)
     const b = obj(body);
     const date = str(b.date, "date", 10);
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Invalid("date: expected YYYY-MM-DD");
-    const itemKind = oneOf(b.itemKind, ["recipes", "products"] as const, "itemKind");
+    const itemKind = oneOf(b.itemKind, ["recipes", "products", "dishes"] as const, "itemKind");
     if (!itemKind) throw new Invalid("itemKind: required");
     const itemId = id(b.itemId, "itemId");
     if (!itemId) throw new Invalid("itemId: required");

@@ -1,4 +1,27 @@
-import { METHOD_LABEL, RATINGS, RATING_EMOJI, STATUSES, STATUS_LABEL, nameKey, productName, type Food, type FoodNode, type Product, type Rating, type Tag, type View } from "@foodlab/shared";
+import {
+  COSTS,
+  COST_LABEL,
+  GF_LABEL,
+  METHOD_LABEL,
+  PLACE_STATUS_LABEL,
+  PLACE_TYPES,
+  PLACE_TYPE_LABEL,
+  RATINGS,
+  RATING_EMOJI,
+  SPEEDS,
+  SPEED_LABEL,
+  STATUSES,
+  STATUS_LABEL,
+  nameKey,
+  productName,
+  type Food,
+  type FoodNode,
+  type PlaceType,
+  type Product,
+  type Rating,
+  type Tag,
+  type View,
+} from "@foodlab/shared";
 import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import { deleteTag, ensureStore, ensureTag, mergeTag, renameTag } from "../actions";
 import { showToast } from "../toast";
@@ -828,7 +851,7 @@ export function TagsList() {
 }
 
 /** "Oct 20 (3×)": the last time, and how many times when more than once. */
-function LastDone({ view, id, kind }: { view: View; id: string; kind: "made" | "bought" }) {
+function LastDone({ view, id, kind }: { view: View; id: string; kind: "made" | "bought" | "ate" }) {
   const { count, last } = view.done(id, kind);
   if (!last) return null;
   return (
@@ -839,40 +862,73 @@ function LastDone({ view, id, kind }: { view: View; id: string; kind: "made" | "
   );
 }
 
-export function StoresList() {
+/** A row of pills that filter by one field, kept in the address (?type=restaurant). Tap again to clear. */
+function Pills<T extends string>({ param, options, labels }: { param: string; options: readonly T[]; labels: Record<T, string> }) {
+  const { query } = useRoute();
+  const on = query.get(param);
+  return (
+    <div className="chips">
+      {options.map((o) => (
+        <button key={o} className={`chip small ${on === o ? "chip-on" : ""}`} aria-pressed={on === o} onClick={() => setQuery({ [param]: on === o ? null : o })}>
+          {labels[o]}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+export function PlacesList() {
   const { view } = useData();
   const { query } = useRoute();
   const f = query.get("f") ?? "";
-  const rows = useMemo(() => view.stores.filter((s) => match(s.name, f)), [view, f]);
-  const liked = (id: string) => view.productsAt(id).filter((p) => p.rating === "love" || p.rating === "up").length;
+  const type = query.get("type");
+  const speed = query.get("speed");
+  const cost = query.get("cost");
+  const status = query.get("status");
+  const rows = useMemo(
+    () =>
+      view.stores.filter(
+        (s) =>
+          match(s.name, f) &&
+          (!type || s.types.includes(type as PlaceType)) &&
+          (!speed || s.speed === speed) &&
+          (!cost || s.cost === cost) &&
+          (!status || s.status === status),
+      ),
+    [view, f, type, speed, cost, status],
+  );
   const { sorted, th } = useSort(rows, {
+    rating: { value: (s) => rank(s.rating), desc: true },
     name: { value: (s) => s.name },
+    type: { value: (s) => s.types.map((t) => PLACE_TYPE_LABEL[t]).join(", ") },
+    cost: { value: (s) => (s.cost ? Number(s.cost) : null) },
+    dishes: { value: (s) => view.dishesAt(s.id).length, desc: true },
     products: { value: (s) => view.productsAt(s.id).length, desc: true },
-    liked: { value: (s) => liked(s.id), desc: true },
   });
-  // A store is just a name, so + Add asks for it right here instead of in Quick add.
+  // A place starts as just a name, so + Add asks for it right here instead of in Quick add.
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState("");
   const create = () => {
     if (!name.trim()) return;
-    const id = ensureStore(name); // an existing store by that name opens instead
+    // An existing place by that name opens instead; a new one gets the type being filtered on.
+    const id = ensureStore(name, type ? { types: [type as PlaceType] } : {});
     setName("");
     setAdding(false);
     go(pathOf("stores", id));
   };
+  const filtered = !!(type || speed || cost || status);
   return (
     <ListShell
-      title="Stores"
+      title="Places"
       icon={KIND_ICON.stores}
       count={rows.length}
       add={() => setAdding(true)}
       filters={
-        adding && (
+        adding ? (
           <span className="inline">
             <input
               className="input"
-              placeholder="Store name"
-              aria-label="New store"
+              aria-label="New place"
               autoFocus
               value={name}
               enterKeyHint="done"
@@ -889,31 +945,126 @@ export function StoresList() {
               Cancel
             </button>
           </span>
+        ) : (
+          <>
+            <Pills param="type" options={PLACE_TYPES} labels={PLACE_TYPE_LABEL} />
+            <Pills param="speed" options={SPEEDS} labels={SPEED_LABEL} />
+            <Pills param="cost" options={COSTS} labels={COST_LABEL} />
+            <Pills param="status" options={STATUSES} labels={PLACE_STATUS_LABEL} />
+            {filtered && (
+              <button className="btn subtle" onClick={() => setQuery({ type: null, speed: null, cost: null, status: null })}>
+                Clear filters
+              </button>
+            )}
+          </>
         )
       }
-      empty="No stores yet: + Add one, or from a product's Sold at."
+      empty={filtered || f ? "No places match." : "No places yet: + Add one, or from a product's Sold at."}
       head={
         <tr>
-          {th("name", "Store")}
+          {th("rating", "❤️", "rate-col", "Rating")}
+          {th("name", "Place")}
+          {th("type", "Type", "hide-sm")}
+          {th("cost", "$", "hide-sm", "Cost")}
+          {th("dishes", "Dishes", "num")}
           {th("products", "Products", "num")}
-          {th("liked", "❤️ / 👍", "num", "Liked products")}
         </tr>
       }
     >
-      {sorted.map((s) => {
-        const ps = view.productsAt(s.id);
-        return (
-          <tr key={s.id}>
-            <td>
-              <A href={pathOf("stores", s.id)} className="strong">
-                {s.name}
-              </A>
-            </td>
-            <td className="num">{ps.length || ""}</td>
-            <td className="num">{liked(s.id) || ""}</td>
-          </tr>
-        );
-      })}
+      {sorted.map((s) => (
+        <tr key={s.id}>
+          <td className="rate-col">
+            <RatingMark value={s.rating} />
+          </td>
+          <td>
+            <A href={pathOf("stores", s.id)} className="strong">
+              {s.name}
+            </A>
+            {s.status === "want" && <span className="muted small"> · want to go</span>}
+          </td>
+          <td className="hide-sm muted">
+            {s.types.map((t) => PLACE_TYPE_LABEL[t]).join(", ")}
+            {s.speed && <span className="small"> · {SPEED_LABEL[s.speed]}</span>}
+          </td>
+          <td className="hide-sm muted">{s.cost ? COST_LABEL[s.cost] : ""}</td>
+          <td className="num">{view.dishesAt(s.id).length || ""}</td>
+          <td className="num">{view.productsAt(s.id).length || ""}</td>
+        </tr>
+      ))}
+    </ListShell>
+  );
+}
+
+export function DishesList() {
+  const { view } = useData();
+  const { query } = useRoute();
+  const f = query.get("f") ?? "";
+  const rating = query.get("rating");
+  const status = query.get("status");
+  const placeName = (placeId: string | null) => {
+    const p = placeId ? view.store(placeId) : undefined;
+    return p && !p.deleted ? p.name : "";
+  };
+  const rows = useMemo(
+    () => view.dishes.filter((d) => (match(d.name, f) || match(placeName(d.placeId), f)) && ratingOk(d.rating, rating) && (!status || d.status === status)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [view, f, rating, status],
+  );
+  const { sorted, th } = useSort(rows, {
+    rating: { value: (d) => rank(d.rating), desc: true },
+    name: { value: (d) => d.name },
+    place: { value: (d) => placeName(d.placeId) },
+    gf: { value: (d) => GF_LABEL[d.glutenFree] },
+    ate: { value: (d) => view.done(d.id, "ate").last, desc: true },
+  });
+  return (
+    <ListShell
+      title="Dishes"
+      icon={KIND_ICON.dishes}
+      count={rows.length}
+      add={() => openQuickAdd({ kind: "dishes" })}
+      empty={view.dishes.length ? "No dishes match." : "No dishes yet: + Add one, or from a place's page."}
+      filters={
+        <>
+          <select className="select" value={status ?? ""} onChange={(e) => setQuery({ status: e.target.value || null })} aria-label="Tried">
+            <option value="">Tried or not</option>
+            {[...STATUSES].reverse().map((x) => (
+              <option key={x} value={x}>
+                {STATUS_LABEL[x]}
+              </option>
+            ))}
+          </select>
+          <RatingFilter />
+        </>
+      }
+      head={
+        <tr>
+          {th("rating", "❤️", "rate-col", "Rating")}
+          {th("name", "Dish")}
+          {th("place", "Place")}
+          {th("gf", "Gluten-free", "hide-sm")}
+          {th("ate", "Last ate", "hide-sm")}
+        </tr>
+      }
+    >
+      {sorted.map((d) => (
+        <tr key={d.id}>
+          <td className="rate-col">
+            <RatingMark value={d.rating} />
+          </td>
+          <td>
+            <A href={pathOf("dishes", d.id)} className="strong">
+              {d.name}
+            </A>
+            {d.glutenFree === "no" && <NotGF />}
+          </td>
+          <td className="muted">{d.placeId && placeName(d.placeId) ? <A href={pathOf("stores", d.placeId)}>{placeName(d.placeId)}</A> : ""}</td>
+          <td className="hide-sm muted">{d.glutenFree !== "no" ? GF_LABEL[d.glutenFree] : ""}</td>
+          <td className="hide-sm muted">
+            <LastDone view={view} id={d.id} kind="ate" />
+          </td>
+        </tr>
+      ))}
     </ListShell>
   );
 }

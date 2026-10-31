@@ -19,7 +19,7 @@ export const STATUS_LABEL: Record<Status, string> = { tried: "Tried", want: "Wan
  * How sure I am it's gluten-free (DESIGN.md §4.6). Everything is, unless it's marked Not GF
  * (someone else's food); the rest says how I know. "unknown" = not said.
  */
-export const GF = ["unknown", "certified", "labeled", "ingredients", "facility", "no"] as const;
+export const GF = ["unknown", "certified", "labeled", "ingredients", "facility", "no", "menu", "modified", "ask"] as const;
 export type GlutenFree = (typeof GF)[number];
 export const GF_LABEL: Record<GlutenFree, string> = {
   unknown: "",
@@ -28,7 +28,27 @@ export const GF_LABEL: Record<GlutenFree, string> = {
   ingredients: "No gluten ingredients",
   facility: "Shared facility",
   no: "Not GF",
+  menu: "GF menu",
+  modified: "GF modified",
+  ask: "Ask",
 };
+/** The ones a product offers, and the ones a restaurant dish does (DESIGN.md §4.6, §4.11). */
+export const PRODUCT_GF = ["certified", "labeled", "ingredients", "facility", "no"] as const satisfies readonly GlutenFree[];
+export const DISH_GF = ["menu", "modified", "ask", "no"] as const satisfies readonly GlutenFree[];
+
+/** What a place is (DESIGN.md §4.4): any of these. */
+export const PLACE_TYPES = ["grocery", "specialty", "restaurant"] as const;
+export type PlaceType = (typeof PLACE_TYPES)[number];
+export const PLACE_TYPE_LABEL: Record<PlaceType, string> = { grocery: "Grocery store", specialty: "Specialty store", restaurant: "Restaurant" };
+/** How fast the food comes: a counter, hot bar or fast casual, or a table. */
+export const SPEEDS = ["quick", "sitdown"] as const;
+export type Speed = (typeof SPEEDS)[number];
+export const SPEED_LABEL: Record<Speed, string> = { quick: "Quick", sitdown: "Sit-down" };
+export const COSTS = ["1", "2", "3"] as const;
+export type Cost = (typeof COSTS)[number];
+export const COST_LABEL: Record<Cost, string> = { "1": "$", "2": "$$", "3": "$$$" };
+/** A place's status reads differently from a dish's: been there, or want to go. */
+export const PLACE_STATUS_LABEL: Record<Status, string> = { tried: "Been", want: "Want to go" };
 
 export const TRAVELS = ["cold", "microwave", "asis"] as const;
 export type Travels = (typeof TRAVELS)[number];
@@ -111,9 +131,32 @@ export interface Product extends Base, Eating {
   shelfLife: string;
 }
 
+/**
+ * A place (DESIGN.md §4.4): a store I buy products at, a restaurant with dishes, or both
+ * (Wegmans). Called a store in the code and tables, where it began; "Place" on screen.
+ */
 export interface Store extends Base {
   name: string;
   notes: string;
+  types: PlaceType[];
+  speed: Speed | null;
+  cost: Cost | null;
+  /** Been / want to go; null = not said (most stores). */
+  status: Status | null;
+  rating: Rating | null;
+  address: string;
+  phone: string;
+  hours: string;
+  /** Its site, Find Me Gluten Free, a menu. */
+  links: string[];
+  tagIds: Id[];
+}
+
+/** Something I eat at a place (DESIGN.md §4.11): the hot bar bowl, a restaurant's burger. */
+export interface Dish extends Base, Eating {
+  name: string;
+  /** Where. Null = not said yet. */
+  placeId: Id | null;
 }
 
 export interface RecipeIngredient {
@@ -148,7 +191,7 @@ export interface Tag extends Base {
   kind: TagKind;
 }
 
-export type LogTarget = "recipes" | "products";
+export type LogTarget = "recipes" | "products" | "dishes";
 export interface LogEntry extends Base {
   itemKind: LogTarget;
   itemId: Id;
@@ -208,6 +251,7 @@ export interface Records {
   products: Product;
   stores: Store;
   recipes: Recipe;
+  dishes: Dish;
   tags: Tag;
   log: LogEntry;
   devnotes: DevNote;
@@ -215,13 +259,13 @@ export interface Records {
   settings: Settings;
 }
 export type Kind = keyof Records;
-export const KINDS: Kind[] = ["foods", "products", "stores", "recipes", "tags", "log", "devnotes", "groceries", "settings"];
+export const KINDS: Kind[] = ["foods", "products", "stores", "recipes", "dishes", "tags", "log", "devnotes", "groceries", "settings"];
 export type AnyRecord = Records[Kind];
 
 /** Everything, keyed by id per kind. Deleted records are included (tombstones). */
 export type State = { [K in Kind]: Record<Id, Records[K]> } & { rev: number };
 
-export const emptyState = (): State => ({ rev: 0, foods: {}, products: {}, stores: {}, recipes: {}, tags: {}, log: {}, devnotes: {}, groceries: {}, settings: {} });
+export const emptyState = (): State => ({ rev: 0, foods: {}, products: {}, stores: {}, recipes: {}, dishes: {}, tags: {}, log: {}, devnotes: {}, groceries: {}, settings: {} });
 
 /** The fixed meal tags (DESIGN.md §4.9), seeded with these ids. */
 export const MEAL_TAGS: { id: Id; name: string }[] = [
@@ -277,7 +321,22 @@ export const blank = {
     buyAgain: null,
     shelfLife: "",
   }),
-  stores: (id: Id, name: string, now = Date.now()): Store => ({ ...EMPTY_BASE(id, now), name, notes: "" }),
+  stores: (id: Id, name: string, now = Date.now()): Store => ({
+    ...EMPTY_BASE(id, now),
+    name,
+    notes: "",
+    types: [],
+    speed: null,
+    cost: null,
+    status: null,
+    rating: null,
+    address: "",
+    phone: "",
+    hours: "",
+    links: [],
+    tagIds: [],
+  }),
+  dishes: (id: Id, name: string, now = Date.now()): Dish => ({ ...EMPTY_BASE(id, now), ...EMPTY_EATING(), name, placeId: null }),
   recipes: (id: Id, name: string, now = Date.now()): Recipe => ({
     ...EMPTY_BASE(id, now),
     ...EMPTY_EATING(),

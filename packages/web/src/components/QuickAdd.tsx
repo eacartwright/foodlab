@@ -12,13 +12,14 @@ import { Field, MultiPicker, Picker, RatingInput, Segmented } from "./controls";
 // Quick add (DESIGN.md §5.5): a kind, a name, and only the everyday fields. Also what
 // Share to foodlab opens, with the shared page's title and link filled in.
 
-type AddKind = "foods" | "products" | "recipes";
+type AddKind = "foods" | "products" | "recipes" | "dishes";
 export interface QuickAddInit {
   kind?: AddKind;
   name?: string;
   link?: string;
   foodId?: Id;
   storeIds?: Id[];
+  placeId?: Id;
 }
 
 let open: QuickAddInit | null = null;
@@ -44,8 +45,8 @@ export function useQuickAdd() {
   );
 }
 
-const KINDS: readonly AddKind[] = ["products", "recipes", "foods"];
-const LABELS: Record<AddKind, string> = { products: "🛒 Product", recipes: "🍳 Recipe", foods: "🥕 Food" };
+const KINDS: readonly AddKind[] = ["products", "recipes", "dishes", "foods"];
+const LABELS: Record<AddKind, string> = { products: "🛒 Product", recipes: "🍳 Recipe", dishes: "🥘 Dish", foods: "🥕 Food" };
 const LAST_KIND = "foodlab:add-kind";
 
 /** The page's photo onto the recipe just added: shrunk and uploaded like any (uploads.ts), then put on the latest copy. */
@@ -77,6 +78,7 @@ export function QuickAdd({ init }: { init: QuickAddInit }) {
   const [link, setLink] = useState(init.link ?? "");
   const [foodId, setFoodId] = useState<Id | null>(init.foodId ?? null);
   const [storeIds, setStoreIds] = useState<Id[]>(init.storeIds ?? []);
+  const [placeId, setPlaceId] = useState<Id | null>(init.placeId ?? null);
   const [rating, setRating] = useState<Rating | null>(null);
   const [tagIds, setTagIds] = useState<Id[]>([]);
   const [staple, setStaple] = useState(false);
@@ -157,6 +159,8 @@ export function QuickAdd({ init }: { init: QuickAddInit }) {
       // A name that starts with a brand I already have ("Bell & Evans Nuggets", often from Share) gets it split off.
       const b = brand.trim() || view.brands().find((x) => withoutBrand(n, x) !== n) || "";
       put("products", { ...blank.products(id, withoutBrand(n, b)), brand: b, foodId, storeIds, rating, tagIds, links, status });
+    } else if (kind === "dishes") {
+      put("dishes", { ...blank.dishes(id, n), placeId, rating, tagIds, links, status });
     } else {
       const fromRead = read
         ? {
@@ -220,7 +224,7 @@ export function QuickAdd({ init }: { init: QuickAddInit }) {
           <input
             className="input big"
             autoFocus={kind !== "products" || !!init.name}
-            placeholder={kind === "products" ? "e.g. Deli Deluxe American" : kind === "recipes" ? "e.g. Ham & cheese sandwich" : "e.g. Lemon juice"}
+            placeholder={kind === "products" ? "e.g. Deli Deluxe American" : kind === "recipes" ? "e.g. Ham & cheese sandwich" : kind === "dishes" ? "e.g. Burrito bowl" : "e.g. Lemon juice"}
             value={name}
             onChange={(e) => setName(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && add()}
@@ -251,11 +255,22 @@ export function QuickAdd({ init }: { init: QuickAddInit }) {
                     options={view.stores.map((s) => ({ id: s.id, label: s.name }))}
                     onChange={setStoreIds}
                     onCreate={ensureStore}
-                    placeholder="Add a store…"
-                    createLabel="New store"
+                    placeholder="Add a place…"
+                    createLabel="New place"
                   />
                 </Field>
               </>
+            )}
+            {kind === "dishes" && (
+              <Field label="Place">
+                <Picker
+                  value={placeId}
+                  options={view.stores.map((s) => ({ id: s.id, label: s.name }))}
+                  createLabel="New place"
+                  onChange={setPlaceId}
+                  onCreate={(t) => ensureStore(t, { types: ["restaurant"] })}
+                />
+              </Field>
             )}
             <Field label="Rating">
               <RatingInput value={rating} onChange={setRating} />

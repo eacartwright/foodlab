@@ -72,8 +72,8 @@ Ham & cheese sandwich ─ingredient in─▶ American cheese, GF bread…     (s
        └─ logged ─▶ 10/22 made · "used Cooper Sharp, better"
 ```
 
-**Eatables** answer "what can I eat?": recipes and products now, dishes at restaurants later
-(M4). They share the eating fields (§4.5). Foods don't: a food is a concept, not a meal.
+**Eatables** answer "what can I eat?": recipes and products at home, dishes at places (M4,
+§4.11). They share the eating fields (§4.6). Foods don't: a food is a concept, not a meal.
 
 ### 4.1 Relationship vocabulary
 
@@ -85,6 +85,7 @@ Everything the app stores between things is one of these. Everything else is der
 | **form of** | food → food | `food.formOfId` | Lemon juice is a form of Lemon |
 | **product of** | product → food | `product.foodId` | Santa Cruz Organic is a product of Lemon juice |
 | **sold at** | product ⋈ store | `product_stores` | Santa Cruz Organic is sold at Wegmans |
+| **at** | dish → place | `dish.placeId` | Hot bar mac and cheese is at Wegmans |
 | **ingredient in** | food → recipe | `recipe_ingredients` (+ quantity, unit, prep) | 2 slices American cheese in Ham & cheese |
 | **tagged** | anything ⋈ tag | `item_tags` | Ham & cheese is tagged Work lunch |
 | **logged** | log entry → recipe/product | `log_entries` | 10/22 made it, used Cooper Sharp |
@@ -139,10 +140,31 @@ name. The name never repeats the brand: saving strips a leading brand, and Quick
 known brand off a typed or shared name ("Bell & Evans Nuggets" → Bell & Evans + "Nuggets").
 Brand stays its own field so brand pages or filters can come later.
 
-### 4.4 Store
+### 4.4 Place (was Store)
 
-`name`, `notes`. A store's page lists every product I know is sold there, grouped ❤️ / 👍 /
-not rated / 👎 don't buy. Searching "Wegmans" finds the store and its products.
+**Stores became Places** (M4, 2026-10-31): Wegmans is where I buy products *and* where I eat
+from the hot bar, so it's one record, not two. Still `stores` in the code, tables and sync
+(`Store`, `storeIds`, `product_stores`); "Place" on screen and `/places` in the address
+(`/stores` still works).
+
+| Field | Notes |
+|---|---|
+| `name` | Required. |
+| `types` | Any of **Grocery store · Specialty store · Restaurant**: a fixed list, like meal tags, so the Places filters are reliable. |
+| `speed` | **Quick** (fast food, fast casual, a counter or hot bar) · **Sit-down**. |
+| `cost` | $ · $$ · $$$. |
+| `status` | **Been** · **Want to go** (stored as tried / want), blank = not said (most stores). |
+| `rating` | ❤️ · 👍 · 👎, like everything else. |
+| `address` | Opens Google Maps (🗺️ Map ↗). |
+| `phone` | 📞 Call. |
+| `hours` | Text, as the place says them. |
+| `links` | Its site, Find Me Gluten Free, a menu. |
+| `tags`, `notes` | |
+
+A place's page: those fields, then **Dishes** (when it has any, or is a restaurant or has a
+speed) and **Sold here** (products, grouped ❤️ / 👍 / not rated / 👎 don't buy; when it has any, or
+is a store, or has no type yet). Searching "Wegmans" finds the place, its products and its dishes;
+"restaurant" finds the restaurants.
 
 ### 4.5 Recipe
 
@@ -174,13 +196,13 @@ after half-typed lines made junk ones). Linking it is the Food box beside the li
 the parsed name typed in: pick a food, or **New food** on purpose. Changing a line's amount or
 prep keeps the food it was linked to.
 
-### 4.6 Eating fields (recipes, products; dishes later)
+### 4.6 Eating fields (recipes, products, dishes)
 
 | Field | Values |
 |---|---|
 | `rating` | ❤️ · 👍 · 👎 (offered best first), blank = not rated. |
 | `status` | `tried` · `want to try`. |
-| `glutenFree` | Products: `certified` · `labeled` · `ingredients` (no gluten ingredients) · `facility` (shared facility) · `no`, blank by default. Recipes: none on screen (2026-10-31; the column stays, unread). |
+| `glutenFree` | Products: `certified` · `labeled` · `ingredients` (no gluten ingredients) · `facility` (shared facility) · `no`, blank by default. Dishes: `menu` · `modified` · `ask` · `no` (§4.11). Recipes: none on screen (2026-10-31; the column stays, unread). |
 | `notes` | |
 | `links` | URLs (recipe source, product page, Find Me Gluten Free). |
 | `travels` | `packs cold` · `needs microwave` · `eat as-is`. **Shelved** 2026-10-30 (below). |
@@ -267,6 +289,21 @@ counter, and the same ten things typed out again every week.)
   turn to × and delete, each with Undo. Staples stay (they come from foods).
 - Pantry inventory stays a non-goal (§3): `need` is "I'm out", not "I have 3".
 
+### 4.11 Dish (M4)
+
+Something I eat at a place: a restaurant's burger, a bowl I assemble at the hot bar. `name`,
+`placeId` (optional at capture, like a product's food) and the eating fields (§4.6), photos and
+history (`ate` and notes; ratings logged like everything else).
+
+**Dish or product?** (2026-10-31) Anything packaged with a label is a **product**, even made by
+the store: Wegmans' frozen meals, and its fresh bowls made daily (they're on its site). Assembled
+at a hot bar or made to order is a **dish**.
+
+**Gluten-free on a dish** says how it's offered: **GF menu** (on the gluten-free menu) ·
+**GF modified** (GFM: made GF on request; notes say how) · **Ask** (ask each time) · **Not GF**
+(someone else's; never in Eat). Places don't have a GF field: dedicated GF kitchens and the like
+go in notes and tags until that proves too thin.
+
 ## 4a. Model decisions
 
 Answers to the ChatGPT sessions' modeling questions. Each is revisitable once there's data.
@@ -341,6 +378,10 @@ typed: Add buttons, meal shortcuts into Eat (the one for the time of day
 highlighted, §5.2), and recently changed things.
 
 ### 5.2 Eat (what can I eat?)
+
+**Home · Out · All** (M4, 2026-10-31), top right: Home (the default) is recipes and products;
+Out is dishes, grouped by place (the place with the best dish first); All is everything, mixed.
+Out / All stay in the address (`?where=`). The meal chips and filters work the same on all three.
 
 Meal chips (Breakfast · Lunch · Dinner · Snack · Dessert) over one mixed list of
 recipes and products with that tag: ❤️, then 👍, then not rated; 👎 hidden unless asked; Not GF
@@ -573,6 +614,18 @@ name and type in the `files` table; `GET /api/files/<id>` serves it, cached for 
 changes). Backups copy new files to `<backups>/files`. Deleting a photo only takes it off the
 record; the file stays (small, and Undo works).
 
+### 5.12 Places and dishes (M4)
+
+**Places** in the sidebar (📍), the Stores list renamed: rows with rating, type and speed, cost,
+dish and product counts, all sortable, and **filter pills** for type, speed, cost and Been / Want to
+go (`?type=restaurant`). **+ Add** asks for a name right there; a new place gets the type being
+filtered on. **Dishes** (🥘) is its own list: dish, place, gluten-free, last ate. Quick add has a
+**Dish** kind (name, place, rating, meal tags); a new place made from a dish is a Restaurant.
+A place's page has **+ Dish**.
+
+Later, if wanted: sharing a Find Me Gluten Free or Google Maps link to make a place (address,
+phone and hours read from the page), "near me", and a dish's price.
+
 ## 6. Later (designed for, not built)
 
 - **Scaling** in three layers: exact quantity → human measurement (3½ tbsp) → practical, using
@@ -655,7 +708,7 @@ page counts as leaving the box (Done on a recipe too). Lines no longer make food
 | **M1** | What can I eat (lunch first) | Foods (is a, form of, staple), products (stores, ratings, eating fields), stores, recipes with parsed ingredient lines, meal and personal tags, the `+` search, Eat with Work lunch filters, lists and pages, Quick add, Share to foodlab, Staples with suggestions, rating history and hand-written log notes, offline outbox. Deployed at foodlab.evans.tools, installed on the phone. **Done 2026-10-26**: deployed, installed from Chrome on the Pixel 8a, Share to foodlab working. |
 | **M2** | Groceries | A standing list that replaces Todoist (§4.10, §5.8): items made once and needed or not, check off with this trip's Undo, Usual (most bought + staples) one tap from the list, + Groceries on foods, products and staples, `bought` log entries for linked products. Works offline in the store. **Done 2026-10-26**: deployed and used for a shop; offline checked in airplane mode (revisit if a real store says otherwise). |
 | **M3** | Memory | Log entries' derived facts on pages (times made, last made, last bought); reading a shared recipe (§5.5); Tags page (rename, merge, delete). **Done 2026-10-27** (card view and product override moved to later). |
-| **M4** | Places & dishes | Places (restaurants, stores with prepared food: address → Maps, phone, hours, Find Me Gluten Free link, been / want to try) and dishes with the eating fields, Tried / Want to try per place. Dishes join Eat. |
+| **M4** | Places & dishes | Places (restaurants, stores with prepared food: address → Maps, phone, hours, Find Me Gluten Free link, been / want to try) and dishes with the eating fields, Tried / Want to try per place. Dishes join Eat. **Built 2026-10-31** (§4.4, §4.11, §5.2, §5.12): stores became places, migration 11. |
 | **M5** | Photos | On products, recipes and dishes (sideshow's file store), and photos or files on dev notes (§5.11). **Built 2026-10-27** for products, recipes and dev notes; dishes get them with M4. |
 | **M6** | Scaling & weights | §6. |
 | later | — | **Cook view** of a recipe: only ingredients and steps, bigger text, screen kept awake (no rating, tags, notes or history). **Per-recipe product override**, once "Usually" is accurate (maybe from what's bought most among liked products). Techniques, variants, substitutions, inventory, Groceries by store or aisle, then §3. |
@@ -673,8 +726,8 @@ rule; whether log entries need actual quantities (a recipe-instance object).
   (shelf-stable when blank). Simpler than Found in and maybe enough for it. Wait and see whether
   notes and the food tree (Frozen foods) already cover it once the import is in use.
 - **Links in the system browser** (2026-10-31, from a dev note; **built 2026-10-31** as Settings →
-  General → Outside links: In the app / Browser, shown on Android only, `web/links.ts`; needs a try on
-  the Pixel): in the installed app on Android, outside links (recipe source, product links, links in
+  General → Outside links: In the app / Browser, shown on Android only, `web/links.ts`; **works on the
+  Pixel**, 2026-10-31: Chrome hands the intent link to the browser): in the installed app on Android, outside links (recipe source, product links, links in
   notes) open in Chrome's in-app view over the app. Plan: Settings → General, **per device**
   (localStorage, like Colors), off by default. When on and on Android, one click handler catches
   outside http(s) links and opens an Android intent link instead,
@@ -686,6 +739,11 @@ rule; whether log entries need actual quantities (a recipe-instance object).
 
 Decided:
 
+- 2026-10-31: **M4**: stores become **places** (one record for Wegmans the store and Wegmans the
+  hot bar), typed Grocery store / Specialty store / Restaurant, with speed (Quick / Sit-down) and
+  cost ($–$$$) as filter pills. **Dishes** are what's assembled or made to order at a place;
+  anything packaged (frozen meals, the daily fresh bowls) stays a product. A dish's GF is GF menu
+  / GF modified / Ask / Not GF. Eat gets **Home / Out / All**, opening on Home.
 - 2026-10-31: a recipe's **Not GF (someone else's)** box is gone (§4.6); non-GF versions will be
   recipe variants with substitutions. A product page's header shows its food's whole path
   (PRODUCT › Dry good › Bread crumbs › Panko bread crumbs), like a food page's.

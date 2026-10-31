@@ -264,3 +264,30 @@ describe("groceries", () => {
     expect(lemon.some((u) => u.product?.id === "bx")).toBe(false); // 👎 isn't suggested
   });
 });
+
+describe("places and dishes (M4)", () => {
+  function out() {
+    const s = world();
+    s.stores.chip = { ...blank.stores("chip", "Chipotle"), types: ["restaurant"], speed: "quick" };
+    s.dishes.bowl = { ...blank.dishes("bowl", "Burrito bowl"), placeId: "chip", rating: "love", tagIds: ["meal-lunch"], glutenFree: "menu" };
+    s.dishes.hb = { ...blank.dishes("hb", "Hot bar mac"), placeId: "weg", rating: "up", tagIds: ["meal-lunch"] };
+    s.dishes.taco = { ...blank.dishes("taco", "Flour tacos"), placeId: "chip", tagIds: ["meal-lunch"], glutenFree: "no" };
+    return new View(s);
+  }
+
+  it("Eat: home is recipes and products, out is dishes (never Not GF), all is both", () => {
+    const v = out();
+    const kinds = (w: "home" | "out" | "all") => new Set(v.eat({ where: w, tagId: "meal-lunch" }).map((e) => e.kind));
+    expect(kinds("home").has("dishes")).toBe(false);
+    expect(v.eat({ where: "out", tagId: "meal-lunch" }).map((e) => e.item.id)).toEqual(["bowl", "hb"]);
+    expect(kinds("all").has("dishes")).toBe(true);
+  });
+
+  it("a place's dishes, best first; search finds dishes by place and places by type", () => {
+    const v = out();
+    expect(v.dishesAt("chip").map((d) => d.id)).toEqual(["bowl", "taco"]);
+    expect(v.search("chipotle").full.dishes.map((h) => h.item.id)).toEqual(["bowl", "taco"]);
+    expect(v.search("restaurant").full.stores.map((h) => h.item.id)).toEqual(["chip"]);
+    expect(v.search("gf menu").full.dishes.map((h) => h.item.id)).toEqual(["bowl"]);
+  });
+});

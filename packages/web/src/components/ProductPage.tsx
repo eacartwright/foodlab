@@ -69,7 +69,7 @@ export function ProductPage({ id }: { id: string }) {
             options={view.stores.map((s) => ({ id: s.id, label: s.name }))}
             onChange={(storeIds) => save({ storeIds })}
             onCreate={ensureStore}
-            createLabel="New store"
+            createLabel="New place"
             linkTo={(s) => pathOf("stores", s)}
           />
         </Field>

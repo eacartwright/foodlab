@@ -1,8 +1,11 @@
 import { nameKey } from "./ingredients";
 import {
   GF_LABEL,
+  PLACE_TYPE_LABEL,
+  SPEED_LABEL,
   nameOf,
   today,
+  type Dish,
   type Effort,
   type Food,
   type GroceryItem,
@@ -21,7 +24,9 @@ import {
 // Everything worked out rather than stored (DESIGN.md §4.1): reverse links, preferred products,
 // staple suggestions, the + search and the Eat list. Built once per state; cheap at personal size.
 
-export type Eatable = { kind: "recipes"; item: Recipe } | { kind: "products"; item: Product };
+export type Eatable = { kind: "recipes"; item: Recipe } | { kind: "products"; item: Product } | { kind: "dishes"; item: Dish };
+/** Eat (DESIGN.md §5.2): home is recipes and products, out is dishes at places. */
+export type Where = "home" | "out" | "all";
 
 const live = <T extends { deleted: boolean }>(rec: Record<Id, T>) => Object.values(rec).filter((x) => !x.deleted);
 const byName = (a: { name: string }, b: { name: string }) => nameOf(a).localeCompare(nameOf(b), undefined, { sensitivity: "base" });
@@ -37,11 +42,13 @@ export class View {
   readonly products: Product[];
   readonly stores: Store[];
   readonly recipes: Recipe[];
+  readonly dishes: Dish[];
   readonly tags: Tag[];
   readonly groceries: GroceryItem[];
   private readonly foodByKey = new Map<string, Food>();
   private readonly productsByFood = new Map<Id, Product[]>();
   private readonly productsByStore = new Map<Id, Product[]>();
+  private readonly dishesByPlace = new Map<Id, Dish[]>();
   private readonly recipesByFood = new Map<Id, Recipe[]>();
   private readonly childrenOf = new Map<Id, Food[]>();
   private readonly formsOf = new Map<Id, Food[]>();
@@ -52,6 +59,7 @@ export class View {
     this.products = live(state.products).sort(byName);
     this.stores = live(state.stores).sort(byName);
     this.recipes = live(state.recipes).sort(byName);
+    this.dishes = live(state.dishes ?? {}).sort(byName);
     this.tags = live(state.tags).sort((a, b) => (a.kind === b.kind ? (a.kind === "meal" ? 0 : byName(a, b)) : a.kind === "meal" ? -1 : 1));
 
     const push = <K, V>(m: Map<K, V[]>, k: K, v: V) => {
@@ -71,6 +79,8 @@ export class View {
     }
     for (const list of this.productsByFood.values()) list.sort(byRating);
     for (const list of this.productsByStore.values()) list.sort(byRating);
+    for (const d of this.dishes) if (d.placeId) push(this.dishesByPlace, d.placeId, d);
+    for (const list of this.dishesByPlace.values()) list.sort(byRating);
     for (const r of this.recipes) {
       for (const id of new Set(r.ingredients.map((i) => i.foodId).filter((x): x is Id => !!x))) push(this.recipesByFood, id, r);
     }
@@ -90,6 +100,8 @@ export class View {
 
   productsOf = (foodId: Id) => this.productsByFood.get(foodId) ?? [];
   productsAt = (storeId: Id) => this.productsByStore.get(storeId) ?? [];
+  /** A place's dishes, best first. */
+  dishesAt = (placeId: Id) => this.dishesByPlace.get(placeId) ?? [];
   childrenOfFood = (foodId: Id) => this.childrenOf.get(foodId) ?? [];
   formsOfFood = (foodId: Id) => this.formsOf.get(foodId) ?? [];
   recipesUsing = (foodId: Id) => this.recipesByFood.get(foodId) ?? [];
@@ -124,12 +136,14 @@ export class View {
     return best;
   }
 
-  /** The live foods, products and recipes with this tag. */
-  tagged(tagId: Id): { kind: "foods" | "products" | "recipes"; item: Food | Product | Recipe }[] {
+  /** The live foods, products, recipes, dishes and places with this tag. */
+  tagged(tagId: Id): { kind: "foods" | "products" | "recipes" | "dishes" | "stores"; item: Food | Product | Recipe | Dish | Store }[] {
     return [
       ...this.foods.filter((f) => f.tagIds.includes(tagId)).map((item) => ({ kind: "foods" as const, item })),
       ...this.products.filter((p) => p.tagIds.includes(tagId)).map((item) => ({ kind: "products" as const, item })),
       ...this.recipes.filter((r) => r.tagIds.includes(tagId)).map((item) => ({ kind: "recipes" as const, item })),
+      ...this.dishes.filter((d) => d.tagIds.includes(tagId)).map((item) => ({ kind: "dishes" as const, item })),
+      ...this.stores.filter((s) => s.tagIds.includes(tagId)).map((item) => ({ kind: "stores" as const, item })),
     ];
   }
 
@@ -270,10 +284,11 @@ export class View {
       .join(" · ");
   }
 
-  eatables(): Eatable[] {
+  eatables(where: Where = "all"): Eatable[] {
     return [
-      ...this.recipes.map((item) => ({ kind: "recipes" as const, item })),
-      ...this.products.map((item) => ({ kind: "products" as const, item })),
+      ...(where !== "out" ? this.recipes.map((item) => ({ kind: "recipes" as const, item })) : []),
+      ...(where !== "out" ? this.products.map((item) => ({ kind: "products" as const, item })) : []),
+      ...(where !== "home" ? this.dishes.map((item) => ({ kind: "dishes" as const, item })) : []),
     ];
   }
 
@@ -424,7 +439,7 @@ export class View {
   }
 
   /** The words a thing can be found by, lowercased. */
-  private haystack(kind: SearchKind, x: Food | Product | Recipe | Store): string[] {
+  private haystack(kind: SearchKind, x: Food | Product | Recipe | Store | Dish): string[] {
     const out: string[] = [x.name];
     const foodWords = (id: Id | null) => {
       const f = this.food(id);
@@ -463,10 +478,18 @@ export class View {
         foodWords(i.foodId);
       }
       tagWords(r.tagIds);
+    } else if (kind === "dishes") {
+      const d = x as Dish;
+      out.push(d.notes, GF_LABEL[d.glutenFree]);
+      const place = d.placeId ? this.store(d.placeId) : undefined;
+      if (place && !place.deleted) out.push(place.name);
+      tagWords(d.tagIds);
     } else {
-      out.push((x as Store).notes);
+      const s = x as Store;
+      out.push(s.notes, s.address, ...s.types.map((t) => PLACE_TYPE_LABEL[t]), s.speed ? SPEED_LABEL[s.speed] : "");
+      tagWords(s.tagIds);
     }
-    if (kind === "products" || kind === "recipes") for (const e of this.logOf(x.id)) out.push(e.text);
+    if (kind === "products" || kind === "recipes" || kind === "dishes") for (const e of this.logOf(x.id)) out.push(e.text);
     return out.filter(Boolean).map(norm);
   }
 
@@ -490,6 +513,7 @@ export class View {
     };
     consider("recipes", this.recipes);
     consider("products", this.products);
+    consider("dishes", this.dishes);
     consider("foods", this.foods);
     consider("stores", this.stores);
     for (const g of [empty.full, empty.partial]) {
@@ -518,9 +542,9 @@ export class View {
   /** The Eat list (DESIGN.md §5.2). Never a product that isn't gluten-free: that's someone else's.
    * A recipe's flag is no longer set or read (2026-10-31); non-GF versions will be variants. */
   eat(f: EatFilter): Eatable[] {
-    return this.eatables()
+    return this.eatables(f.where ?? "all")
       .filter(({ kind, item }) => {
-        if (kind === "products" && item.glutenFree === "no") return false;
+        if (kind !== "recipes" && item.glutenFree === "no") return false;
         if (f.tagId && !item.tagIds.includes(f.tagId)) return false;
         if (!f.showDown && item.rating === "down") return false;
         if (f.status && item.status !== f.status) return false;
@@ -534,10 +558,11 @@ export class View {
   }
 
   /** Recently changed things, for the empty search page. */
-  recent(n = 12): ({ kind: SearchKind; item: Food | Product | Recipe | Store })[] {
+  recent(n = 12): ({ kind: SearchKind; item: Food | Product | Recipe | Store | Dish })[] {
     const all = [
       ...this.recipes.map((item) => ({ kind: "recipes" as const, item })),
       ...this.products.map((item) => ({ kind: "products" as const, item })),
+      ...this.dishes.map((item) => ({ kind: "dishes" as const, item })),
       ...this.foods.map((item) => ({ kind: "foods" as const, item })),
       ...this.stores.map((item) => ({ kind: "stores" as const, item })),
     ];
@@ -564,6 +589,7 @@ export function swapTag(tagIds: Id[], from: Id, to: Id | null): Id[] {
 }
 
 export interface EatFilter {
+  where?: Where;
   tagId?: Id | null;
   status?: Status | null;
   travels?: Travels[];
@@ -572,9 +598,9 @@ export interface EatFilter {
   showDown?: boolean;
 }
 
-export const SEARCH_KINDS = ["recipes", "products", "foods", "stores"] as const;
+export const SEARCH_KINDS = ["recipes", "products", "dishes", "foods", "stores"] as const;
 export type SearchKind = (typeof SEARCH_KINDS)[number];
-type SearchItem<K extends SearchKind> = K extends "recipes" ? Recipe : K extends "products" ? Product : K extends "foods" ? Food : Store;
+type SearchItem<K extends SearchKind> = K extends "recipes" ? Recipe : K extends "products" ? Product : K extends "dishes" ? Dish : K extends "foods" ? Food : Store;
 export type SearchHit = { [K in SearchKind]: { kind: K; item: SearchItem<K>; hits: number } }[SearchKind];
 export type SearchGroups = { [K in SearchKind]: Extract<SearchHit, { kind: K }>[] };
 export interface SearchResults {
@@ -584,7 +610,7 @@ export interface SearchResults {
   /** How many full matches. */
   count: number;
 }
-const emptyGroups = (): SearchGroups => ({ recipes: [], products: [], foods: [], stores: [] });
+const emptyGroups = (): SearchGroups => ({ recipes: [], products: [], dishes: [], foods: [], stores: [] });
 
 /** Lowercase, letters/digits/spaces only, each word singular (so "potatoes" finds "potato"). */
 function norm(s: string): string {

@@ -8,7 +8,7 @@ import { ItemRow, Section } from "./rows";
 
 // Home: one box over everything (DESIGN.md §5.1). "breakfast + lemon + potato" = all three.
 
-const GROUP_TITLE = { recipes: "Recipes", products: "Products", foods: "Foods", stores: "Stores" } as const;
+const GROUP_TITLE = { recipes: "Recipes", products: "Products", dishes: "Dishes", foods: "Foods", stores: "Places" } as const;
 const finePointer = typeof matchMedia !== "undefined" && matchMedia("(pointer: fine)").matches;
 
 export function SearchPage() {
@@ -39,6 +39,9 @@ export function SearchPage() {
         </button>
         <button className="btn" onClick={() => openQuickAdd({ kind: "recipes" })}>
           + {KIND_ICON.recipes} Recipe
+        </button>
+        <button className="btn" onClick={() => openQuickAdd({ kind: "dishes" })}>
+          + {KIND_ICON.dishes} Dish
         </button>
         <button className="btn" onClick={() => openQuickAdd({ kind: "foods" })}>
           + {KIND_ICON.foods} Food

@@ -148,3 +148,35 @@ describe("migrations", () => {
     now.close();
   });
 });
+
+describe("Places and dishes (M4)", () => {
+  it("saves a place's fields and a dish at it, and reads them back the same", () => {
+    store.put("stores", "weg", {
+      ...blank.stores("weg", "Wegmans"),
+      types: ["grocery", "restaurant"],
+      speed: "quick",
+      cost: "2",
+      status: "tried",
+      address: "Route 9",
+      links: ["https://www.findmeglutenfree.com/x"],
+      tagIds: [WORK_LUNCH],
+    });
+    store.put("dishes", "bowl", { ...blank.dishes("bowl", "Hot bar bowl"), placeId: "weg", glutenFree: "menu", tagIds: ["meal-lunch"] });
+    const again = loadState(db);
+    expect(again.stores.weg).toEqual(store.state.stores.weg);
+    expect(again.dishes.bowl).toEqual(store.state.dishes.bowl);
+    expect(again.stores.weg?.types).toEqual(["grocery", "restaurant"]);
+  });
+
+  it("refuses a dish at an unknown place, and unknown place types", () => {
+    expect(() => store.put("dishes", "d", { ...blank.dishes("d", "Fries"), placeId: "nowhere" })).toThrow(Invalid);
+    expect(() => store.put("stores", "s", { ...blank.stores("s", "X"), types: ["bar"] })).toThrow(Invalid);
+  });
+
+  it("logs a dish's rating change like a product's", () => {
+    store.put("dishes", "d", blank.dishes("d", "Fries"));
+    const { log } = store.put("dishes", "d", { ...blank.dishes("d", "Fries"), rating: "love" });
+    expect(log).toHaveLength(1);
+    expect(log[0]).toMatchObject({ itemKind: "dishes", itemId: "d", kind: "rating", rating: "love" });
+  });
+});

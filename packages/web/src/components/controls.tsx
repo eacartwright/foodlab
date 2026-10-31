@@ -11,7 +11,7 @@ import {
 } from "@foodlab/shared";
 import { createContext, useContext, useEffect, useId, useRef, useState, type InputHTMLAttributes, type ReactNode, type TextareaHTMLAttributes } from "react";
 import { ensureTag } from "../actions";
-import { A } from "../router";
+import { A, listPath } from "../router";
 import { useData } from "../sync";
 
 // Inputs that edit a record in place and save as you go.
@@ -548,8 +548,8 @@ export function Field({ label, children, htmlFor }: { label: string; children: R
   );
 }
 
-export const KIND_ICON = { recipes: "🍳", products: "🛒", foods: "🥕", stores: "🏪" } as const;
-export const KIND_ONE = { recipes: "Recipe", products: "Product", foods: "Food", stores: "Store" } as const;
+export const KIND_ICON = { recipes: "🍳", products: "🛒", dishes: "🥘", foods: "🥕", stores: "📍" } as const;
+export const KIND_ONE = { recipes: "Recipe", products: "Product", dishes: "Dish", foods: "Food", stores: "Place" } as const;
 
 /**
  * The line above a page: "🥕 FOOD › Condiment › Mustard". The kind goes to its list, each crumb
@@ -560,7 +560,7 @@ export function PageKind({ kind, trail = [], children }: { kind: keyof typeof KI
   return (
     <div className="page-kind">
       <nav className="crumbs" aria-label="Breadcrumb">
-        <A className="kind-link" href={`/${kind}`}>
+        <A className="kind-link" href={listPath(kind)}>
           {KIND_ICON[kind]} {KIND_ONE[kind]}
         </A>
         {trail.map((t) => (

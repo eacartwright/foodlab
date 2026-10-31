@@ -20,6 +20,7 @@ import {
   type Rating,
   type Recipe,
   type Records,
+  type Store,
   type Tag,
 } from "@foodlab/shared";
 import { go, pathOf } from "./router";
@@ -37,10 +38,11 @@ export function ensureFood(name: string, extra: Partial<Food> = {}): Id {
   return food.id;
 }
 
-export function ensureStore(name: string): Id {
+/** The place with this name, made if there's none (a new one from a dish is a restaurant). */
+export function ensureStore(name: string, extra: Partial<Store> = {}): Id {
   const found = data().view.findStore(name);
   if (found) return found.id;
-  const s = blank.stores(newId(), tidyName(name));
+  const s = { ...blank.stores(newId(), tidyName(name)), ...extra };
   put("stores", s);
   return s.id;
 }
@@ -131,7 +133,7 @@ export function removeLog(e: LogEntry) {
  * describes the thing, not what I thought of it: no rating, buy again or history, and for a
  * product no notes, links or gluten-free (those belong to that one product).
  */
-export function duplicate(kind: "foods" | "products" | "recipes", id: Id) {
+export function duplicate(kind: "foods" | "products" | "recipes" | "dishes", id: Id) {
   const now = Date.now();
   const copy = { id: newId(), deleted: false, createdAt: now, updatedAt: now, rev: 0 };
   const name = (n: string) => `${n} (copy)`;
@@ -141,6 +143,10 @@ export function duplicate(kind: "foods" | "products" | "recipes", id: Id) {
   } else if (kind === "products") {
     const p = data().state.products[id]!;
     put("products", { ...blank.products(copy.id, name(p.name), now), ...pick(p, ["foodId", "brand", "storeIds", "tagIds", "travels", "keepsDays", "effort", "shelfLife"]) });
+  } else if (kind === "dishes") {
+    // Another dish at the same place: what describes it, not what I thought of it.
+    const d = data().state.dishes[id]!;
+    put("dishes", { ...blank.dishes(copy.id, name(d.name), now), ...pick(d, ["placeId", "tagIds", "glutenFree"]) });
   } else {
     const r = data().state.recipes[id]!;
     put("recipes", {

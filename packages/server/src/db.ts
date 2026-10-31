@@ -1,7 +1,7 @@
 import { DatabaseSync } from "node:sqlite";
 import { existsSync, mkdirSync } from "node:fs";
 import { dirname } from "node:path";
-import { DEFAULT_AI, emptyState, type Attachment, type DevNote, type Photo, type Settings, type Food, type GroceryItem, type Id, type LogEntry, type Product, type Recipe, type RecipeIngredient, type State, type Store, type Tag } from "@foodlab/shared";
+import { DEFAULT_AI, emptyState, type Attachment, type DevNote, type Dish, type Photo, type Settings, type Food, type GroceryItem, type Id, type LogEntry, type Product, type Recipe, type RecipeIngredient, type State, type Store, type Tag } from "@foodlab/shared";
 
 // SQLite persistence: ordinary relational tables, one row per record, links in their own tables
 // (product_stores, recipe_ingredients, item_tags), so the file reads well in any SQLite browser
@@ -203,6 +203,26 @@ const MIGRATIONS: string[] = [
     rev = (SELECT CAST(value AS INTEGER) FROM meta WHERE key = 'rev')
     WHERE meal_times LIKE '%meal-work-lunch%';
   `,
+  // 2026-10-31 (M4): stores become places (a grocery store, a restaurant, or both), and dishes
+  // are what I eat at one. Their tags go in item_tags (item_kind stores / dishes).
+  `
+  ALTER TABLE stores ADD COLUMN types TEXT NOT NULL DEFAULT '[]';  -- JSON: grocery · specialty · restaurant
+  ALTER TABLE stores ADD COLUMN speed TEXT;                        -- quick · sitdown
+  ALTER TABLE stores ADD COLUMN cost TEXT;                         -- 1 · 2 · 3 ($ to $$$)
+  ALTER TABLE stores ADD COLUMN status TEXT;                       -- tried (been) · want
+  ALTER TABLE stores ADD COLUMN rating TEXT;
+  ALTER TABLE stores ADD COLUMN address TEXT NOT NULL DEFAULT '';
+  ALTER TABLE stores ADD COLUMN phone TEXT NOT NULL DEFAULT '';
+  ALTER TABLE stores ADD COLUMN hours TEXT NOT NULL DEFAULT '';
+  ALTER TABLE stores ADD COLUMN links TEXT NOT NULL DEFAULT '[]';
+  CREATE TABLE dishes (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    place_id TEXT,${EATING}
+    photos TEXT NOT NULL DEFAULT '[]',${BASE}
+  );
+  CREATE INDEX dishes_place ON dishes(place_id);
+  `,
 ];
 
 export type DB = DatabaseSync;
@@ -304,7 +324,24 @@ export function loadState(db: DB): State {
     } satisfies Food;
   }
   for (const r of db.prepare("SELECT * FROM stores").all() as Row[]) {
-    s.stores[r.id] = { ...base(r), name: r.name, notes: r.notes } satisfies Store;
+    s.stores[r.id] = {
+      ...base(r),
+      name: r.name,
+      notes: r.notes,
+      types: JSON.parse(r.types),
+      speed: r.speed,
+      cost: r.cost,
+      status: r.status,
+      rating: r.rating,
+      address: r.address,
+      phone: r.phone,
+      hours: r.hours,
+      links: JSON.parse(r.links),
+      tagIds: tagsOf.get(`stores:${r.id}`) ?? [],
+    } satisfies Store;
+  }
+  for (const r of db.prepare("SELECT * FROM dishes").all() as Row[]) {
+    s.dishes[r.id] = { ...base(r), ...eating(r, tagsOf.get(`dishes:${r.id}`) ?? []), name: r.name, placeId: r.place_id } satisfies Dish;
   }
   for (const r of db.prepare("SELECT * FROM products").all() as Row[]) {
     s.products[r.id] = {
@@ -377,7 +414,7 @@ const baseCols = (x: { id: Id; deleted: boolean; createdAt: number; updatedAt: n
   updated_at: x.updatedAt,
   rev: x.rev,
 });
-const eatingCols = (x: Product | Recipe) => ({
+const eatingCols = (x: Product | Recipe | Dish) => ({
   rating: x.rating,
   status: x.status,
   gluten_free: x.glutenFree,
@@ -396,7 +433,7 @@ function upsert(db: DB, table: string, cols: Record<string, unknown>) {
   );
 }
 
-function setTags(db: DB, kind: "foods" | "products" | "recipes", id: Id, tagIds: Id[]) {
+function setTags(db: DB, kind: "foods" | "products" | "recipes" | "stores" | "dishes", id: Id, tagIds: Id[]) {
   db.prepare("DELETE FROM item_tags WHERE item_kind = ? AND item_id = ?").run(kind, id);
   const ins = db.prepare("INSERT INTO item_tags (item_kind, item_id, tag_id) VALUES (?, ?, ?)");
   for (const t of tagIds) ins.run(kind, id, t);
@@ -417,7 +454,25 @@ export const save = {
     setTags(db, "foods", x.id, x.tagIds);
   },
   stores(db: DB, x: Store) {
-    upsert(db, "stores", { ...baseCols(x), name: x.name, notes: x.notes });
+    upsert(db, "stores", {
+      ...baseCols(x),
+      name: x.name,
+      notes: x.notes,
+      types: JSON.stringify(x.types),
+      speed: x.speed,
+      cost: x.cost,
+      status: x.status,
+      rating: x.rating,
+      address: x.address,
+      phone: x.phone,
+      hours: x.hours,
+      links: JSON.stringify(x.links),
+    });
+    setTags(db, "stores", x.id, x.tagIds);
+  },
+  dishes(db: DB, x: Dish) {
+    upsert(db, "dishes", { ...baseCols(x), ...eatingCols(x), name: x.name, place_id: x.placeId });
+    setTags(db, "dishes", x.id, x.tagIds);
   },
   products(db: DB, x: Product) {
     upsert(db, "products", {

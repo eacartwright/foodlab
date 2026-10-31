@@ -1,7 +1,10 @@
 import {
+  COST_LABEL,
+  PLACE_TYPE_LABEL,
   fileUrl,
   RATING_EMOJI,
   nameOf,
+  type Dish,
   type Food,
   type Product,
   type Recipe,
@@ -15,7 +18,7 @@ import { KIND_ICON, KIND_ONE } from "./controls";
 
 // One line per thing, used by search, Eat, lists and pages.
 
-type Item = Food | Product | Recipe | Store;
+type Item = Food | Product | Recipe | Store | Dish;
 
 export function Rating({ value }: { value: Product["rating"] }) {
   return value ? (
@@ -28,6 +31,11 @@ export function Rating({ value }: { value: Product["rating"] }) {
 /** What to show under a thing's name. */
 export function subline(view: View, kind: SearchKind, item: Item, hideFood = false): ReactNode {
   if (kind === "recipes") return "";
+  if (kind === "dishes") {
+    if (hideFood) return ""; // under its place already
+    const place = (item as Dish).placeId ? view.store((item as Dish).placeId!) : undefined;
+    return place && !place.deleted ? `at ${place.name}` : "";
+  }
   if (kind === "products") {
     const p = item as Product;
     const food = view.food(p.foodId);
@@ -49,8 +57,17 @@ export function subline(view: View, kind: SearchKind, item: Item, hideFood = fal
       .filter(Boolean)
       .join(" · ");
   }
-  const n = view.productsAt(item.id).length;
-  return n ? `${n} product${n === 1 ? "" : "s"}` : "";
+  const s = item as Store;
+  const n = view.productsAt(s.id).length;
+  const d = view.dishesAt(s.id).length;
+  return [
+    s.types.map((t) => PLACE_TYPE_LABEL[t]).join(", ") || null,
+    s.cost ? COST_LABEL[s.cost] : null,
+    n ? `${n} product${n === 1 ? "" : "s"}` : null,
+    d ? `${d} dish${d === 1 ? "" : "es"}` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
 }
 
 export function ItemRow({
@@ -68,13 +85,14 @@ export function ItemRow({
   showKind?: boolean;
   hideFood?: boolean;
 }) {
-  const rated = kind === "recipes" || kind === "products" ? (item as Product | Recipe) : null;
+  const eating = kind === "recipes" || kind === "products" || kind === "dishes" ? (item as Product | Recipe | Dish) : null;
+  const rated = eating ?? (kind === "stores" ? (item as Store) : null);
   const sub = subline(view, kind, item, hideFood);
   return (
     <A className={`row ${item.deleted ? "is-deleted" : ""}`} href={pathOf(kind, item.id)}>
       {/* Its main photo, when it has one: quicker to recognize than the name. */}
-      {rated?.photos[0] ? (
-        <img className="row-thumb" src={fileUrl(rated.photos[0].thumb)} alt="" loading="lazy" />
+      {eating?.photos[0] ? (
+        <img className="row-thumb" src={fileUrl(eating.photos[0].thumb)} alt="" loading="lazy" />
       ) : (
         showKind && (
           <span className="row-icon" title={KIND_ONE[kind]} aria-label={KIND_ONE[kind]}>
@@ -90,7 +108,7 @@ export function ItemRow({
               ★
             </span>
           )}
-          {kind === "products" && rated?.glutenFree === "no" && <NotGF />}
+          {kind !== "recipes" && eating?.glutenFree === "no" && <NotGF />}
         </span>
         {sub && <span className="row-sub">{sub}</span>}
         {extra}

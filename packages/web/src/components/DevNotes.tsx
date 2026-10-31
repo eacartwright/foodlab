@@ -24,9 +24,10 @@ const readWithPage = () => {
 /** "Product: Bell & Evans Gluten Free Chicken Breasts" for /products/<id>, else the path. */
 function pageLabel(path: string): string {
   const { state } = data();
-  const m = /^\/(foods|products|recipes|stores)\/([^/?]+)/.exec(path);
-  const rec = m ? state[m[1] as "foods"][decodeURIComponent(m[2]!)] : undefined;
-  if (m && rec) return `${{ foods: "Food", products: "Product", recipes: "Recipe", stores: "Store" }[m[1] as "foods"]}: ${nameOf(rec)}`;
+  const m = /^\/(foods|products|recipes|stores|places|dishes)\/([^/?]+)/.exec(path);
+  const kind = m ? ((m[1] === "places" ? "stores" : m[1]) as "foods") : undefined;
+  const rec = m && kind ? state[kind][decodeURIComponent(m[2]!)] : undefined;
+  if (kind && rec) return `${{ foods: "Food", products: "Product", recipes: "Recipe", stores: "Place", dishes: "Dish" }[kind]}: ${nameOf(rec)}`;
   return path === "/" ? "Search" : path;
 }
 

@@ -32,7 +32,7 @@ aria-label (a page's title behind the Quick add dialog): scope selectors to `.qu
   `derive.ts` (`View`: reverse links, preferred products, ancestors/descendants, staple
   suggestions, the `+` search, the Eat list). Pure; tests beside them.
 - `packages/server` — Node + Hono + `node:sqlite` (Node ≥ 22.13). `db.ts`: relational tables
-  (foods, stores, products + `product_stores`, recipes + `recipe_ingredients`, tags +
+  (foods, stores (= places), products + `product_stores`, recipes + `recipe_ingredients`, dishes, tags +
   `item_tags`, `log_entries`, `dev_notes`, `grocery_items`, `settings` (one row, `app`: Meal times, AI), `ai_usage` (server-only), `meta.rev`), `loadState` / `save.<kind>`. `store.ts`: the state
   in memory; `put(kind, id, body)` validates, checks links (no unknown ids, no food loops,
   meal tags fixed), writes a `rating` log entry when a rating changes, bumps `rev`.
@@ -188,6 +188,11 @@ tombstones (`deleted`), restorable with Undo or the page's Restore.
   Page titles wrap (`TitleInput` in `controls.tsx`, a one-row textarea; Enter saves); on the phone
   Staple / + Groceries go on the line below. Browser-checked at 400px and desktop.
 - 2026-10-31: **Outside links → Browser** (Settings → General, Android only, per device; `web/links.ts`
-  turns outside links into intent links). Built, not yet tried on the Pixel: keep it if Chrome hands
-  off to the browser, drop it if it opens in place (DESIGN.md §later).
-- **Next: M4** (places & dishes) or M6 (weights).
+  turns outside links into intent links). Works on the Pixel. AI is live on the mini PC (both keys);
+  Compare not run yet.
+- 2026-10-31: **M4 places & dishes built** (DESIGN.md §4.4, §4.11, §5.2, §5.12; migration 11).
+  Stores are **Places** on screen and `/places` in the address, but still `stores` / `Store` /
+  `storeIds` in code, tables and sync (`pathOf("stores")` → `/places`, `listPath`). New `dishes`
+  kind (`DishPage.tsx`, `DishesList`, Quick add Dish, `View.dishesAt`), Eat Home / Out / All
+  (`?where=`). 99 tests; migration checked on a copy of the live DB; browser-checked.
+- **Next:** M6 (weights), or the M4 extras (share a place link to make a place).

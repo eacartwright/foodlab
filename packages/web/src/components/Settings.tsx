@@ -223,12 +223,12 @@ function MealTimes() {
 
 function DataSection() {
   const { state, pending, status } = useData();
-  const count = (k: "foods" | "products" | "recipes" | "stores") => Object.values(state[k]).filter((x) => !x.deleted).length;
+  const count = (k: "foods" | "products" | "recipes" | "stores" | "dishes") => Object.values(state[k]).filter((x) => !x.deleted).length;
   return (
     <div className="fields">
       <Field label="Data">
         <p className="small">
-          {count("foods")} foods · {count("products")} products · {count("recipes")} recipes · {count("stores")} stores
+          {count("foods")} foods · {count("products")} products · {count("recipes")} recipes · {count("stores")} places · {count("dishes")} dishes
           <br />
           Version {state.rev} · {pending ? `${pending} change${pending === 1 ? "" : "s"} waiting to save` : "everything saved"} ({status})
         </p>
