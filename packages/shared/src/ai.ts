@@ -84,3 +84,8 @@ export const monthOf = (t: number) => {
   const d = new Date(t);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 };
+
+/** What AI found on a place's page (DESIGN.md §5.12): its locations, for me to pick from. */
+export interface ReadPlace {
+  locations: { name: string; address: string; phone: string; hours: string }[];
+}

@@ -2023,3 +2023,28 @@ ul.notes li.done .note-text {
   border: 1.5px solid var(--border);
   flex: none;
 }
+/* A place's location dropdown: wide enough to read; its buttons wrap below on the phone. */
+.select.location-select {
+  flex: 1 1 14em;
+}
+/* Fill from page: what AI found, to pick from. */
+ul.found-list {
+  list-style: none;
+  padding: 0;
+}
+.found-list li + li {
+  margin-top: 10px;
+}
+.found {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  cursor: pointer;
+}
+.found input {
+  margin-top: 5px;
+}
+.found-lines {
+  display: block;
+  white-space: pre-line;
+}

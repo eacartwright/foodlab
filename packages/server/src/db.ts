@@ -223,6 +223,18 @@ const MIGRATIONS: string[] = [
   );
   CREATE INDEX dishes_place ON dishes(place_id);
   `,
+  // 2026-10-31: a place has locations (a chain has several), each with its own address, phone
+  // and hours. A place's address, phone and hours become its first location; the old columns
+  // are left blank. Rev bumps so every device reloads.
+  `
+  ALTER TABLE stores ADD COLUMN locations TEXT NOT NULL DEFAULT '[]';  -- JSON [{ id, name, address, phone, hours }]
+  UPDATE meta SET value = CAST(value AS INTEGER) + 1 WHERE key = 'rev';
+  UPDATE stores SET
+    locations = json_array(json_object('id', lower(hex(randomblob(16))), 'name', '', 'address', address, 'phone', phone, 'hours', hours)),
+    address = '', phone = '', hours = '',
+    rev = (SELECT CAST(value AS INTEGER) FROM meta WHERE key = 'rev'), updated_at = CAST(unixepoch('subsec') * 1000 AS INTEGER)
+    WHERE address <> '' OR phone <> '' OR hours <> '';
+  `,
 ];
 
 export type DB = DatabaseSync;
@@ -333,9 +345,7 @@ export function loadState(db: DB): State {
       cost: r.cost,
       status: r.status,
       rating: r.rating,
-      address: r.address,
-      phone: r.phone,
-      hours: r.hours,
+      locations: JSON.parse(r.locations),
       links: JSON.parse(r.links),
       tagIds: tagsOf.get(`stores:${r.id}`) ?? [],
     } satisfies Store;
@@ -463,9 +473,7 @@ export const save = {
       cost: x.cost,
       status: x.status,
       rating: x.rating,
-      address: x.address,
-      phone: x.phone,
-      hours: x.hours,
+      locations: JSON.stringify(x.locations),
       links: JSON.stringify(x.links),
     });
     setTags(db, "stores", x.id, x.tagIds);

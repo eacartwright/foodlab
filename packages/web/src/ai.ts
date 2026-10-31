@@ -1,9 +1,9 @@
-import { modelLabel, recipeFromText, type ReadRecipe, type Recipe } from "@foodlab/shared";
+import { modelLabel, recipeFromText, type FoundLocation, type ReadRecipe, type Recipe } from "@foodlab/shared";
 import { data, put } from "./sync";
 import { showToast } from "./toast";
 import { uploadPhoto } from "./uploads";
 
-// Reading recipes through the server, which may ask Claude (DESIGN.md §5.5, §5.9).
+// Reading recipes (and places) through the server, which may ask Claude (DESIGN.md §5.5, §5.9).
 
 export interface ReadReply {
   recipe?: ReadRecipe | null;
@@ -88,5 +88,27 @@ export async function readText(text: string): Promise<ReadReply> {
     return r;
   } catch {
     return { recipe: recipeFromText(text), via: "text", note: "offline" };
+  }
+}
+
+export interface PlaceReply {
+  locations?: FoundLocation[];
+  model?: string;
+  costUsd?: number;
+  alerts?: number[];
+  limitUsd?: number | null;
+  error?: string;
+  message?: string;
+}
+
+/** A place's page (a link) or text copied from it, read on the server for its locations (DESIGN.md §5.12). */
+export async function readPlace(input: { url: string } | { text: string }): Promise<PlaceReply> {
+  try {
+    const res = await fetch("/api/ai/place", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(input) });
+    const r = (await res.json()) as PlaceReply;
+    aiAlert(r);
+    return r;
+  } catch {
+    return { error: "failed", message: "Couldn't reach foodlab (offline?)" };
   }
 }

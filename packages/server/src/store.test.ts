@@ -147,6 +147,28 @@ describe("migrations", () => {
     expect(s.groceries).toEqual({});
     now.close();
   });
+
+  it("v12: a place's address, phone and hours become its first location", () => {
+    const file = join(dir, "v11.db");
+    const old = openDb(file, 11);
+    const ins = old.prepare("INSERT INTO stores (id, name, address, phone, hours, created_at, updated_at, rev) VALUES (?, ?, ?, ?, ?, 0, 0, 1)");
+    ins.run("weg", "Wegmans", "3195 Monroe Ave", "(585) 555-0100", "6am–midnight");
+    ins.run("tj", "Trader Joe's", "", "", "");
+    old.close();
+    const now = openDb(file);
+    const s = loadState(now);
+    expect(s.stores.weg?.locations).toEqual([{ id: expect.any(String), name: "", address: "3195 Monroe Ave", phone: "(585) 555-0100", hours: "6am–midnight" }]);
+    expect(s.stores.weg?.rev).toBeGreaterThan(1);
+    expect(s.stores.tj?.locations).toEqual([]);
+    now.close();
+  });
+
+  it("an app from before locations saving address / phone / hours makes one", () => {
+    const { locations, ...old } = blank.stores("o", "Old app");
+    expect(locations).toEqual([]);
+    store.put("stores", "o", { ...old, address: "1 Main St", phone: "6175551234", hours: "" });
+    expect(store.state.stores.o?.locations).toEqual([{ id: "0", name: "", address: "1 Main St", phone: "(617) 555-1234", hours: "" }]);
+  });
 });
 
 describe("Places and dishes (M4)", () => {
@@ -157,7 +179,7 @@ describe("Places and dishes (M4)", () => {
       speed: "quick",
       cost: "2",
       status: "tried",
-      address: "Route 9",
+      locations: [{ id: "l1", name: "", address: "Route 9", phone: "(617) 555-0100", hours: "" }],
       links: ["https://www.findmeglutenfree.com/x"],
       tagIds: [WORK_LUNCH],
     });

@@ -486,7 +486,7 @@ export class View {
       tagWords(d.tagIds);
     } else {
       const s = x as Store;
-      out.push(s.notes, s.address, ...s.types.map((t) => PLACE_TYPE_LABEL[t]), s.speed ? SPEED_LABEL[s.speed] : "");
+      out.push(s.notes, ...s.locations.flatMap((l) => [l.name, l.address]), ...s.types.map((t) => PLACE_TYPE_LABEL[t]), s.speed ? SPEED_LABEL[s.speed] : "");
       tagWords(s.tagIds);
     }
     if (kind === "products" || kind === "recipes" || kind === "dishes") for (const e of this.logOf(x.id)) out.push(e.text);

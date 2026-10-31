@@ -144,12 +144,20 @@ export interface Store extends Base {
   /** Been / want to go; null = not said (most stores). */
   status: Status | null;
   rating: Rating | null;
-  address: string;
-  phone: string;
-  hours: string;
+  /** Where it is: one for most places, several for a chain (Wegmans Pittsford, Perinton). */
+  locations: PlaceLocation[];
   /** Its site, Find Me Gluten Free, a menu. */
   links: string[];
   tagIds: Id[];
+}
+
+/** One of a place's locations; `name` tells them apart ("Pittsford"), blank when there's one. */
+export interface PlaceLocation {
+  id: Id;
+  name: string;
+  address: string;
+  phone: string;
+  hours: string;
 }
 
 /** Something I eat at a place (DESIGN.md §4.11): the hot bar bowl, a restaurant's burger. */
@@ -330,9 +338,7 @@ export const blank = {
     cost: null,
     status: null,
     rating: null,
-    address: "",
-    phone: "",
-    hours: "",
+    locations: [],
     links: [],
     tagIds: [],
   }),

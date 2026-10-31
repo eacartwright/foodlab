@@ -23,6 +23,7 @@ import {
   type Kind,
   type LogEntry,
   type Photo,
+  type PlaceLocation,
   type Product,
   type Recipe,
   type RecipeIngredient,
@@ -140,6 +141,27 @@ function eating(b: In): Eating {
   };
 }
 
+function location(x: unknown, i: number): PlaceLocation {
+  const b = obj(x);
+  const f = `locations[${i}]`;
+  return {
+    id: id(b.id, `${f}.id`) ?? `${i}`,
+    name: str(b.name, `${f}.name`, 200).trim(),
+    address: str(b.address, `${f}.address`, 500).trim(),
+    phone: formatPhone(str(b.phone, `${f}.phone`, 60)),
+    hours: str(b.hours, `${f}.hours`, 2000),
+  };
+}
+
+/** A place's locations. An app from before them (cached on a phone) sends address / phone / hours: one location. */
+function locations(b: In): PlaceLocation[] {
+  if (b.locations === undefined && (b.address || b.phone || b.hours)) return [location({ id: "0", address: b.address, phone: b.phone, hours: b.hours }, 0)];
+  const list = b.locations ?? [];
+  if (!Array.isArray(list)) throw new Invalid("locations: expected a list");
+  if (list.length > 100) throw new Invalid("locations: too many");
+  return list.map(location);
+}
+
 function ingredient(x: unknown, i: number): RecipeIngredient {
   const b = obj(x);
   const f = `ingredients[${i}]`;
@@ -198,9 +220,7 @@ export const validators: { [K in Kind]: (body: unknown, id: string, now: number)
       cost: oneOf(b.cost, COSTS, "cost"),
       status: oneOf(b.status, STATUSES, "status"),
       rating: oneOf(b.rating, RATINGS, "rating"),
-      address: str(b.address, "address", 500).trim(),
-      phone: formatPhone(str(b.phone, "phone", 60)),
-      hours: str(b.hours, "hours", 2000),
+      locations: locations(b),
       links: strs(b.links, "links"),
       tagIds: ids(b.tagIds, "tagIds"),
     };

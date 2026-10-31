@@ -2,6 +2,12 @@ import {
   COSTS,
   COST_LABEL,
   formatPhone,
+  locationLabel,
+  matchLocation,
+  newId,
+  withFound,
+  type FoundLocation,
+  type PlaceLocation,
   PLACE_STATUS_LABEL,
   PLACE_TYPES,
   PLACE_TYPE_LABEL,
@@ -12,6 +18,9 @@ import {
   type Store,
 } from "@foodlab/shared";
 import { useState } from "react";
+import { money, readPlace } from "../ai";
+import { showToast } from "../toast";
+import { Dialog } from "./Dialog";
 import { remove } from "../actions";
 import { go, listPath } from "../router";
 import { data, put, useData } from "../sync";
@@ -22,17 +31,43 @@ import { openQuickAdd } from "./QuickAdd";
 import { ItemRow, Section } from "./rows";
 
 // A place (DESIGN.md §4.4, §5.12): a store, a restaurant, or both. What I eat there (dishes),
-// everything I know is sold there (products), and how to get there.
+// everything I know is sold there (products), and how to get there: its locations, one at a
+// time (a dropdown once there are two).
 
-/** Google Maps for the address (the Maps app on the phone). */
-export const mapsUrl = (s: Store) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([s.name, s.address].filter(Boolean).join(", "))}`;
+/** Google Maps for a location's address (the Maps app on the phone). */
+export const mapsUrl = (s: Store, l: PlaceLocation) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([s.name, l.address].filter(Boolean).join(", "))}`;
+
+const blankLocation = (): PlaceLocation => ({ id: newId(), name: "", address: "", phone: "", hours: "" });
 
 export function PlacePage({ id }: { id: string }) {
   const { view, state } = useData();
   const s = state.stores[id];
   const [confirm, setConfirm] = useState(false);
+  const [locId, setLocId] = useState<string | null>(null);
+  const [blank] = useState(blankLocation);
+  const [filling, setFilling] = useState(false);
   if (!s) return <NotFound what="place" />;
-  const save = (patch: Partial<Store>) => put("stores", { ...(data().state.stores[id] ?? s), ...patch });
+  const latest = () => data().state.stores[id] ?? s;
+  const save = (patch: Partial<Store>) => put("stores", { ...latest(), ...patch });
+  // The location on screen; a place without one shows blank fields, and the first edit makes it.
+  const loc = s.locations.find((l) => l.id === locId) ?? s.locations[0] ?? blank;
+  const saveLoc = (patch: Partial<PlaceLocation>) => {
+    const locs = latest().locations;
+    save({ locations: locs.some((l) => l.id === loc.id) ? locs.map((l) => (l.id === loc.id ? { ...l, ...patch } : l)) : [...locs, { ...loc, ...patch }] });
+  };
+  const addLocation = () => {
+    const l = blankLocation();
+    const locs = latest().locations;
+    // A second one for a place with none yet keeps the (blank) first to fill in later.
+    save({ locations: [...(locs.length ? locs : [loc]), l] });
+    setLocId(l.id);
+  };
+  const removeLocation = () => {
+    const before = latest().locations;
+    save({ locations: before.filter((l) => l.id !== loc.id) });
+    setLocId(null);
+    showToast(`Removed ${locationLabel(loc, before.findIndex((l) => l.id === loc.id))}`, { label: "Undo", run: () => save({ locations: before }) });
+  };
   const products = view.productsAt(s.id);
   const dishes = view.dishesAt(s.id);
   const groups: [string, Product[]][] = [
@@ -78,11 +113,40 @@ export function PlacePage({ id }: { id: string }) {
         <Field label="Rating">
           <RatingInput value={s.rating} onChange={(rating) => save({ rating })} />
         </Field>
+        <Field label="Location">
+          <div className="inline">
+            {s.locations.length > 1 && (
+              <select className="select location-select" value={loc.id} onChange={(e) => setLocId(e.target.value)} aria-label="Location">
+                {s.locations.map((l, i) => (
+                  <option key={l.id} value={l.id}>
+                    {locationLabel(l, i)}
+                  </option>
+                ))}
+              </select>
+            )}
+            <button className="btn subtle" onClick={addLocation}>
+              + Location
+            </button>
+            <button className="btn subtle" onClick={() => setFilling(true)} title="Read the place's page for its locations, address, phone and hours">
+              ✨ Fill from page
+            </button>
+          </div>
+        </Field>
+        {s.locations.length > 1 && (
+          <Field label="Location name">
+            <div className="inline">
+              <DraftInput key={loc.id} className="input grow" value={loc.name} onCommit={(name) => saveLoc({ name: name.trim() })} />
+              <button className="btn subtle" onClick={removeLocation}>
+                Remove
+              </button>
+            </div>
+          </Field>
+        )}
         <Field label="Address">
           <div className="inline">
-            <DraftInput className="input grow" value={s.address} onCommit={(address) => save({ address })} />
-            {s.address && (
-              <a className="btn subtle" href={mapsUrl(s)} target="_blank" rel="noreferrer noopener">
+            <DraftInput key={loc.id} className="input grow" value={loc.address} onCommit={(address) => saveLoc({ address: address.trim() })} />
+            {loc.address && (
+              <a className="btn subtle" href={mapsUrl(s, loc)} target="_blank" rel="noreferrer noopener">
                 🗺️ Map ↗
               </a>
             )}
@@ -90,16 +154,16 @@ export function PlacePage({ id }: { id: string }) {
         </Field>
         <Field label="Phone">
           <div className="inline">
-            <DraftInput className="input grow" type="tel" value={s.phone} onCommit={(phone) => save({ phone: formatPhone(phone) })} />
-            {s.phone && (
-              <a className="btn subtle" href={`tel:${s.phone.replace(/[^\d+]/g, "")}`}>
+            <DraftInput key={loc.id} className="input grow" type="tel" value={loc.phone} onCommit={(phone) => saveLoc({ phone: formatPhone(phone) })} />
+            {loc.phone && (
+              <a className="btn subtle" href={`tel:${loc.phone.replace(/[^\d+]/g, "")}`}>
                 📞 Call
               </a>
             )}
           </div>
         </Field>
         <Field label="Hours">
-          <DraftTextarea className="input" rows={2} value={s.hours} onCommit={(hours) => save({ hours })} />
+          <DraftTextarea key={loc.id} className="input" rows={2} value={loc.hours} onCommit={(hours) => saveLoc({ hours })} />
         </Field>
         <Field label="Links">
           <LinksEditor value={s.links} onChange={(links) => save({ links })} />
@@ -153,6 +217,25 @@ export function PlacePage({ id }: { id: string }) {
           </button>
         )}
       </div>
+      {filling && (
+        <FillDialog
+          place={s}
+          onClose={() => setFilling(false)}
+          onAdd={(found) => {
+            const now = latest();
+            const locations = withFound(now.locations, found);
+            save({ locations });
+            setFilling(false);
+            const added = locations.length - now.locations.length;
+            const filled = found.length - added;
+            showToast([added && `Added ${added} location${added > 1 ? "s" : ""}`, filled && `Filled in ${filled}`].filter(Boolean).join(", "), {
+              label: "Undo",
+              run: () => save({ locations: now.locations }),
+            });
+            if (added) setLocId(locations[now.locations.length]!.id);
+          }}
+        />
+      )}
       {confirm && (
         <ConfirmDialog
           title={`Delete “${s.name}”?`}
@@ -173,5 +256,79 @@ export function PlacePage({ id }: { id: string }) {
         </ConfirmDialog>
       )}
     </article>
+  );
+}
+
+/**
+ * ✨ Fill from page: the place's page (its first link, or another) or text copied from it, read by
+ * AI for its locations. What's found is listed to pick from; nothing is saved until Add.
+ */
+function FillDialog({ place, onClose, onAdd }: { place: Store; onClose: () => void; onAdd: (found: FoundLocation[]) => void }) {
+  const [input, setInput] = useState(place.links.find((l) => /^https?:\/\//i.test(l)) ?? "");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [found, setFound] = useState<FoundLocation[] | null>(null);
+  const [cost, setCost] = useState("");
+  const [picked, setPicked] = useState<Set<number>>(new Set());
+  const read = async () => {
+    const t = input.trim();
+    if (!t) return;
+    setBusy(true);
+    setError("");
+    const r = await readPlace(/^https?:\/\/\S+$/i.test(t) ? { url: t } : { text: t });
+    setBusy(false);
+    if (r.error || !r.locations) {
+      setError(r.error === "refused" ? `${r.message}. Copy the page's text and paste it here instead.` : (r.message ?? "Couldn't read it"));
+      return;
+    }
+    if (!r.locations.length) {
+      setError("No locations found there.");
+      return;
+    }
+    setFound(r.locations);
+    setPicked(new Set(r.locations.map((_, i) => i)));
+    setCost(r.costUsd !== undefined ? money(r.costUsd) : "");
+  };
+  const toggle = (i: number) => setPicked((p) => (p.has(i) ? new Set([...p].filter((x) => x !== i)) : new Set([...p, i])));
+  return (
+    <Dialog title="Fill from page" onClose={onClose} className="fill-place">
+      {!found ? (
+        <div className="stack">
+          <textarea className="input" rows={3} aria-label="Link or text from the page" value={input} autoFocus onChange={(e) => setInput(e.target.value)} />
+          {error && <p className="warn small">{error}</p>}
+          <div className="inline">
+            <button className="btn primary" disabled={busy || !input.trim()} onClick={read}>
+              {busy ? "Reading…" : "Read"}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="stack">
+          <ul className="plain found-list">
+            {found.map((f, i) => {
+              const same = matchLocation(place.locations, f);
+              return (
+                <li key={i}>
+                  <label className="found">
+                    <input type="checkbox" checked={picked.has(i)} onChange={() => toggle(i)} />
+                    <span>
+                      <span className="strong">{f.name || f.address.split(",")[0]}</span>
+                      {same && <span className="muted small"> · updates {locationLabel(same, place.locations.indexOf(same))}</span>}
+                      <span className="muted small found-lines">{[f.address, f.phone && formatPhone(f.phone), f.hours].filter(Boolean).join("\n")}</span>
+                    </span>
+                  </label>
+                </li>
+              );
+            })}
+          </ul>
+          <div className="inline">
+            <button className="btn primary" disabled={!picked.size} onClick={() => onAdd(found.filter((_, i) => picked.has(i)))}>
+              Add {picked.size}
+            </button>
+            {cost && <span className="muted small">{cost}</span>}
+          </div>
+        </div>
+      )}
+    </Dialog>
   );
 }

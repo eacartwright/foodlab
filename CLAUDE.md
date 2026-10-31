@@ -199,4 +199,9 @@ tombstones (`deleted`), restorable with Undo or the page's Restore.
   Recently changed has Show more; partial matches say which terms matched (`SearchHit.matched`); no
   + Add for a `+` search; saved searches in DESIGN.md §6. Products' food path also drops a level the
   food's name contains; list text 0.94rem. 100 tests, browser-checked on a scratch copy.
+- 2026-10-31: **Place locations** (DESIGN.md §4.4, §5.12; migration 12): `Store.locations` replaces
+  address / phone / hours (old apps' saves still turn those into one); Location dropdown from two;
+  **✨ Fill from page** (`POST /api/ai/place`, `aiPlace`; `ai.ts` now runs any `Job` through `aiCall`),
+  `shared/places.ts` (`withFound`, `matchLocation`). 106 tests; migration checked on a copy of the live
+  DB; browser-checked against a stand-in Claude API (desktop and phone dark).
 - **Next:** M6 (weights), or the M4 extras (share a place link to make a place).

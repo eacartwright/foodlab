@@ -155,9 +155,7 @@ from the hot bar, so it's one record, not two. Still `stores` in the code, table
 | `cost` | $ · $$ · $$$. |
 | `status` | **Been** · **Want to go** (stored as tried / want), blank = not said (most stores). |
 | `rating` | ❤️ · 👍 · 👎, like everything else. |
-| `address` | Opens Google Maps (🗺️ Map ↗). |
-| `phone` | 📞 Call. |
-| `hours` | Text, as the place says them. |
+| `locations` | (2026-10-31) Where it is: one for most places, several for a chain. Each has a `name` that tells it apart ("Pittsford"; blank when there's one), `address` (🗺️ Map ↗), `phone` (📞 Call) and `hours` (text, as the place says them). Products and dishes point at the place, not a location: "sold at Wegmans" is what I ask. Migration 12 moved a place's address / phone / hours into its first location. |
 | `links` | Its site, Find Me Gluten Free, a menu. |
 | `tags`, `notes` | |
 
@@ -626,8 +624,18 @@ filtered on. **Dishes** (🥘) is its own list: dish, place, gluten-free, last a
 **Dish** kind (name, place, rating, meal tags); a new place made from a dish is a Restaurant.
 A place's page has **+ Dish**.
 
+**Locations** (2026-10-31): the page shows one location's address, phone and hours at a time;
+with two or more a **Location** dropdown picks which (named by its name, else its street), with a
+**Location name** box and **Remove** (Undo). **+ Location** adds a blank one. **✨ Fill from page**
+takes the place's first link (or any link, or text copied from the page when a site refuses),
+the AI model reads it for locations (`POST /api/ai/place`, cost in `ai_usage` as `place`), and
+the dialog lists what it found, each checked, marked "updates …" when it's at an address I have.
+**Add** fills those in (what was found wins, blanks keep mine) and adds the rest (`withFound` in
+`shared/places.ts`), with Undo. Search finds a place by a location's name or address.
+
 Later, if wanted: sharing a Find Me Gluten Free or Google Maps link to make a place (address,
-phone and hours read from the page), "near me", and a dish's price.
+phone and hours read from the page), looking a place up by name alone (needs the model's web
+search, a few cents a lookup), "near me", and a dish's price.
 
 ## 6. Later (designed for, not built)
 

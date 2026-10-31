@@ -14,12 +14,13 @@ import {
   type AiSettings,
   type AiTokens,
   type AiUsage,
+  type ReadPlace,
   type ReadRecipe,
 } from "@foodlab/shared";
 import type { DB } from "./db";
 
 // Claude or GPT reads a recipe the plain reader can't: a page without recipe data, or pasted
-// text (DESIGN.md §5.5, §5.9). The keys come from ANTHROPIC_API_KEY and OPENAI_API_KEY in .env
+// text (DESIGN.md §5.5, §5.9); and a place's page for its locations (§5.12). The keys come from ANTHROPIC_API_KEY and OPENAI_API_KEY in .env
 // (either or both, as in sideshow) and never leave the server. Every call is recorded in
 // ai_usage with its estimated cost; past the monthly cap the server makes no more calls.
 
@@ -55,7 +56,41 @@ const SYSTEM = `You read recipes for a personal recipe box. From the text you're
 
 Copy, don't improve: no added steps, amounts or tips. If the text holds no recipe, return an empty name and empty lists.`;
 
+const Place = z.object({
+  locations: z.array(z.object({ name: z.string(), address: z.string(), phone: z.string(), hours: z.string() })),
+});
+
+const PLACE_SYSTEM = `You read a restaurant's or store's web page (or text copied from one) for a personal list of places. Return its locations.
+
+- One entry per physical location the text gives. A chain's locations page may list many; a single shop has one.
+- name: what tells this location apart, usually the town or neighborhood ("Pittsford", "Downtown"); "" when there's only one location.
+- address: the street address on one line ("3195 Monroe Ave, Rochester, NY 14618").
+- phone: as written; "" when not given.
+- hours: one line per day or range, as the page gives them ("Mon–Fri 7am–10pm", "Sat–Sun 8am–9pm"); "" when not given.
+
+Copy what the text says; never guess an address, phone or hours. If it gives no locations, return an empty list.`;
+
 export class AiStopped extends Error {}
+
+/** One kind of read: what the model is told, and the shape it answers in. */
+interface Job<T> {
+  name: string;
+  system: string;
+  schema: z.ZodType<T>;
+}
+
+const RECIPE_JOB: Job<z.infer<typeof Recipe>> = { name: "recipe", system: SYSTEM, schema: Recipe };
+const PLACE_JOB: Job<z.infer<typeof Place>> = { name: "place", system: PLACE_SYSTEM, schema: Place };
+
+export interface AiCall<T> {
+  out: T | null;
+  model: string;
+  costUsd: number;
+  tokens: AiTokens;
+  ms: number;
+  /** Alert levels (% of the cap) this call crossed. */
+  alerts: number[];
+}
 
 export interface AiResult {
   recipe: ReadRecipe | null;
@@ -67,38 +102,37 @@ export interface AiResult {
   alerts: number[];
 }
 
-type Parsed = z.infer<typeof Recipe>;
-/** One provider's call: the recipe it read (null when it declined), its tokens, and anything odd. */
-type Ask = (model: string, text: string) => Promise<{ out: Parsed | null; tokens: AiTokens; note: string }>;
+/** One provider's call: what it read (null when it declined), its tokens, and anything odd. */
+type Ask = <T>(job: Job<T>, model: string, text: string) => Promise<{ out: T | null; tokens: AiTokens; note: string }>;
 
-const askAnthropic: Ask = async (model, text) => {
+const askAnthropic: Ask = async (job, model, text) => {
   const res = await (anthropic ??= new Anthropic()).messages.parse({
     model,
     max_tokens: 16000,
-    system: SYSTEM,
+    system: job.system,
     messages: [{ role: "user", content: text }],
-    // Copying a recipe out of text needs little thinking.
-    output_config: { effort: "low", format: zodOutputFormat(Recipe) },
+    // Copying things out of text needs little thinking.
+    output_config: { effort: "low", format: zodOutputFormat(job.schema) },
   });
   const tokens = { input: res.usage.input_tokens, output: res.usage.output_tokens, cacheRead: res.usage.cache_read_input_tokens ?? 0 };
   const out = res.stop_reason === "refusal" ? null : res.parsed_output;
-  return { out, tokens, note: res.stop_reason === "refusal" ? "declined" : out ? "" : `no recipe (${res.stop_reason})` };
+  return { out, tokens, note: res.stop_reason === "refusal" ? "declined" : out ? "" : `no ${job.name} (${res.stop_reason})` };
 };
 
-const askOpenAi: Ask = async (model, text) => {
+const askOpenAi: Ask = async (job, model, text) => {
   const res = await (openai ??= new OpenAI()).responses.parse({
     model,
-    instructions: SYSTEM,
+    instructions: job.system,
     input: text,
     reasoning: { effort: "low" },
     max_output_tokens: 16000,
-    text: { format: zodTextFormat(Recipe, "recipe") },
+    text: { format: zodTextFormat(job.schema, job.name) },
   });
   // OpenAI counts cached input inside input_tokens; the bill (and costUsd) counts them apart.
   const cached = res.usage?.input_tokens_details?.cached_tokens ?? 0;
   const tokens = { input: (res.usage?.input_tokens ?? 0) - cached, output: res.usage?.output_tokens ?? 0, cacheRead: cached };
   const out = res.output_parsed;
-  return { out, tokens, note: out ? "" : `no recipe (${res.status})` };
+  return { out, tokens, note: out ? "" : `no ${job.name} (${res.status})` };
 };
 
 const ASK: Record<AiProvider, Ask> = { anthropic: askAnthropic, openai: askOpenAi };
@@ -115,6 +149,20 @@ export function monthSpend(db: DB, month = monthOf(Date.now())): number {
 
 /** Ask the model for the recipe in `text`. Throws AiStopped when AI is off, its provider has no key or the month's cap is spent. */
 export async function aiRead(db: DB, ai: AiSettings, text: string, purpose: "read" | "paste" | "compare", model: string = ai.model): Promise<AiResult> {
+  const { out, ...rest } = await aiCall(db, ai, RECIPE_JOB, text, purpose, model);
+  return { recipe: out ? toRecipe(out) : null, ...rest };
+}
+
+/** Ask the model for a place's locations in `text` (its page, or pasted). Throws AiStopped like aiRead. */
+export async function aiPlace(db: DB, ai: AiSettings, text: string): Promise<AiCall<ReadPlace>> {
+  const { out, ...rest } = await aiCall(db, ai, PLACE_JOB, text, "place", ai.model);
+  const locations = (out?.locations ?? [])
+    .map((l) => ({ name: l.name.trim(), address: l.address.trim(), phone: l.phone.trim(), hours: l.hours.trim() }))
+    .filter((l) => l.address || l.phone || l.hours);
+  return { out: out && { locations }, ...rest };
+}
+
+async function aiCall<T>(db: DB, ai: AiSettings, job: Job<T>, text: string, purpose: string, model: string): Promise<AiCall<T>> {
   if (model === "off") throw new AiStopped("AI is off in Settings");
   const info = modelInfo(model);
   if (!info) throw new AiStopped(`Not a model foodlab knows: ${model}`);
@@ -131,14 +179,14 @@ export async function aiRead(db: DB, ai: AiSettings, text: string, purpose: "rea
   };
   let res;
   try {
-    res = await ASK[info.provider](model, text);
+    res = await ASK[info.provider](job, model, text);
   } catch (err) {
     record({ input: 0, output: 0, cacheRead: 0 }, false, errorNote(err));
     throw err;
   }
   const { out, tokens } = res;
   const cost = record(tokens, !!out, res.note);
-  return { recipe: out ? toRecipe(out) : null, model, costUsd: cost, tokens, ms: Date.now() - started, alerts: crossed(ai, before, before + cost) };
+  return { out, model, costUsd: cost, tokens, ms: Date.now() - started, alerts: crossed(ai, before, before + cost) };
 }
 
 function toRecipe(r: z.infer<typeof Recipe>): ReadRecipe | null {
@@ -163,7 +211,7 @@ function toRecipe(r: z.infer<typeof Recipe>): ReadRecipe | null {
 }
 
 /** What the model is sent for a page. */
-export const pagePrompt = (url: string, html: string) => `A recipe page (${url}):\n\n${pageText(html)}`;
+export const pagePrompt = (url: string, html: string, what = "A recipe page") => `${what} (${url}):\n\n${pageText(html)}`;
 
 /** A page's readable text, for the model: no scripts, styles or markup; one line per block. */
 export function pageText(html: string, max = 60_000): string {

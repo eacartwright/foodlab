@@ -5,7 +5,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { aiOf, Invalid, KINDS, recipeFromText, type Kind, type ReadRecipe } from "@foodlab/shared";
-import { AiStopped, aiRead, availableModels, pagePrompt, usage, type AiResult } from "./ai";
+import { AiStopped, aiPlace, aiRead, availableModels, pagePrompt, usage, type AiResult } from "./ai";
 import { startBackups } from "./backup";
 import { openDb } from "./db";
 import { FileStore, MAX_FILE } from "./files";
@@ -180,6 +180,26 @@ app.post("/api/ai/compare", async (c) => {
     }),
   );
   return c.json({ plain, results });
+});
+
+// A place's page (or text copied from it), read by the AI model for its locations (DESIGN.md
+// §5.12). Nothing is saved but the cost: the app shows what was found and I pick.
+app.post("/api/ai/place", async (c) => {
+  const body = await jsonBody(c);
+  let text = typeof body?.text === "string" ? body.text.slice(0, 60_000) : "";
+  const url = typeof body?.url === "string" ? body.url.trim() : "";
+  if (url) {
+    const r = await readRecipe(url);
+    if (!("html" in r)) return c.json({ error: r.error, message: r.message });
+    text = pagePrompt(url, r.html, "A place's page");
+  }
+  if (!text.trim()) return c.json({ error: "failed", message: "Nothing to read" }, 400);
+  try {
+    const a = await aiPlace(db, aiOf(store.state), text);
+    return c.json({ locations: a.out?.locations ?? [], model: a.model, costUsd: a.costUsd, alerts: a.alerts, limitUsd: aiOf(store.state).monthlyLimitUsd });
+  } catch (err) {
+    return c.json({ error: "failed", message: `Couldn't read it${aiWhy(err)}` });
+  }
 });
 
 app.all("/api/*", (c) => c.json({ error: "Not found" }, 404));
