@@ -47,6 +47,7 @@ function ListShell({
   head,
   children,
   empty,
+  textBelow = false,
 }: {
   title: string;
   icon: string;
@@ -56,8 +57,20 @@ function ListShell({
   head: ReactNode;
   children: ReactNode;
   empty: string;
+  /** The filter box under the other filters, on its own line (Places, with its rows of pills). */
+  textBelow?: boolean;
 }) {
   const { query } = useRoute();
+  const text = (
+    <input
+      className={`input ${textBelow ? "filter-below" : ""}`}
+      type="search"
+      placeholder="Filter…"
+      aria-label="Filter"
+      value={query.get("f") ?? ""}
+      onChange={(e) => setQuery({ f: e.target.value })}
+    />
+  );
   return (
     <div className="page wide">
       <div className="list-head">
@@ -72,15 +85,9 @@ function ListShell({
         )}
       </div>
       <div className="list-filters">
-        <input
-          className="input"
-          type="search"
-          placeholder="Filter…"
-          aria-label="Filter"
-          value={query.get("f") ?? ""}
-          onChange={(e) => setQuery({ f: e.target.value })}
-        />
+        {!textBelow && text}
         {filters}
+        {textBelow && text}
       </div>
       {count ? (
         <table className="db">
@@ -921,6 +928,7 @@ export function PlacesList() {
     <ListShell
       title="Places"
       icon={KIND_ICON.stores}
+      textBelow
       count={rows.length}
       add={() => setAdding(true)}
       filters={
