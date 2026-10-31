@@ -515,11 +515,12 @@ export class View {
     return [...seen.values()].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
   }
 
-  /** The Eat list (DESIGN.md §5.2). Never what isn't gluten-free: that's someone else's. */
+  /** The Eat list (DESIGN.md §5.2). Never a product that isn't gluten-free: that's someone else's.
+   * A recipe's flag is no longer set or read (2026-10-31); non-GF versions will be variants. */
   eat(f: EatFilter): Eatable[] {
     return this.eatables()
-      .filter(({ item }) => {
-        if (item.glutenFree === "no") return false;
+      .filter(({ kind, item }) => {
+        if (kind === "products" && item.glutenFree === "no") return false;
         if (f.tagId && !item.tagIds.includes(f.tagId)) return false;
         if (!f.showDown && item.rating === "down") return false;
         if (f.status && item.status !== f.status) return false;

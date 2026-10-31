@@ -750,6 +750,12 @@ textarea::placeholder {
 .title-input:hover {
   border-color: var(--border);
 }
+/* The wrapping title (TitleInput): a one-row textarea that grows with the name. */
+textarea.title-input {
+  resize: none;
+  overflow: hidden;
+  line-height: 1.2;
+}
 /* A product's title is two boxes, brand then name, that read as one name. */
 .product-title {
   flex-wrap: wrap;
@@ -1826,6 +1832,14 @@ ul.notes li.done .note-text {
   }
   .title-input {
     font-size: 1.4rem;
+  }
+  /* The title gets the whole width; Staple and + Groceries go on the line below. */
+  .title-row {
+    flex-wrap: wrap;
+    gap: 6px 12px;
+  }
+  .title-row textarea.title-input {
+    flex: 1 1 100%;
   }
   .recipe-title {
     font-size: 1.6rem;

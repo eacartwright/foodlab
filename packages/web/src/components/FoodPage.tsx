@@ -3,7 +3,7 @@ import { useState } from "react";
 import { duplicate, ensureFood, remove } from "../actions";
 import { go, pathOf } from "../router";
 import { data, put, useData } from "../sync";
-import { DraftInput, DraftTextarea, Field, PageKind, Picker, TagEditor } from "./controls";
+import { DraftInput, DraftTextarea, Field, PageKind, Picker, TagEditor, TitleInput } from "./controls";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { ItemRow, Section } from "./rows";
 import { openQuickAdd } from "./QuickAdd";
@@ -47,7 +47,7 @@ export function FoodPage({ id }: { id: string }) {
       {food.deleted && <Deleted onRestore={() => save({ deleted: false })} />}
       <PageKind kind="foods" trail={path.map((f) => ({ href: pathOf("foods", f.id), label: f.name }))} />
       <div className="title-row">
-        <DraftInput className="title-input" value={food.name} required aria-label="Name" onCommit={(name) => save({ name })} />
+        <TitleInput value={food.name} required aria-label="Name" onCommit={(name) => save({ name })} />
         <button className={`btn staple ${food.staple ? "on" : ""}`} aria-pressed={food.staple} onClick={() => save({ staple: !food.staple })} title="Something I want to keep in the house">
           {food.staple ? "★ Staple" : "☆ Staple"}
         </button>

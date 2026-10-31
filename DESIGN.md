@@ -180,7 +180,7 @@ prep keeps the food it was linked to.
 |---|---|
 | `rating` | ❤️ · 👍 · 👎 (offered best first), blank = not rated. |
 | `status` | `tried` · `want to try`. |
-| `glutenFree` | Products: `certified` · `labeled` · `ingredients` (no gluten ingredients) · `facility` (shared facility) · `no`, blank by default. Recipes: only `no`. |
+| `glutenFree` | Products: `certified` · `labeled` · `ingredients` (no gluten ingredients) · `facility` (shared facility) · `no`, blank by default. Recipes: none on screen (2026-10-31; the column stays, unread). |
 | `notes` | |
 | `links` | URLs (recipe source, product page, Find Me Gluten Free). |
 | `travels` | `packs cold` · `needs microwave` · `eat as-is`. **Shelved** 2026-10-30 (below). |
@@ -197,7 +197,8 @@ never knowingly eat anything else; a product I find isn't GF gets marked, not ke
 option. So the field doesn't ask *whether*, it says **how sure**: certified, labeled, no gluten
 ingredients, or made in a shared facility. **Not GF** is for someone else's food (a partner's
 favorite): it's flagged "not GF" in lists and **never shows in Eat**. A recipe is GF by what
-goes in it, so it only has "Not GF". It's not on Quick add. "GF option" is gone: that's a
+goes in it, so it has no field: its "Not GF (someone else's)" box went 2026-10-31, and a non-GF
+version of a recipe will be a **variant** with substitutions (§10, later). It's not on Quick add. "GF option" is gone: that's a
 restaurant idea (GFM, gluten-free modified), and belongs to dishes in M4.
 
 ### 4.7 Staples
@@ -343,7 +344,7 @@ highlighted, §5.2), and recently changed things.
 
 Meal chips (Breakfast · Lunch · Dinner · Snack · Dessert) over one mixed list of
 recipes and products with that tag: ❤️, then 👍, then not rated; 👎 hidden unless asked; Not GF
-never. Filters: tried / want to try, show 👎. (Work lunch's travels / keeps / effort filters
+products never. Filters: tried / want to try, show 👎. (Work lunch's travels / keeps / effort filters
 were shelved with it, 2026-10-30.)
 
 **Opens on the meal for the time of day** (2026-10-25): four slots in Settings → Meal times,
@@ -674,6 +675,9 @@ rule; whether log entries need actual quantities (a recipe-instance object).
 
 Decided:
 
+- 2026-10-31: a recipe's **Not GF (someone else's)** box is gone (§4.6); non-GF versions will be
+  recipe variants with substitutions. A product page's header shows its food's whole path
+  (PRODUCT › Dry good › Bread crumbs › Panko bread crumbs), like a food page's.
 - 2026-10-27: **M5 photos** (§5.11): shrunk on the device (1600px + a 400px thumbnail), files kept
   forever in `data/files` like sideshow's; dev notes attach any file as it is.
 - 2026-10-27: **M3 done.** The recipe card view (now "cook view": ingredients and steps only,

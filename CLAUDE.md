@@ -183,4 +183,8 @@ tombstones (`deleted`), restorable with Undo or the page's Restore.
 - 2026-10-30: **Work lunch is a personal tag**, not a meal (migration 10: `work lunch`, same id
   `WORK_LUNCH`; meal times on it → Lunch; rev bumped). Its lunch box (travels / keeps / effort) is
   shelved: hidden and unfiltered, data kept (DESIGN.md §4.6). 94 tests, migration checked on a v9 DB.
+- 2026-10-31: a recipe's "Not GF (someone else's)" box is gone (not shown, listed or filtered on; the
+  column stays): non-GF versions will be recipe variants. Product header: PRODUCT › the food's whole path.
+  Page titles wrap (`TitleInput` in `controls.tsx`, a one-row textarea; Enter saves); on the phone
+  Staple / + Groceries go on the line below. Browser-checked at 400px and desktop.
 - **Next: M4** (places & dishes) or M6 (weights).

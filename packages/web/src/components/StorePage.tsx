@@ -4,7 +4,7 @@ import { remove } from "../actions";
 import { go } from "../router";
 import { data, put, useData } from "../sync";
 import { ConfirmDialog } from "./ConfirmDialog";
-import { DraftInput, DraftTextarea, Field, PageKind } from "./controls";
+import { DraftTextarea, Field, PageKind, TitleInput } from "./controls";
 import { Deleted, NotFound } from "./FoodPage";
 import { openQuickAdd } from "./QuickAdd";
 import { ItemRow, Section } from "./rows";
@@ -30,7 +30,7 @@ export function StorePage({ id }: { id: string }) {
       {s.deleted && <Deleted onRestore={() => save({ deleted: false })} />}
       <PageKind kind="stores" />
       <div className="title-row">
-        <DraftInput className="title-input" value={s.name} required aria-label="Name" onCommit={(name) => save({ name })} />
+        <TitleInput value={s.name} required aria-label="Name" onCommit={(name) => save({ name })} />
       </div>
       <div className="fields">
         <Field label="Notes">

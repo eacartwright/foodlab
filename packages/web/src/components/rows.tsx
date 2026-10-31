@@ -90,7 +90,7 @@ export function ItemRow({
               ★
             </span>
           )}
-          {rated?.glutenFree === "no" && <NotGF />}
+          {kind === "products" && rated?.glutenFree === "no" && <NotGF />}
         </span>
         {sub && <span className="row-sub">{sub}</span>}
         {extra}

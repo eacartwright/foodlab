@@ -1,5 +1,4 @@
 import {
-  GF_LABEL,
   METHODS,
   METHOD_LABEL,
   fileUrl,
@@ -22,7 +21,7 @@ import { A, go, pathOf, setQuery, useRoute } from "../router";
 import { data, put, useData } from "../sync";
 import { showToast } from "../toast";
 import { ConfirmDialog } from "./ConfirmDialog";
-import { DraftInput, DraftTextarea, Field, NumberInput, PageKind, Picker, RatingInput, Segmented } from "./controls";
+import { DraftInput, DraftTextarea, Field, NumberInput, PageKind, Picker, RatingInput, Segmented, TitleInput } from "./controls";
 import { EatingFields, LogSection, doneText } from "./eating";
 import { PhotoFromLink, PhotoViewer, Photos } from "./Photos";
 import { Deleted, NotFound } from "./FoodPage";
@@ -61,7 +60,6 @@ function RecipeView({ r }: { r: Recipe }) {
     r.method ? METHOD_LABEL[r.method] : null,
     r.yieldQty === null && r.yieldUnit ? `makes ${r.yieldUnit}` : null,
     ...time,
-    r.glutenFree !== "unknown" ? GF_LABEL[r.glutenFree] : null,
     doneText(view, r.id, "made") || null,
   ].filter(Boolean);
   // The first link is where the recipe came from: a button up top. Any others (a video, what it
@@ -311,7 +309,7 @@ function RecipeEdit({ r }: { r: Recipe }) {
         </button>
       </PageKind>
       <div className="title-row">
-        <DraftInput className="title-input" value={r.name} required aria-label="Name" onCommit={(name) => save({ name })} />
+        <TitleInput value={r.name} required aria-label="Name" onCommit={(name) => save({ name })} />
       </div>
 
       <div className="fields">

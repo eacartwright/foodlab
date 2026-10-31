@@ -669,7 +669,6 @@ export function RecipesList() {
             <A href={pathOf("recipes", r.id)} className="strong">
               {r.name}
             </A>
-            {r.glutenFree === "no" && <NotGF />}
           </td>
           <td className="hide-sm muted small clip">{r.ingredients.length || ""}</td>
           <td className="hide-sm muted">{r.method ? METHOD_LABEL[r.method] : ""}</td>

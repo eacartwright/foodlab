@@ -4,7 +4,7 @@ import { duplicate, ensureFood, ensureStore, remove } from "../actions";
 import { go, pathOf } from "../router";
 import { data, put, useData } from "../sync";
 import { ConfirmDialog } from "./ConfirmDialog";
-import { DraftInput, DraftTextarea, Field, MultiPicker, PageKind, Picker, Segmented } from "./controls";
+import { DraftInput, DraftTextarea, Field, MultiPicker, PageKind, Picker, Segmented, TitleInput } from "./controls";
 import { EatingFields, LogSection } from "./eating";
 import { Photos } from "./Photos";
 import { Deleted, NotFound } from "./FoodPage";
@@ -30,11 +30,12 @@ export function ProductPage({ id }: { id: string }) {
   return (
     <article className="page">
       {p.deleted && <Deleted onRestore={() => save({ deleted: false })} />}
-      <PageKind kind="products" trail={food ? [{ href: pathOf("foods", food.id), label: food.name }] : []} />
+      {/* The food's whole path, like a food page's, ending at the food itself. */}
+      <PageKind kind="products" trail={food ? [...[...view.ancestors(food.id)].reverse(), food].map((f) => ({ href: pathOf("foods", f.id), label: f.name })) : []} />
       {/* Brand, then name: reads as the whole name ("Bell & Evans" "Gluten Free Chicken Breasts"). */}
       <div className="title-row product-title">
         <DraftInput className="title-input brand-input" value={p.brand} placeholder="Brand" aria-label="Brand" list={brands} onCommit={(brand) => save({ brand })} />
-        <DraftInput className="title-input" value={p.name} required aria-label="Name" onCommit={(name) => save({ name })} />
+        <TitleInput value={p.name} required aria-label="Name" onCommit={(name) => save({ name })} />
         <GroceryButton name={productName(p)} foodId={p.foodId} productId={p.id} />
         <datalist id={brands}>
           {view.brands().map((b) => (

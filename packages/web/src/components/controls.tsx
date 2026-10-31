@@ -68,6 +68,66 @@ export function DraftInput({
   );
 }
 
+/** A page's title: a DraftInput that wraps onto more lines instead of cutting a long name
+ * off. One line of text (Enter saves, pasted line breaks become spaces). */
+export function TitleInput({
+  value,
+  onCommit,
+  required,
+  className = "",
+  ...rest
+}: { value: string; onCommit: (v: string) => void; required?: boolean } & Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, "value" | "onChange">) {
+  const [draft, setDraft] = useState(value);
+  const [base, setBase] = useState(value);
+  if (value !== base) {
+    setBase(value);
+    setDraft(value);
+  }
+  const commit = () => {
+    const v = draft.trim();
+    if (required && !v) return setDraft(value);
+    if (v !== value) onCommit(v);
+  };
+  // As tall as its lines, again whenever the width changes.
+  const ref = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const fit = () => {
+      el.style.height = "auto";
+      el.style.height = `${el.scrollHeight + 3}px`;
+    };
+    fit();
+    const ro = new ResizeObserver(fit);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [draft]);
+  const name = useFieldName(rest);
+  return (
+    <textarea
+      ref={ref}
+      {...name}
+      {...rest}
+      className={`title-input ${className}`}
+      rows={1}
+      value={draft}
+      onChange={(e) => setDraft(e.target.value.replace(/\s*[\r\n]+\s*/g, " "))}
+      onBlur={commit}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          commit();
+          e.currentTarget.blur();
+        } else if (e.key === "Escape") {
+          setDraft(value);
+          e.stopPropagation();
+        }
+        rest.onKeyDown?.(e);
+      }}
+    />
+  );
+}
+
 /** A number box: blank = none. */
 export function NumberInput({
   value,
