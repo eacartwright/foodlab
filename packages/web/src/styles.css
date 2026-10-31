@@ -889,7 +889,11 @@ textarea.title-input {
 }
 .row-icon {
   font-size: 1.2rem;
-  width: 40px; /* as wide as a photo, so names line up */
+  /* As wide as a photo, so names line up, and as tall as one (40px less its -4px margins), so
+     a row with a photo is no taller than one without. */
+  width: 40px;
+  height: 32px;
+  line-height: 32px;
   flex: none;
   text-align: center;
 }
