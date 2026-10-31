@@ -649,6 +649,10 @@ search, a few cents a lookup), "near me", and a dish's price.
 - **Substitutions** as links. Until then, food notes.
 - **Inventory**: counts on foods or products, if they ever earn their keep. The shopping list
   is Groceries (M2), and needs no inventory.
+- **Recipe view header, round two** (to revisit, 2026-10-31): with a tall photo beside it the
+  facts leave empty space under the source link. Ideas: times and servings on one line ("Cook ·
+  prep 5 min · cook 20 min · makes − 4 servings +"), tags beside the rating buttons; and, apart
+  from the header, the Ingredients column staying in view while scrolling the instructions.
 - **Saved searches**: a `+` search kept by name, one tap from home.
 - **Groceries by store or aisle**: grouping the list by a product's store, or a store's aisle
   order, once the list is in use and it's clear whether that's wanted.
