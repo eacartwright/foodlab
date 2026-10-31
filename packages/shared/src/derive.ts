@@ -504,9 +504,10 @@ export class View {
     const consider = <K extends SearchKind>(kind: K, list: SearchItem<K>[]) => {
       for (const item of list) {
         const hay = this.haystack(kind, item);
-        const hits = terms.filter((t) => hay.some((h) => termMatches(h, t))).length;
+        const matched = terms.filter((t) => hay.some((h) => termMatches(h, t)));
+        const hits = matched.length;
         if (!hits) continue;
-        const hit = { kind, item, hits } as SearchHit;
+        const hit = { kind, item, hits, matched } as SearchHit;
         if (hits === terms.length) empty.full[kind].push(hit as never);
         else empty.partial[kind].push(hit as never);
       }
@@ -601,7 +602,7 @@ export interface EatFilter {
 export const SEARCH_KINDS = ["recipes", "products", "dishes", "foods", "stores"] as const;
 export type SearchKind = (typeof SEARCH_KINDS)[number];
 type SearchItem<K extends SearchKind> = K extends "recipes" ? Recipe : K extends "products" ? Product : K extends "dishes" ? Dish : K extends "foods" ? Food : Store;
-export type SearchHit = { [K in SearchKind]: { kind: K; item: SearchItem<K>; hits: number } }[SearchKind];
+export type SearchHit = { [K in SearchKind]: { kind: K; item: SearchItem<K>; hits: number; matched: string[] } }[SearchKind];
 export type SearchGroups = { [K in SearchKind]: Extract<SearchHit, { kind: K }>[] };
 export interface SearchResults {
   terms: string[];

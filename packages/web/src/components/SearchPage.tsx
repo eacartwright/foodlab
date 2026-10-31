@@ -1,5 +1,5 @@
 import { MEAL_TAGS, mealNow, mealTimes, SEARCH_KINDS, type SearchGroups } from "@foodlab/shared";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { A, setQuery, useRoute } from "../router";
 import { useData } from "../sync";
 import { KIND_ICON } from "./controls";
@@ -18,6 +18,8 @@ export function SearchPage() {
   const results = useMemo(() => view.search(q), [view, q]);
   const now = mealNow(mealTimes(view.state));
   const partial = SEARCH_KINDS.reduce((n, k) => n + results.partial[k].length, 0);
+  const [recentN, setRecentN] = useState(12);
+  const recent = useMemo(() => view.recent(recentN + 1), [view, recentN]);
 
   return (
     <div className="page search-page">
@@ -60,8 +62,15 @@ export function SearchPage() {
             </div>
           </Section>
           <Section title="Recently changed">
-            {view.recent().length ? (
-              <div className="rows">{view.recent().map(({ kind, item }) => <ItemRow key={item.id} view={view} kind={kind} item={item} />)}</div>
+            {recent.length ? (
+              <>
+                <div className="rows">{recent.slice(0, recentN).map(({ kind, item }) => <ItemRow key={item.id} view={view} kind={kind} item={item} />)}</div>
+                {recent.length > recentN && (
+                  <button className="btn subtle show-more" onClick={() => setRecentN((n) => n + 24)}>
+                    Show more
+                  </button>
+                )}
+              </>
             ) : (
               <p className="empty-line">{loaded ? "Nothing yet. Start with what you'd bring for lunch: + Product or + Recipe." : "Loading…"}</p>
             )}
@@ -82,9 +91,12 @@ export function SearchPage() {
           {results.count === 0 && (
             <div className="empty">
               Nothing matches {results.terms.length > 1 ? "all of those" : `“${q.trim()}”`}.{" "}
-              <button className="btn subtle" onClick={() => openQuickAdd({ name: q.replace(/\+/g, " ").replace(/\s+/g, " ").trim() })}>
-                + Add “{q.replace(/\+/g, " ").replace(/\s+/g, " ").trim()}”
-              </button>
+              {/* "breakfast + lemon" is a search, not the name of something missing. */}
+              {results.terms.length === 1 && (
+                <button className="btn subtle" onClick={() => openQuickAdd({ name: q.replace(/\+/g, " ").trim() })}>
+                  + Add “{q.replace(/\+/g, " ").trim()}”
+                </button>
+              )}
             </div>
           )}
           {partial > 0 && (
@@ -113,7 +125,13 @@ function Groups({ view, groups, terms }: { view: ReturnType<typeof useData>["vie
                   kind={k}
                   item={h.item}
                   showKind={false}
-                  extra={terms ? <span className="row-sub muted">{h.hits} of {terms}</span> : undefined}
+                  extra={
+                    terms ? (
+                      <span className="row-sub muted">
+                        {h.hits} of {terms}: {h.matched.join(", ")}
+                      </span>
+                    ) : undefined
+                  }
                 />
               ))}
             </div>

@@ -97,6 +97,7 @@ describe("View", () => {
     expect(r.full.recipes.map((h) => h.item.id)).toEqual(["hash"]);
     // Lemon chicken has lemon (via lemon juice) and meat, but no potato or breakfast.
     expect(r.partial.recipes.map((h) => h.item.id)).toContain("lc");
+    expect(r.partial.recipes.find((h) => h.item.id === "lc")?.matched).toEqual(["lemon", "meat"]);
   });
 
   it("finds products by store and plural", () => {

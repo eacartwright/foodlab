@@ -133,6 +133,9 @@ select:focus {
   color: var(--muted);
   margin: 4px 0 8px;
 }
+.show-more {
+  margin-top: 6px;
+}
 .stack {
   display: flex;
   flex-direction: column;

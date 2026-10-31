@@ -10,8 +10,8 @@ import { openQuickAdd } from "./QuickAdd";
 import { GroceryButton } from "./GroceriesPage";
 import { showToast } from "../toast";
 
-// A food: the database personality. What it is, its forms, its products best first, the
-// recipes it's in.
+// A food: the database personality. What it is, its products best first, its kinds, its
+// forms, the recipes it's in.
 
 export function FoodPage({ id }: { id: string }) {
   const { view, state } = useData();
@@ -104,6 +104,15 @@ export function FoodPage({ id }: { id: string }) {
         )}
       </Section>
 
+      <Section title="Kinds" count={kinds.length} actions={<button className="btn subtle" onClick={() => setAdding("kind")}>+ Kind</button>}>
+        {adding === "kind" && <AddFood label="Add a kind (e.g. Roma tomato)" options={addable(kinds)} onDone={() => setAdding(null)} link={(f) => link(f, { parentId: food.id })} />}
+        {kinds.length > 0 ? (
+          <div className="rows">{kinds.map((f) => <ItemRow key={f.id} view={view} kind="foods" item={f} showKind={false} />)}</div>
+        ) : (
+          adding !== "kind" && <p className="empty-line">No kinds yet.</p>
+        )}
+      </Section>
+
       <Section title="Forms" count={forms.length} actions={<button className="btn subtle" onClick={() => setAdding("form")}>+ Form</button>}>
         {adding === "form" && <AddFood label="Add a form (e.g. Lemon juice)" options={addable(forms)} onDone={() => setAdding(null)} link={(f) => link(f, { formOfId: food.id })} />}
         {forms.length > 0 ? (
@@ -117,13 +126,6 @@ export function FoodPage({ id }: { id: string }) {
           </p>
         )}
       </Section>
-
-      {(kinds.length > 0 || adding === "kind") && (
-        <Section title="Kinds" count={kinds.length} actions={<button className="btn subtle" onClick={() => setAdding("kind")}>+ Kind</button>}>
-          {adding === "kind" && <AddFood label="Add a kind (e.g. Roma tomato)" options={addable(kinds)} onDone={() => setAdding(null)} link={(f) => link(f, { parentId: food.id })} />}
-          <div className="rows">{kinds.map((f) => <ItemRow key={f.id} view={view} kind="foods" item={f} showKind={false} />)}</div>
-        </Section>
-      )}
 
       <Section title="Used in" count={used.length + viaForms.length}>
         {used.length + viaForms.length ? (
@@ -147,11 +149,6 @@ export function FoodPage({ id }: { id: string }) {
         <button className="btn subtle" onClick={() => duplicate("foods", food.id)} title="A copy with the same kind of, form of and tags">
           Duplicate
         </button>
-        {kinds.length === 0 && adding !== "kind" && (
-          <button className="btn subtle" onClick={() => setAdding("kind")}>
-            + Kind of {food.name}
-          </button>
-        )}
       </div>
       {confirm && (
         <ConfirmDialog

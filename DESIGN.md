@@ -373,9 +373,11 @@ dashed chips under the tag box, not buttons, "From Beverage" on hover (`View.inh
 they're changed on the food they come from.
 
 Results are grouped Recipes · Products · Foods · Stores, ❤️ first. With several terms, things
-matching only some of them follow under **Partial matches**, most terms first. With nothing
-typed: Add buttons, meal shortcuts into Eat (the one for the time of day
-highlighted, §5.2), and recently changed things.
+matching only some of them follow under **Partial matches**, most terms first, each saying
+which it matched ("1 of 3: breakfast"). Nothing matching offers + Add only for a single term:
+"breakfast + lemon" is a search, not something missing. With nothing typed: Add buttons, meal
+shortcuts into Eat (the one for the time of day highlighted, §5.2), and recently changed
+things (12, then Show more).
 
 ### 5.2 Eat (what can I eat?)
 
@@ -639,6 +641,7 @@ phone and hours read from the page), "near me", and a dish's price.
 - **Substitutions** as links. Until then, food notes.
 - **Inventory**: counts on foods or products, if they ever earn their keep. The shopping list
   is Groceries (M2), and needs no inventory.
+- **Saved searches**: a `+` search kept by name, one tap from home.
 - **Groceries by store or aisle**: grouping the list by a product's store, or a store's aisle
   order, once the list is in use and it's clear whether that's wanted.
 
