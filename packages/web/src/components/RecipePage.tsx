@@ -77,50 +77,55 @@ function RecipeView({ r }: { r: Recipe }) {
           ✏️ Edit
         </button>
       </PageKind>
-      <h1 className="recipe-title">{r.name}</h1>
-      {r.photos.length > 0 && (
-        <div className="recipe-photos">
-          <button className="recipe-hero" onClick={() => setPhoto(0)} aria-label="Main photo">
-            <img src={fileUrl(r.photos[0]!.id)} alt="" />
-          </button>
-          {r.photos.slice(1).map((p, i) => (
-            <button key={p.id} className="photo-thumb" onClick={() => setPhoto(i + 1)} aria-label={`Photo ${i + 2}`}>
-              <img src={fileUrl(p.thumb)} alt="" loading="lazy" />
+      {/* On a desktop the photo sits to the right of the title and facts; on the phone it's between them. */}
+      <div className={`recipe-head ${r.photos.length ? "has-photo" : ""}`}>
+        <h1 className="recipe-title">{r.name}</h1>
+        {r.photos.length > 0 && (
+          <div className="recipe-photos">
+            <button className="recipe-hero" onClick={() => setPhoto(0)} aria-label="Main photo">
+              <img src={fileUrl(r.photos[0]!.id)} alt="" />
             </button>
-          ))}
-        </div>
-      )}
-      {photo !== null && r.photos[photo] && <PhotoViewer photos={r.photos} at={photo} setAt={setPhoto} update={updatePhotos} name={r.name} />}
-      {meta.length > 0 && <p className="recipe-meta">{meta.join(" · ")}</p>}
-      {r.yieldQty !== null && servings !== null && <Servings r={r} servings={servings} setServings={setServings} save={save} />}
-      {tags.length > 0 && (
-        <div className="chips">
-          {tags.map((t) => (
-            <A key={t!.id} className="tag" href={t!.kind === "meal" ? `/eat?tag=${t!.id}` : `/?q=${encodeURIComponent(t!.name)}`}>
-              {t!.name}
-            </A>
-          ))}
-        </div>
-      )}
-      <div className="recipe-actions">
-        <RatingInput value={r.rating} onChange={(rating) => save({ rating })} size="big" />
-        <button
-          className="btn"
-          disabled={madeToday}
-          onClick={() => {
-            addLog("recipes", r.id, "made", "");
-            if (r.status === "want") save({ status: "tried" });
-            showToast("Logged: made it today");
-          }}
-        >
-          {madeToday ? "✓ Made today" : "Made it today"}
-        </button>
-        {source && (
-          <a className="btn subtle" href={source} target="_blank" rel="noreferrer noopener" title={source}>
-            🔗 {siteOf(source)} ↗
-          </a>
+            {r.photos.slice(1).map((p, i) => (
+              <button key={p.id} className="photo-thumb" onClick={() => setPhoto(i + 1)} aria-label={`Photo ${i + 2}`}>
+                <img src={fileUrl(p.thumb)} alt="" loading="lazy" />
+              </button>
+            ))}
+          </div>
         )}
+        <div className="recipe-facts">
+          {meta.length > 0 && <p className="recipe-meta">{meta.join(" · ")}</p>}
+          {r.yieldQty !== null && servings !== null && <Servings r={r} servings={servings} setServings={setServings} save={save} />}
+          {tags.length > 0 && (
+            <div className="chips">
+              {tags.map((t) => (
+                <A key={t!.id} className="tag" href={t!.kind === "meal" ? `/eat?tag=${t!.id}` : `/?q=${encodeURIComponent(t!.name)}`}>
+                  {t!.name}
+                </A>
+              ))}
+            </div>
+          )}
+          <div className="recipe-actions">
+            <RatingInput value={r.rating} onChange={(rating) => save({ rating })} size="big" />
+            <button
+              className="btn"
+              disabled={madeToday}
+              onClick={() => {
+                addLog("recipes", r.id, "made", "");
+                if (r.status === "want") save({ status: "tried" });
+                showToast("Logged: made it today");
+              }}
+            >
+              {madeToday ? "✓ Made today" : "Made it today"}
+            </button>
+            {source && (
+              <a className="btn subtle" href={source} target="_blank" rel="noreferrer noopener" title={source}>
+                🔗 {siteOf(source)} ↗
+              </a>
+            )}
+          </div>
+        </div>
       </div>
+      {photo !== null && r.photos[photo] && <PhotoViewer photos={r.photos} at={photo} setAt={setPhoto} update={updatePhotos} name={r.name} />}
 
       <div className="recipe-body">
         <section className="ingredients">

@@ -601,7 +601,7 @@ gallery, several at once) shrinks each on the device to 1600px (a JPEG of a few 
 through the outbox as usual. An upload needs the server: offline, it says so. **Pasting** (2026-10-28): a
 picture pasted anywhere on the page (Ctrl+V; not while a dialog is open) is added the same way, and
 **📋 Paste photo** reads one from the clipboard (the phone has no Ctrl+V; the browser asks once). A product shows its
-photos under its name; a recipe shows its main photo big under the title (adding photos is in Edit only, 2026-10-28;
+photos under its name; a recipe shows its main photo uncropped, in its own shape (at most 460 × 340): on a desktop to the right of the title, times, servings, tags and rating (2026-10-31), on the phone under the title (adding photos is in Edit only, 2026-10-28;
 the view has no "want to try" badge: Tried / Want to try is a filter and a column); search, Eat and Recently changed rows show the main photo's thumbnail
 in place of the kind icon. Tapping a photo opens it big: ‹ ›, **Make main**, **Delete** (Undo).
 

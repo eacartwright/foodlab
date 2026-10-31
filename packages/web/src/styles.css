@@ -1856,6 +1856,18 @@ ul.notes li.done .note-text {
   .recipe-title {
     font-size: 1.6rem;
   }
+  /* (.recipe in front: these come before the desktop rules in this file.) */
+  .recipe .recipe-head.has-photo {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "title" "photo" "facts";
+  }
+  .recipe .recipe-head .recipe-photos {
+    max-width: none;
+    margin-top: 0;
+  }
+  .recipe .recipe-hero img {
+    max-width: 100%;
+  }
   .recipe-body {
     grid-template-columns: 1fr;
     gap: 20px;
@@ -1935,24 +1947,52 @@ ul.notes li.done .note-text {
   outline: 2px solid var(--primary);
   outline-offset: 2px;
 }
-.photo-thumb img,
-.recipe-hero img {
+.photo-thumb img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
 }
-/* A recipe's main photo reads like a cookbook's: wide, not too tall. */
+/* A recipe's main photo, never cropped: its own shape, at most 460 × 340 (all the width on the
+   phone). Wide photos come out wide, tall ones tall. */
 .recipe-hero {
   all: unset;
   cursor: pointer;
   flex: 1 0 100%;
-  max-width: 640px;
-  aspect-ratio: 16 / 10;
+  display: flex;
+}
+.recipe-hero img {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 460px;
   max-height: 340px;
   border-radius: 12px;
-  overflow: hidden;
   background: var(--surface-2);
+}
+/* Title and facts on the left, photos on the right (DESIGN.md §5.4). */
+.recipe-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: "title" "facts";
+}
+.recipe-head.has-photo {
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto 1fr;
+  grid-template-areas: "title photo" "facts photo";
+  column-gap: 28px;
+}
+.recipe-head .recipe-title {
+  grid-area: title;
+}
+.recipe-head .recipe-facts {
+  grid-area: facts;
+}
+.recipe-head .recipe-photos {
+  grid-area: photo;
+  max-width: 460px;
+  align-self: start;
+  margin-top: 8px;
 }
 .dialog.photo-viewer {
   max-width: min(1000px, 96vw);
