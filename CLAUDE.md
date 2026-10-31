@@ -187,4 +187,7 @@ tombstones (`deleted`), restorable with Undo or the page's Restore.
   column stays): non-GF versions will be recipe variants. Product header: PRODUCT › the food's whole path.
   Page titles wrap (`TitleInput` in `controls.tsx`, a one-row textarea; Enter saves); on the phone
   Staple / + Groceries go on the line below. Browser-checked at 400px and desktop.
+- 2026-10-31: **Outside links → Browser** (Settings → General, Android only, per device; `web/links.ts`
+  turns outside links into intent links). Built, not yet tried on the Pixel: keep it if Chrome hands
+  off to the browser, drop it if it opens in place (DESIGN.md §later).
 - **Next: M4** (places & dishes) or M6 (weights).

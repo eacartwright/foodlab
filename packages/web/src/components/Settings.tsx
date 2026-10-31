@@ -20,6 +20,7 @@ import { useEffect, useState } from "react";
 import { aiAlert, money, photoFromLink, photoless, type ReadReply } from "../ai";
 import { FONTS, fontChoice, loaded, setFont, type FontSlot } from "../fonts";
 import { ALL_SANS } from "../fonts-sans";
+import { isAndroid, linksInBrowser, setLinksInBrowser } from "../links";
 import { Markdown } from "../markdown";
 import { data, put, refresh, useData } from "../sync";
 import { showToast } from "../toast";
@@ -91,6 +92,7 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
 
 function General() {
   const [theme, setTheme] = useState<ThemePref>(themePref());
+  const [links, setLinks] = useState(linksInBrowser() ? "browser" : "app");
   return (
     <div className="fields">
       <Field label="Colors">
@@ -107,6 +109,22 @@ function General() {
         />
         <p className="muted small">This device only.</p>
       </Field>
+      {isAndroid && (
+        <Field label="Outside links">
+          <Segmented
+            value={links}
+            options={["app", "browser"] as const}
+            labels={{ app: "In the app", browser: "Browser" }}
+            clearable={false}
+            onChange={(v) => {
+              if (!v) return;
+              setLinks(v);
+              setLinksInBrowser(v === "browser");
+            }}
+          />
+          <p className="muted small">This device only.</p>
+        </Field>
+      )}
     </div>
   );
 }

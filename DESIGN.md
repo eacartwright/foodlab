@@ -672,8 +672,9 @@ rule; whether log entries need actual quantities (a recipe-instance object).
 - **Storage** (2026-10-25, to try): a fixed field on products, blank · Refrigerated · Frozen
   (shelf-stable when blank). Simpler than Found in and maybe enough for it. Wait and see whether
   notes and the food tree (Frozen foods) already cover it once the import is in use.
-- **Links in the system browser** (2026-10-31, from a dev note; not built, needs a try on the
-  Pixel): in the installed app on Android, outside links (recipe source, product links, links in
+- **Links in the system browser** (2026-10-31, from a dev note; **built 2026-10-31** as Settings →
+  General → Outside links: In the app / Browser, shown on Android only, `web/links.ts`; needs a try on
+  the Pixel): in the installed app on Android, outside links (recipe source, product links, links in
   notes) open in Chrome's in-app view over the app. Plan: Settings → General, **per device**
   (localStorage, like Colors), off by default. When on and on Android, one click handler catches
   outside http(s) links and opens an Android intent link instead,
