@@ -195,4 +195,8 @@ tombstones (`deleted`), restorable with Undo or the page's Restore.
   `storeIds` in code, tables and sync (`pathOf("stores")` → `/places`, `listPath`). New `dishes`
   kind (`DishPage.tsx`, `DishesList`, Quick add Dish, `View.dishesAt`), Eat Home / Out / All
   (`?where=`). 99 tests; migration checked on a copy of the live DB; browser-checked.
+- 2026-10-31, Evan's dev notes: a food's Kinds always shown, above Forms (no "+ Kind of" in the foot);
+  Recently changed has Show more; partial matches say which terms matched (`SearchHit.matched`); no
+  + Add for a `+` search; saved searches in DESIGN.md §6. Products' food path also drops a level the
+  food's name contains; list text 0.94rem. 100 tests, browser-checked on a scratch copy.
 - **Next:** M6 (weights), or the M4 extras (share a place link to make a place).
