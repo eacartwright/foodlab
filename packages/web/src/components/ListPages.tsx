@@ -442,6 +442,7 @@ export function ProductsList() {
       filters={
         <>
           <TreeSwitch kind="products" tree={tree} />
+          <RatingFilter />
           <select className="select" value={store ?? ""} onChange={(e) => setQuery({ store: e.target.value || null })} aria-label="Store">
             <option value="">Any store</option>
             {view.stores.map((s) => (
@@ -450,7 +451,6 @@ export function ProductsList() {
               </option>
             ))}
           </select>
-          <RatingFilter />
           {tree && !filtering && (
             <FoldAll
               onExpand={() => fold(new Set())}
@@ -606,9 +606,18 @@ function ProductTreeRows({
 }
 
 const pathText =(path: { name: string }[]) => path.map((x) => x.name).join(" › ");
-// Shown without the top (the aisle-like "Canned and jarred goods") once there are three levels;
-// sorting still uses the whole path.
-const shortPath = <T,>(path: T[]) => (path.length > 2 ? path.slice(1) : path);
+// Shown without the top (the aisle-like "Canned and jarred goods") once there are three levels,
+// and without a level in between that the food's own name already says ("Tea › Iced tea drink
+// mix", not "Tea › Iced tea › Iced tea drink mix"), keeping one above it; sorting still uses the
+// whole path.
+const shortPath = <T extends { name: string }>(path: T[]): T[] => {
+  const short = path.length > 2 ? path.slice(1) : path;
+  const [top, ...rest] = short;
+  const leaf = rest.pop();
+  if (!top || !leaf || rest.length === 0) return short;
+  const said = leaf.name.toLowerCase();
+  return [top, ...rest.filter((x) => !said.includes(x.name.toLowerCase())), leaf];
+};
 
 /** "Pickles › Baby pickles": what it's under muted, the food itself in link color. */
 function FoodPath({ path }: { path: Food[] }) {

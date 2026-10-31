@@ -404,7 +404,8 @@ flip, a third time back to A–Z by name. Text starts A–Z, counts and ratings 
 way), like the filters.
 
 **A product's food with what it's under** (2026-10-25): the Products list shows "Pickles ›
-Baby pickles" (the top level dropped once there are three, full path on hover). Sorting by
+Baby pickles" (the top level dropped once there are three, and a level in between whose name
+the food's own name contains, "Tea › Iced tea drink mix"; full path on hover). Sorting by
 Food uses the whole path, so every pickle product sits together whatever its kind, and the
 filter matches any level ("pickles" finds them all). Stores get **+ Add** on their list (just a
 name; an existing one opens instead), not a Quick add kind.

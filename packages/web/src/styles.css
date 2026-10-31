@@ -1103,6 +1103,7 @@ table.db tr.context a {
   gap: 4px;
 }
 table.db td {
+  font-size: 0.94rem;
   padding: 8px 10px;
   border-bottom: 1px solid var(--border);
   vertical-align: top;
