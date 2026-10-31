@@ -37,9 +37,9 @@ export const PRODUCT_GF = ["certified", "labeled", "ingredients", "facility", "n
 export const DISH_GF = ["menu", "modified", "ask", "no"] as const satisfies readonly GlutenFree[];
 
 /** What a place is (DESIGN.md §4.4): any of these. */
-export const PLACE_TYPES = ["grocery", "specialty", "restaurant"] as const;
+export const PLACE_TYPES = ["grocery", "specialty", "prepared", "restaurant"] as const;
 export type PlaceType = (typeof PLACE_TYPES)[number];
-export const PLACE_TYPE_LABEL: Record<PlaceType, string> = { grocery: "Grocery store", specialty: "Specialty store", restaurant: "Restaurant" };
+export const PLACE_TYPE_LABEL: Record<PlaceType, string> = { grocery: "Grocery store", specialty: "Specialty store", prepared: "Prepared food", restaurant: "Restaurant" };
 /** How fast the food comes: a counter, hot bar or fast casual, or a table. */
 export const SPEEDS = ["quick", "sitdown"] as const;
 export type Speed = (typeof SPEEDS)[number];

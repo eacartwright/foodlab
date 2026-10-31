@@ -150,7 +150,7 @@ from the hot bar, so it's one record, not two. Still `stores` in the code, table
 | Field | Notes |
 |---|---|
 | `name` | Required. |
-| `types` | Any of **Grocery store · Specialty store · Restaurant**: a fixed list, like meal tags, so the Places filters are reliable. |
+| `types` | Any of **Grocery store · Specialty store · Prepared food · Restaurant**: a fixed list, like meal tags, so the Places filters are reliable. **Prepared food** (2026-10-31) is a store you can eat at (a hot bar, deli counter or café inside), so Wegmans is Grocery store + Prepared food, not a restaurant. |
 | `speed` | **Quick** (fast food, fast casual, a counter or hot bar) · **Sit-down**. |
 | `cost` | $ · $$ · $$$. |
 | `status` | **Been** · **Want to go** (stored as tried / want), blank = not said (most stores). |
@@ -162,7 +162,7 @@ from the hot bar, so it's one record, not two. Still `stores` in the code, table
 | `tags`, `notes` | |
 
 A place's page: those fields, then **Dishes** (when it has any, or is a restaurant or has a
-speed) and **Sold here** (products, grouped ❤️ / 👍 / not rated / 👎 don't buy; when it has any, or
+speed or prepared food) and **Sold here** (products, grouped ❤️ / 👍 / not rated / 👎 don't buy; when it has any, or
 is a store, or has no type yet). Searching "Wegmans" finds the place, its products and its dishes;
 "restaurant" finds the restaurants.
 

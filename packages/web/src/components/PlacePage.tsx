@@ -41,7 +41,7 @@ export function PlacePage({ id }: { id: string }) {
     ["👎 Don't buy", products.filter((p) => p.rating === "down")],
   ];
   // A grocery store doesn't need an empty Dishes section, nor a restaurant an empty Sold here.
-  const eatsHere = dishes.length > 0 || s.types.includes("restaurant") || !!s.speed;
+  const eatsHere = dishes.length > 0 || s.types.includes("restaurant") || s.types.includes("prepared") || !!s.speed;
   const sellsHere = products.length > 0 || s.types.includes("grocery") || s.types.includes("specialty") || !s.types.length;
   const toggleType = (t: (typeof PLACE_TYPES)[number]) => {
     const now = data().state.stores[id] ?? s;
