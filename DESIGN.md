@@ -375,7 +375,7 @@ matching only some of them follow under **Partial matches**, most terms first, e
 which it matched ("1 of 3: breakfast"). Nothing matching offers + Add only for a single term:
 "breakfast + lemon" is a search, not something missing. With nothing typed: Add buttons, meal
 shortcuts into Eat (the one for the time of day highlighted, §5.2), and recently changed
-things (12, then Show more).
+things (12, then Show more; names only, no second line).
 
 ### 5.2 Eat (what can I eat?)
 

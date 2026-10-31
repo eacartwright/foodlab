@@ -64,7 +64,7 @@ export function SearchPage() {
           <Section title="Recently changed">
             {recent.length ? (
               <>
-                <div className="rows">{recent.slice(0, recentN).map(({ kind, item }) => <ItemRow key={item.id} view={view} kind={kind} item={item} />)}</div>
+                <div className="rows">{recent.slice(0, recentN).map(({ kind, item }) => <ItemRow key={item.id} view={view} kind={kind} item={item} noSub />)}</div>
                 {recent.length > recentN && (
                   <button className="btn subtle show-more" onClick={() => setRecentN((n) => n + 24)}>
                     Show more

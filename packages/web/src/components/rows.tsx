@@ -77,6 +77,7 @@ export function ItemRow({
   extra,
   showKind = true,
   hideFood = false,
+  noSub = false,
 }: {
   view: View;
   kind: SearchKind;
@@ -84,10 +85,12 @@ export function ItemRow({
   extra?: ReactNode;
   showKind?: boolean;
   hideFood?: boolean;
+  /** Just the name: no second line (Recently changed). */
+  noSub?: boolean;
 }) {
   const eating = kind === "recipes" || kind === "products" || kind === "dishes" ? (item as Product | Recipe | Dish) : null;
   const rated = eating ?? (kind === "stores" ? (item as Store) : null);
-  const sub = subline(view, kind, item, hideFood);
+  const sub = noSub ? "" : subline(view, kind, item, hideFood);
   return (
     <A className={`row ${item.deleted ? "is-deleted" : ""}`} href={pathOf(kind, item.id)}>
       {/* Its main photo, when it has one: quicker to recognize than the name. */}
