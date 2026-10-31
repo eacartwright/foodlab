@@ -1,6 +1,7 @@
 import {
   COSTS,
   COST_LABEL,
+  formatPhone,
   PLACE_STATUS_LABEL,
   PLACE_TYPES,
   PLACE_TYPE_LABEL,
@@ -89,7 +90,7 @@ export function PlacePage({ id }: { id: string }) {
         </Field>
         <Field label="Phone">
           <div className="inline">
-            <DraftInput className="input grow" type="tel" value={s.phone} onCommit={(phone) => save({ phone })} />
+            <DraftInput className="input grow" type="tel" value={s.phone} onCommit={(phone) => save({ phone: formatPhone(phone) })} />
             {s.phone && (
               <a className="btn subtle" href={`tel:${s.phone.replace(/[^\d+]/g, "")}`}>
                 📞 Call

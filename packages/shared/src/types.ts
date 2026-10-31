@@ -384,6 +384,17 @@ export function withoutBrand(name: string, brand: string): string {
   return rest.replace(/^[\s,:–—-]+/, "") || name;
 }
 
+/**
+ * A US number as (617) 123-4567, however it was typed or pasted ("617.123.4567", "+1 617-123-4567").
+ * Anything else (an extension, a number abroad) stays as typed.
+ */
+export function formatPhone(phone: string): string {
+  const digits = phone.replace(/\D/g, "");
+  const ten = digits.length === 11 && digits.startsWith("1") ? digits.slice(1) : digits;
+  if (ten.length !== 10 || /[a-z]/i.test(phone)) return phone.trim();
+  return `(${ten.slice(0, 3)}) ${ten.slice(3, 6)}-${ten.slice(6)}`;
+}
+
 /** What a record is called on screen. */
 export const nameOf = (x: { name: string; brand?: string }): string => (x.brand !== undefined ? productName(x as { brand: string; name: string }) : x.name);
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { swapTag, View } from "./derive";
-import { blank, emptyState, MEAL_TAGS, productName, withoutBrand, WORK_LUNCH, type Food, type GroceryItem, type Product, type Recipe, type State } from "./types";
+import { blank, emptyState, formatPhone, MEAL_TAGS, productName, withoutBrand, WORK_LUNCH, type Food, type GroceryItem, type Product, type Recipe, type State } from "./types";
 
 // A small world: Lemon → Lemon juice (form) → Santa Cruz (product, Wegmans); Meat → Chicken thigh.
 function world(): State {
@@ -289,5 +289,14 @@ describe("places and dishes (M4)", () => {
     expect(v.search("chipotle").full.dishes.map((h) => h.item.id)).toEqual(["bowl", "taco"]);
     expect(v.search("restaurant").full.stores.map((h) => h.item.id)).toEqual(["chip"]);
     expect(v.search("gf menu").full.dishes.map((h) => h.item.id)).toEqual(["bowl"]);
+  });
+});
+
+describe("formatPhone", () => {
+  it("writes a US number as (617) 123-4567, and leaves anything else as typed", () => {
+    for (const x of ["6171234567", "617.123.4567", "617-123-4567", "+1 (617) 123 4567", "1-617-123-4567"]) expect(formatPhone(x)).toBe("(617) 123-4567");
+    expect(formatPhone("617-123-4567 ext 5")).toBe("617-123-4567 ext 5");
+    expect(formatPhone("+44 20 7946 0958")).toBe("+44 20 7946 0958");
+    expect(formatPhone("")).toBe("");
   });
 });
