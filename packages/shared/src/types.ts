@@ -41,9 +41,9 @@ export const PLACE_TYPES = ["grocery", "specialty", "prepared", "restaurant"] as
 export type PlaceType = (typeof PLACE_TYPES)[number];
 export const PLACE_TYPE_LABEL: Record<PlaceType, string> = { grocery: "Grocery store", specialty: "Specialty store", prepared: "Prepared food", restaurant: "Restaurant" };
 /** How fast the food comes: a counter, hot bar or fast casual, or a table. */
-export const SPEEDS = ["quick", "sitdown"] as const;
+export const SPEEDS = ["quick", "sitdown", "takeout"] as const;
 export type Speed = (typeof SPEEDS)[number];
-export const SPEED_LABEL: Record<Speed, string> = { quick: "Quick", sitdown: "Sit-down" };
+export const SPEED_LABEL: Record<Speed, string> = { quick: "Quick", sitdown: "Sit-down", takeout: "Takeout" };
 export const COSTS = ["1", "2", "3"] as const;
 export type Cost = (typeof COSTS)[number];
 export const COST_LABEL: Record<Cost, string> = { "1": "$", "2": "$$", "3": "$$$" };

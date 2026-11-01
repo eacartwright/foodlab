@@ -151,7 +151,7 @@ from the hot bar, so it's one record, not two. Still `stores` in the code, table
 |---|---|
 | `name` | Required. |
 | `types` | Any of **Grocery store · Specialty store · Prepared food · Restaurant**: a fixed list, like meal tags, so the Places filters are reliable. **Prepared food** (2026-10-31) is a store you can eat at (a hot bar, deli counter or café inside), so Wegmans is Grocery store + Prepared food, not a restaurant. |
-| `speed` | **Quick** (fast food, fast casual, a counter or hot bar) · **Sit-down**. |
+| `speed` | **Quick** (fast food, fast casual, a counter or hot bar) · **Sit-down** · **Takeout** (2026-11-01: order and pick up, nowhere to eat). |
 | `cost` | $ · $$ · $$$. |
 | `status` | **Been** · **Want to go** (stored as tried / want), blank = not said (most stores). |
 | `rating` | ❤️ · 👍 · 👎, like everything else. |

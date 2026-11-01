@@ -926,8 +926,10 @@ export function PlacesList() {
   const [name, setName] = useState("");
   const create = () => {
     if (!name.trim()) return;
-    // An existing place by that name opens instead; a new one gets the type being filtered on.
-    const id = ensureStore(name, type ? { types: [type as PlaceType] } : {});
+    // An existing place by that name opens instead (saying so); a new one gets the type being filtered on.
+    const had = view.findStore(name);
+    if (had) showToast(`“${had.name}” is already there`);
+    const id = had?.id ?? ensureStore(name, type ? { types: [type as PlaceType] } : {});
     setName("");
     setAdding(false);
     go(pathOf("stores", id));
