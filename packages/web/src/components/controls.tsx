@@ -499,7 +499,7 @@ export function TagEditor({ value, onChange, inherited = [] }: { value: Id[]; on
   );
 }
 
-/** A list of links: each opens in a new tab; type or paste one to add it. */
+/** A list of links: each opens in a new tab; type or paste one to add it; ↑ ↓ reorder them. */
 export function LinksEditor({ value, onChange }: { value: string[]; onChange: (v: string[]) => void }) {
   const [text, setText] = useState("");
   const add = () => {
@@ -508,6 +508,11 @@ export function LinksEditor({ value, onChange }: { value: string[]; onChange: (v
     onChange([...value, /^[a-z]+:/i.test(t) ? t : `https://${t}`]);
     setText("");
   };
+  const move = (n: number, by: number) => {
+    const v = value.filter((_, i) => i !== n);
+    v.splice(n + by, 0, value[n]!);
+    onChange(v);
+  };
   return (
     <div className="stack-sm">
       {value.map((l, n) => (
@@ -515,6 +520,16 @@ export function LinksEditor({ value, onChange }: { value: string[]; onChange: (v
           <a href={l} target="_blank" rel="noreferrer noopener">
             {l.replace(/^https?:\/\/(www\.)?/, "")}
           </a>
+          {value.length > 1 && (
+            <>
+              <button className="btn icon subtle" aria-label="Move link up" disabled={n === 0} onClick={() => move(n, -1)}>
+                ↑
+              </button>
+              <button className="btn icon subtle" aria-label="Move link down" disabled={n === value.length - 1} onClick={() => move(n, 1)}>
+                ↓
+              </button>
+            </>
+          )}
           <button className="btn icon subtle" aria-label="Remove link" onClick={() => onChange(value.filter((_, i) => i !== n))}>
             ✕
           </button>
