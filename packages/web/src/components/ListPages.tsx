@@ -999,7 +999,6 @@ export function PlacesList() {
             <A href={pathOf("stores", s.id)} className="strong">
               {s.name}
             </A>
-            {s.status === "want" && <span className="muted small"> · want to go</span>}
           </td>
           <td className="hide-sm muted">
             {s.types.map((t) => PLACE_TYPE_LABEL[t]).join(", ")}
