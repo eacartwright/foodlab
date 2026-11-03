@@ -11,6 +11,16 @@ $ErrorActionPreference = "Stop"
 $root = Split-Path $PSScriptRoot -Parent
 Set-Location $root
 
+Write-Host @'
+
+   __                 _ _       _
+  / _| ___   ___   __| | | __ _| |__
+ | |_ / _ \ / _ \ / _` | |/ _` | '_ \
+ |  _| (_) | (_) | (_| | | (_| | |_) |
+ |_|  \___/ \___/ \__,_|_|\__,_|_.__/
+
+'@ -ForegroundColor Green
+
 function Invoke-Step($what, [scriptblock]$cmd) {
   Write-Host "== $what" -ForegroundColor Cyan
   & $cmd
