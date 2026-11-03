@@ -12,7 +12,6 @@ $root = Split-Path $PSScriptRoot -Parent
 Set-Location $root
 
 Write-Host @'
-
    __                 _ _       _
   / _| ___   ___   __| | | __ _| |__
  | |_ / _ \ / _ \ / _` | |/ _` | '_ \
