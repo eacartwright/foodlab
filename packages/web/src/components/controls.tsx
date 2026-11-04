@@ -330,33 +330,17 @@ export function Picker({
         </button>
       )}
       {open && total > 0 && (
-        <ul className="picker-list" id={listId} role="listbox">
+        // Keeps the input focused, so the list stays open for the click. Picks on click, not on
+        // touching down: a finger has to be able to drag the list to scroll it.
+        <ul className="picker-list" id={listId} role="listbox" onMouseDown={(e) => e.preventDefault()}>
           {shown.map((o, n) => (
-            <li
-              key={o.id}
-              role="option"
-              aria-selected={n === active}
-              className={n === active ? "active" : ""}
-              // Before the input's blur, so the pick lands.
-              onPointerDown={(e) => {
-                e.preventDefault();
-                pick(o);
-              }}
-            >
+            <li key={o.id} role="option" aria-selected={n === active} className={n === active ? "active" : ""} onClick={() => pick(o)}>
               <span>{o.label}</span>
               {o.hint && <span className="muted small">{o.hint}</span>}
             </li>
           ))}
           {canCreate && (
-            <li
-              role="option"
-              aria-selected={active === shown.length}
-              className={`create ${active === shown.length ? "active" : ""}`}
-              onPointerDown={(e) => {
-                e.preventDefault();
-                pick("create");
-              }}
-            >
+            <li role="option" aria-selected={active === shown.length} className={`create ${active === shown.length ? "active" : ""}`} onClick={() => pick("create")}>
               + {createLabel} “{text.trim()}”
             </li>
           )}

@@ -77,6 +77,13 @@ function Page() {
   }
 }
 
+/** How many groceries are left to get. Its own component so a save doesn't redraw the whole app. */
+function GroceryCount() {
+  const { view } = useData();
+  const n = view.groceryList().length;
+  return n > 0 ? <span className="nav-count">{n}</span> : null;
+}
+
 function Status() {
   const { status, pending, update } = useData();
   if (update && status === "synced" && !pending)
@@ -179,6 +186,7 @@ export function App() {
           <A key={n.href} href={n.href} className={active(n.href) ? "active" : ""} aria-current={active(n.href) ? "page" : undefined}>
             <span className="nav-icon">{n.icon}</span>
             {n.label}
+            {n.href === "/groceries" && <GroceryCount />}
           </A>
         ) : (
           <hr key={i} />
@@ -263,7 +271,10 @@ export function App() {
         </button>
         {TABS.map((t) => (
           <A key={t.href} href={t.href} className={active(t.href) && !drawer ? "active" : ""} aria-current={active(t.href) ? "page" : undefined} onClick={() => setDrawer(false)}>
-            <span className="tab-icon">{t.icon}</span>
+            <span className="tab-icon">
+              {t.icon}
+              {t.href === "/groceries" && <GroceryCount />}
+            </span>
             {t.label}
           </A>
         ))}

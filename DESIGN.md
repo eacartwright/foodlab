@@ -516,7 +516,8 @@ like everything else, never in search. They can go once the app settles.
 ### 5.8 Groceries
 
 Its own sidebar entry, under Eat, and phone-first (it's used in the store, often with no
-signal: checking off goes through the outbox like any save).
+signal: checking off goes through the outbox like any save). A red badge counts what's left to
+get, beside the word in the sidebar and drawer, on the icon in the phone's tab bar; none at zero.
 
 ```
 ┌ Groceries ──────────────── 5 ┐   the count is what's on the list, nothing else

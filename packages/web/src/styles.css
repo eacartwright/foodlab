@@ -526,6 +526,7 @@ textarea::placeholder {
   list-style: none;
   max-height: 280px;
   overflow-y: auto;
+  overscroll-behavior: contain;
   background: var(--surface);
   border: 1.5px solid var(--border-strong);
   border-radius: var(--control-radius);
@@ -618,6 +619,18 @@ textarea::placeholder {
 }
 .nav-icon {
   width: 22px;
+  text-align: center;
+}
+.nav-count {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--danger);
+  color: var(--surface);
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 18px;
   text-align: center;
 }
 .nav hr {
@@ -1752,8 +1765,15 @@ ul.notes li.done .note-text {
     cursor: pointer;
   }
   .tabbar .tab-icon {
+    position: relative;
     font-size: 1.3rem;
     line-height: 1;
+  }
+  .tabbar .nav-count {
+    position: absolute;
+    top: -6px;
+    left: 62%;
+    box-shadow: 0 0 0 1.5px var(--surface);
   }
   .tabbar .active {
     color: var(--primary);

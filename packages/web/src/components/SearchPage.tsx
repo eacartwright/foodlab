@@ -29,7 +29,7 @@ export function SearchPage() {
           type="search"
           autoFocus={finePointer}
           enterKeyHint="search"
-          placeholder="Search everything…  (breakfast + lemon + potato)"
+          placeholder="breakfast + lemon + potato"
           aria-label="Search"
           value={q}
           onChange={(e) => setQuery({ q: e.target.value })}

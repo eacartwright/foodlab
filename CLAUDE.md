@@ -86,6 +86,8 @@ tombstones (`deleted`), restorable with Undo or the page's Restore.
   the same way as sideshow's 8787 / 5173; don't just pick another port.
 - Android install needs the manifest and icons reachable without the Access login (runbook),
   or there's no share target.
+- Every test file failing with "Vitest failed to find the runner" = started from `c:\Dev\foodlab`
+  (lowercase drive). Run from `C:\Dev\foodlab`.
 
 ## Working with Evan
 
@@ -204,4 +206,7 @@ tombstones (`deleted`), restorable with Undo or the page's Restore.
   **✨ Fill from page** (`POST /api/ai/place`, `aiPlace`; `ai.ts` now runs any `Job` through `aiCall`),
   `shared/places.ts` (`withFound`, `matchLocation`). 106 tests; migration checked on a copy of the live
   DB; browser-checked against a stand-in Claude API (desktop and phone dark).
+- 2026-11-04, Evan's dev notes: `Picker` picks on click, not on touching down (a finger can now
+  drag the list to scroll); red Groceries badge (`GroceryCount` in `App.tsx`); search placeholder is
+  just the example. 106 tests, browser-checked with real touch drags on a scratch DB.
 - **Next:** M6 (weights), or the M4 extras (share a place link to make a place).
