@@ -284,6 +284,15 @@ describe("places and dishes (M4)", () => {
     expect(kinds("all").has("dishes")).toBe(true);
   });
 
+  it("a product that isn't food is never in Eat, and still found by search", () => {
+    const s = world();
+    s.products.paste = { ...blank.products("paste", "Toothpaste"), notFood: true, tagIds: ["meal-lunch"] };
+    const v = new View(s);
+    expect(v.eat({ where: "home", tagId: "meal-lunch" }).map((e) => e.item.id)).not.toContain("paste");
+    expect(v.eat({ where: "all" }).map((e) => e.item.id)).not.toContain("paste");
+    expect(v.search("toothpaste").full.products.map((h) => h.item.id)).toEqual(["paste"]);
+  });
+
   it("a place's dishes, best first; search finds dishes by place and places by type", () => {
     const v = out();
     expect(v.dishesAt("chip").map((d) => d.id)).toEqual(["bowl", "taco"]);

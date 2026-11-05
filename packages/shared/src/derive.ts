@@ -287,7 +287,7 @@ export class View {
   eatables(where: Where = "all"): Eatable[] {
     return [
       ...(where !== "out" ? this.recipes.map((item) => ({ kind: "recipes" as const, item })) : []),
-      ...(where !== "out" ? this.products.map((item) => ({ kind: "products" as const, item })) : []),
+      ...(where !== "out" ? this.products.filter((p) => !p.notFood).map((item) => ({ kind: "products" as const, item })) : []),
       ...(where !== "home" ? this.dishes.map((item) => ({ kind: "dishes" as const, item })) : []),
     ];
   }

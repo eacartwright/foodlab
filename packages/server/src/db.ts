@@ -235,6 +235,8 @@ const MIGRATIONS: string[] = [
     rev = (SELECT CAST(value AS INTEGER) FROM meta WHERE key = 'rev'), updated_at = CAST(unixepoch('subsec') * 1000 AS INTEGER)
     WHERE address <> '' OR phone <> '' OR hours <> '';
   `,
+  // 2026-11-04: products that aren't food (toothpaste, tissues): on the grocery list, never in Eat.
+  `ALTER TABLE products ADD COLUMN not_food INTEGER NOT NULL DEFAULT 0;`,
 ];
 
 export type DB = DatabaseSync;
@@ -359,6 +361,7 @@ export function loadState(db: DB): State {
       ...eating(r, tagsOf.get(`products:${r.id}`) ?? []),
       name: r.name,
       foodId: r.food_id,
+      notFood: !!r.not_food,
       brand: r.brand,
       storeIds: storesOf.get(r.id) ?? [],
       buyAgain: r.buy_again,
@@ -488,6 +491,7 @@ export const save = {
       ...eatingCols(x),
       name: x.name,
       food_id: x.foodId,
+      not_food: x.notFood ? 1 : 0,
       brand: x.brand,
       buy_again: x.buyAgain,
       shelf_life: x.shelfLife,

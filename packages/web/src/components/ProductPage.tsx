@@ -3,6 +3,7 @@ import { useId, useState } from "react";
 import { duplicate, ensureFood, ensureStore, remove } from "../actions";
 import { go, pathOf } from "../router";
 import { data, put, useData } from "../sync";
+import { showToast } from "../toast";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { DraftInput, DraftTextarea, Field, MultiPicker, PageKind, Picker, Segmented, TitleInput } from "./controls";
 import { EatingFields, LogSection } from "./eating";
@@ -23,6 +24,13 @@ export function ProductPage({ id }: { id: string }) {
     const next = { ...(data().state.products[id] ?? p), ...patch };
     // The brand is shown in front of the name, so the name shouldn't say it again.
     put("products", { ...next, name: withoutBrand(next.name, next.brand) });
+  };
+  // Not food has no food link and no gluten-free answer; if it had them, Undo brings them back.
+  const setNotFood = (notFood: boolean) => {
+    if (!notFood) return save({ notFood });
+    const { foodId, glutenFree } = p;
+    save({ notFood, foodId: null, glutenFree: "unknown" });
+    if (foodId || glutenFree !== "unknown") showToast(`${productName(p)} is not food`, { label: "Undo", run: () => save({ notFood: false, foodId, glutenFree }) });
   };
   const food = view.food(p.foodId);
   const others = food ? view.productsOf(food.id).filter((x) => x.id !== p.id) : [];
@@ -54,14 +62,19 @@ export function ProductPage({ id }: { id: string }) {
 
       <div className="fields">
         <Field label="Food">
-          <Picker
-            value={p.foodId}
-            options={view.foods.map((f) => ({ id: f.id, label: f.name }))}
-            placeholder="Which food is it? (optional)"
-            createLabel="New food"
-            onChange={(foodId) => save({ foodId })}
-            onCreate={(n) => ensureFood(n)}
-          />
+          {!p.notFood && (
+            <Picker
+              value={p.foodId}
+              options={view.foods.map((f) => ({ id: f.id, label: f.name }))}
+              placeholder="Which food is it? (optional)"
+              createLabel="New food"
+              onChange={(foodId) => save({ foodId })}
+              onCreate={(n) => ensureFood(n)}
+            />
+          )}
+          <label className="check">
+            <input type="checkbox" checked={p.notFood} onChange={(e) => setNotFood(e.target.checked)} /> Not food
+          </label>
         </Field>
         <Field label="Sold at">
           <MultiPicker
@@ -77,15 +90,17 @@ export function ProductPage({ id }: { id: string }) {
           <Segmented value={p.buyAgain} options={BUY_AGAIN} labels={{ yes: "Yes", no: "No" }} onChange={(buyAgain) => save({ buyAgain })} />
         </Field>
         <EatingFields item={p} save={save} inheritedTags={view.inheritedTags(p.foodId, p.tagIds, false)} />
-        <Field label="Shelf life">
-          <DraftInput className="input" value={p.shelfLife} onCommit={(shelfLife) => save({ shelfLife })} />
-        </Field>
+        {!p.notFood && (
+          <Field label="Shelf life">
+            <DraftInput className="input" value={p.shelfLife} onCommit={(shelfLife) => save({ shelfLife })} />
+          </Field>
+        )}
         <Field label="Notes">
           <DraftTextarea className="input" rows={3} value={p.notes} onCommit={(notes) => save({ notes })} />
         </Field>
       </div>
 
-      <LogSection itemKind="products" itemId={p.id} />
+      <LogSection key={String(p.notFood)} itemKind="products" itemId={p.id} notFood={p.notFood} />
 
       {food && others.length > 0 && (
         <Section title={`Other ${food.name.toLowerCase()}`} count={others.length}>

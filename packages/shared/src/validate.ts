@@ -195,12 +195,14 @@ export const validators: { [K in Kind]: (body: unknown, id: string, now: number)
   products(body, rid, now): Product {
     const b = obj(body);
     const brand = str(b.brand, "brand", 200).trim();
+    const notFood = bool(b.notFood);
     return {
       ...base(b, rid, now),
       ...eating(b),
       // Shown as brand + name, so the name doesn't repeat the brand.
       name: withoutBrand(name(b.name), brand),
-      foodId: id(b.foodId, "foodId"),
+      foodId: notFood ? null : id(b.foodId, "foodId"),
+      notFood,
       brand,
       storeIds: ids(b.storeIds, "storeIds"),
       buyAgain: oneOf(b.buyAgain, BUY_AGAIN, "buyAgain"),

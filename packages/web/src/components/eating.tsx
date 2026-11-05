@@ -34,7 +34,7 @@ export function EatingFields<T extends Product | Recipe | Dish>({ item, save, in
       {/* A product: how I know it's safe, or that it's someone else's; a dish: on the GF menu, GF
           if modified, or ask. A recipe is gluten-free by what goes in it; a non-GF version will be
           a variant (DESIGN.md §10). */}
-      {("brand" in item || "placeId" in item) && (
+      {(("brand" in item && !item.notFood) || "placeId" in item) && (
         <Field label="Gluten-free">
           <Segmented
             value={item.glutenFree === "unknown" ? null : item.glutenFree}
@@ -45,7 +45,7 @@ export function EatingFields<T extends Product | Recipe | Dish>({ item, save, in
         </Field>
       )}
       <Field label="Tags">
-        <TagEditor value={item.tagIds} inherited={inheritedTags} onChange={(tagIds) => save({ tagIds } as Partial<T>)} />
+        <TagEditor value={item.tagIds} inherited={inheritedTags} noMeals={"brand" in item && item.notFood} onChange={(tagIds) => save({ tagIds } as Partial<T>)} />
       </Field>
       <Field label="Links">
         <LinksEditor value={item.links} onChange={(links) => save({ links } as Partial<T>)} />
@@ -69,10 +69,10 @@ export function doneText(view: View, itemId: string, kind: "made" | "ate" | "bou
 }
 
 /** History: rating changes (automatic) and what I wrote down, newest first. */
-export function LogSection({ itemKind, itemId }: { itemKind: LogTarget; itemId: string }) {
+export function LogSection({ itemKind, itemId, notFood }: { itemKind: LogTarget; itemId: string; notFood?: boolean }) {
   const { view } = useData();
   const entries = view.logOf(itemId);
-  const kinds: LogKind[] = itemKind === "recipes" ? ["made", "note"] : itemKind === "dishes" ? ["ate", "note"] : ["ate", "bought", "note"];
+  const kinds: LogKind[] = itemKind === "recipes" ? ["made", "note"] : itemKind === "dishes" ? ["ate", "note"] : notFood ? ["bought", "note"] : ["ate", "bought", "note"];
   const [kind, setKind] = useState<LogKind>(kinds[0]!);
   const [text, setText] = useState("");
   const [date, setDate] = useState(today());

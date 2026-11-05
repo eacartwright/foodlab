@@ -142,7 +142,7 @@ export function duplicate(kind: "foods" | "products" | "recipes" | "dishes", id:
     put("foods", { ...f, ...copy, name: name(f.name), staple: false, notes: "" });
   } else if (kind === "products") {
     const p = data().state.products[id]!;
-    put("products", { ...blank.products(copy.id, name(p.name), now), ...pick(p, ["foodId", "brand", "storeIds", "tagIds", "travels", "keepsDays", "effort", "shelfLife"]) });
+    put("products", { ...blank.products(copy.id, name(p.name), now), ...pick(p, ["foodId", "notFood", "brand", "storeIds", "tagIds", "travels", "keepsDays", "effort", "shelfLife"]) });
   } else if (kind === "dishes") {
     // Another dish at the same place: what describes it, not what I thought of it.
     const d = data().state.dishes[id]!;

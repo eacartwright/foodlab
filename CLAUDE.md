@@ -209,4 +209,6 @@ tombstones (`deleted`), restorable with Undo or the page's Restore.
 - 2026-11-04, Evan's dev notes: `Picker` picks on click, not on touching down (a finger can now
   drag the list to scroll); red Groceries badge (`GroceryCount` in `App.tsx`); search placeholder is
   just the example. 106 tests, browser-checked with real touch drags on a scratch DB.
+- 2026-11-04: **Not food** products (DESIGN.md §4.3, migration 13, `Product.notFood`). 110 tests;
+  migration checked on a copy of the live DB; browser-checked (desktop and phone dark).
 - **Next:** M6 (weights), or the M4 extras (share a place link to make a place).

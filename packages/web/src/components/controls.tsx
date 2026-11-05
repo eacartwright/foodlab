@@ -448,19 +448,21 @@ export function Segmented<T extends string>({
 /** A tag a thing gets from a food it's a kind of: shown, not edited here. */
 export type InheritedTag = { tag: Tag; from: Food };
 
-export function TagEditor({ value, onChange, inherited = [] }: { value: Id[]; onChange: (ids: Id[]) => void; inherited?: InheritedTag[] }) {
+export function TagEditor({ value, onChange, inherited = [], noMeals }: { value: Id[]; onChange: (ids: Id[]) => void; inherited?: InheritedTag[]; noMeals?: boolean }) {
   const { view } = useData();
   const personal = view.tags.filter((t) => t.kind === "personal");
   const toggle = (id: Id) => onChange(value.includes(id) ? value.filter((v) => v !== id) : [...value, id]);
   return (
     <div className="stack-sm">
-      <div className="chips">
-        {MEAL_TAGS.map((t) => (
-          <button key={t.id} className={`chip ${value.includes(t.id) ? "chip-on" : ""}`} aria-pressed={value.includes(t.id)} onClick={() => toggle(t.id)}>
-            {t.name}
-          </button>
-        ))}
-      </div>
+      {!noMeals && (
+        <div className="chips">
+          {MEAL_TAGS.map((t) => (
+            <button key={t.id} className={`chip ${value.includes(t.id) ? "chip-on" : ""}`} aria-pressed={value.includes(t.id)} onClick={() => toggle(t.id)}>
+              {t.name}
+            </button>
+          ))}
+        </div>
+      )}
       <MultiPicker
         values={value.filter((id) => !MEAL_TAGS.some((m) => m.id === id))}
         options={personal.map((t) => ({ id: t.id, label: t.name }))}

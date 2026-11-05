@@ -124,6 +124,8 @@ export interface Product extends Base, Eating {
   name: string;
   /** Product of. Null = unsorted. */
   foodId: Id | null;
+  /** Toothpaste, tissues: bought at the store, never eaten (no food, never in Eat). */
+  notFood: boolean;
   brand: string;
   /** Sold at. */
   storeIds: Id[];
@@ -324,6 +326,7 @@ export const blank = {
     ...EMPTY_EATING(),
     name,
     foodId: null,
+    notFood: false,
     brand: "",
     storeIds: [],
     buyAgain: null,

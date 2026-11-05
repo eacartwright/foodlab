@@ -129,7 +129,32 @@ describe("groceries", () => {
   });
 });
 
+describe("products that aren't food", () => {
+  it("keeps the flag across a reload and drops any food link", () => {
+    store.put("foods", "f", blank.foods("f", "Cheese"));
+    store.put("products", "paste", { ...blank.products("paste", "Toothpaste"), notFood: true, foodId: "f" });
+    expect(store.state.products.paste?.foodId).toBeNull();
+    expect(loadState(db).products.paste?.notFood).toBe(true);
+  });
+
+  it("an old app's save, with no flag, is food", () => {
+    const { notFood: _, ...old } = blank.products("old", "Butter");
+    store.put("products", "old", old);
+    expect(store.state.products.old?.notFood).toBe(false);
+  });
+});
+
 describe("migrations", () => {
+  it("v13: products already there are food", () => {
+    const file = join(dir, "v12.db");
+    const old = openDb(file, 12);
+    old.prepare("INSERT INTO products (id, name, created_at, updated_at, rev) VALUES ('a', 'Butter', 0, 0, 1)").run();
+    old.close();
+    const now = openDb(file);
+    expect(loadState(now).products.a?.notFood).toBe(false);
+    now.close();
+  });
+
   it("v2: gluten-free says how sure, and names lose a leading brand", () => {
     const file = join(dir, "old.db");
     const old = openDb(file, 1);

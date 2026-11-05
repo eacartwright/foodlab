@@ -125,6 +125,7 @@ first; the recipes that use it (and those using its forms); the preps used on it
 | `brand` | "Bell & Evans". Typed first, suggested from brands already used. |
 | `name` | Required. The rest of the name: "Gluten Free Chicken Breasts". |
 | `foodId` | **Product of**. Optional at capture ("unsorted"), easy to fill later. |
+| `notFood` | (2026-11-04) Toothpaste, tissues: see below. |
 | `storeIds` | **Sold at**, any number of stores. |
 | `buyAgain` | yes · no · blank. Separate from rating: liked but too pricey, etc. |
 | `shelfLife` | Optional. |
@@ -132,6 +133,13 @@ first; the recipes that use it (and those using its forms); the preps used on it
 
 Ready-made meals I buy (a Wegmans prepared bowl, a frozen meal) are products, with or without
 a food.
+
+**Not food** (2026-11-04): grocery stores sell things I don't eat. Typing "toothpaste" on the
+grocery list is enough for most of them; when the brand or the store matters it's a product with
+the Not food box ticked, not a new kind of record or a sidebar entry. It has no food (saving clears
+the link; ticking it on the page offers Undo), is never in What can I eat?, doesn't ask gluten-free,
+shelf life or meals, and has no "ate" in its history. It's still in Products (its own group in the
+Tree), search, its places' pages and Groceries.
 
 **Brand + name, shown as one** (2026-10-23): a product is shown everywhere as "<brand> <name>"
 ("Bell & Evans Gluten Free Chicken Breasts"), so two brands of the same thing never look

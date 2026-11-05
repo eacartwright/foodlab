@@ -77,6 +77,7 @@ export function QuickAdd({ init }: { init: QuickAddInit }) {
   const brandList = useId();
   const [link, setLink] = useState(init.link ?? "");
   const [foodId, setFoodId] = useState<Id | null>(init.foodId ?? null);
+  const [notFood, setNotFood] = useState(false);
   const [storeIds, setStoreIds] = useState<Id[]>(init.storeIds ?? []);
   const [placeId, setPlaceId] = useState<Id | null>(init.placeId ?? null);
   const [rating, setRating] = useState<Rating | null>(null);
@@ -158,7 +159,7 @@ export function QuickAdd({ init }: { init: QuickAddInit }) {
     } else if (kind === "products") {
       // A name that starts with a brand I already have ("Bell & Evans Nuggets", often from Share) gets it split off.
       const b = brand.trim() || view.brands().find((x) => withoutBrand(n, x) !== n) || "";
-      put("products", { ...blank.products(id, withoutBrand(n, b)), brand: b, foodId, storeIds, rating, tagIds, links, status });
+      put("products", { ...blank.products(id, withoutBrand(n, b)), brand: b, foodId: notFood ? null : foodId, notFood, storeIds, rating, tagIds: notFood ? [] : tagIds, links, status });
     } else if (kind === "dishes") {
       put("dishes", { ...blank.dishes(id, n), placeId, rating, tagIds, links, status });
     } else {
@@ -240,14 +241,19 @@ export function QuickAdd({ init }: { init: QuickAddInit }) {
             {kind === "products" && (
               <>
                 <Field label="Food">
-                  <Picker
-                    value={foodId}
-                    options={view.foods.map((f) => ({ id: f.id, label: f.name }))}
-                    placeholder="Which food is it? (optional)"
-                    createLabel="New food"
-                    onChange={setFoodId}
-                    onCreate={(t) => ensureFood(t)}
-                  />
+                  {!notFood && (
+                    <Picker
+                      value={foodId}
+                      options={view.foods.map((f) => ({ id: f.id, label: f.name }))}
+                      placeholder="Which food is it? (optional)"
+                      createLabel="New food"
+                      onChange={setFoodId}
+                      onCreate={(t) => ensureFood(t)}
+                    />
+                  )}
+                  <label className="check">
+                    <input type="checkbox" checked={notFood} onChange={(e) => setNotFood(e.target.checked)} /> Not food
+                  </label>
                 </Field>
                 <Field label="Sold at">
                   <MultiPicker
@@ -275,15 +281,17 @@ export function QuickAdd({ init }: { init: QuickAddInit }) {
             <Field label="Rating">
               <RatingInput value={rating} onChange={setRating} />
             </Field>
-            <Field label="For">
-              <div className="chips">
-                {MEAL_TAGS.map((t) => (
-                  <button key={t.id} className={`chip ${tagIds.includes(t.id) ? "chip-on" : ""}`} aria-pressed={tagIds.includes(t.id)} onClick={() => toggleTag(t.id)}>
-                    {t.name}
-                  </button>
-                ))}
-              </div>
-            </Field>
+            {!(kind === "products" && notFood) && (
+              <Field label="For">
+                <div className="chips">
+                  {MEAL_TAGS.map((t) => (
+                    <button key={t.id} className={`chip ${tagIds.includes(t.id) ? "chip-on" : ""}`} aria-pressed={tagIds.includes(t.id)} onClick={() => toggleTag(t.id)}>
+                      {t.name}
+                    </button>
+                  ))}
+                </div>
+              </Field>
+            )}
             {(link || init.link || kind === "recipes") && (
               <Field label="Link">
                 <input className="input" value={link} onChange={(e) => setLink(e.target.value)} aria-label="Link" />

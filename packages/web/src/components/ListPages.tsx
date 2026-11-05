@@ -454,7 +454,7 @@ export function ProductsList() {
           {tree && !filtering && (
             <FoldAll
               onExpand={() => fold(new Set())}
-              onCollapse={() => fold(new Set([UNSORTED, ...view.foods.filter((x) => (totalsOf(nodes).get(x.id) ?? 0) > 0).map((x) => x.id)]))}
+              onCollapse={() => fold(new Set([UNSORTED, NOT_FOOD, ...view.foods.filter((x) => (totalsOf(nodes).get(x.id) ?? 0) > 0).map((x) => x.id)]))}
             />
           )}
         </>
@@ -485,9 +485,10 @@ export function ProductsList() {
               </A>
               {p.glutenFree === "no" && <NotGF />}
               {path.length > 0 && <div className="show-sm muted small">{pathText(shortPath(path))}</div>}
+              {p.notFood && <div className="show-sm muted small">Not food</div>}
             </td>
             <td className="hide-sm">
-              <FoodPath path={path} />
+              {p.notFood ? <span className="muted">Not food</span> : <FoodPath path={path} />}
             </td>
             <td className="hide-sm muted">{p.storeIds.map((s) => view.store(s)?.name).filter(Boolean).join(", ")}</td>
             <td className="hide-sm muted">
@@ -502,6 +503,7 @@ export function ProductsList() {
 }
 
 const UNSORTED = "unsorted";
+const NOT_FOOD = "not-food";
 const totalsOf = (nodes: FoodNode[]) => {
   const m = new Map<string, number>();
   const walk = (ns: FoodNode[]) => ns.forEach((n) => (m.set(n.food.id, n.total), walk(n.kids)));
@@ -512,7 +514,7 @@ const totalsOf = (nodes: FoodNode[]) => {
 /**
  * Products as a tree: each food a folding heading with how many products are under it, its kinds
  * first, then its own products (in the list's sort order). Foods with nothing showing are left
- * out; products without a food go last, under Unsorted. `openAll` while filtering.
+ * out; products without a food go last, under Unsorted, then Not food. `openAll` while filtering.
  */
 function ProductTreeRows({
   nodes,
@@ -531,7 +533,7 @@ function ProductTreeRows({
   const byFood = new Map<string, Product[]>();
   for (const p of products) {
     const f = view.food(p.foodId);
-    const key = f && !f.deleted ? f.id : UNSORTED;
+    const key = p.notFood ? NOT_FOOD : f && !f.deleted ? f.id : UNSORTED;
     byFood.set(key, [...(byFood.get(key) ?? []), p]);
   }
   const counts = new Map<string, number>();
@@ -596,10 +598,11 @@ function ProductTreeRows({
     }
   };
   walk(nodes, 0);
-  const loose = byFood.get(UNSORTED);
-  if (loose) {
-    const open = openAll || !folded.has(UNSORTED);
-    heading(UNSORTED, <span className="strong">Unsorted</span>, "Unsorted", loose.length, 0, open);
+  for (const [id, label] of [[UNSORTED, "Unsorted"], [NOT_FOOD, "Not food"]] as const) {
+    const loose = byFood.get(id);
+    if (!loose) continue;
+    const open = openAll || !folded.has(id);
+    heading(id, <span className="strong">{label}</span>, label, loose.length, 0, open);
     if (open) items(loose, 1);
   }
   return <>{out}</>;

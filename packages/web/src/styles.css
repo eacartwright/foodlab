@@ -823,7 +823,8 @@ textarea.title-input {
   gap: 6px;
 }
 .field-control > .segmented,
-.field-control > .rating-input {
+.field-control > .rating-input,
+.field-control > .check {
   align-self: flex-start;
 }
 .fields.compact .field {
