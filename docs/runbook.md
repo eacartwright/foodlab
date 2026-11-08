@@ -53,8 +53,8 @@ setup); this file has only what's different. Legend: **[Evan]** = needs Evan.
 
 ## Everyday
 
-- **Update** after a push to `main`: admin PowerShell, `cd C:\Apps\foodlab; .\scripts\update.ps1`
-  (a shortcut like sideshow's "Update sideshow" is worth making). The installed app picks up the
+- **Update** after a push to `main`: the **Update Foodlab** shortcut on the desktop (it runs
+  `.\scripts\update.ps1` in `C:\Apps\foodlab` as admin). The installed app picks up the
   new build next time it's opened.
 - **Health:** `Invoke-RestMethod http://127.0.0.1:8082/api/health`.
 - **Restore a backup:** `Stop-ScheduledTask foodlab`, copy the backup over `data\foodlab.db`,

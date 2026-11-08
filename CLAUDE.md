@@ -57,8 +57,9 @@ the one from the last render, or two quick saves undo each other. A new recipe o
 `?edit=1` in the address: the mode must not depend on whether it has ingredients yet (it
 used to flip to the recipe view mid-typing).
 
-Schema changes: **append** a migration to `MIGRATIONS` in `server/src/db.ts`; never edit old
-ones. The server copies the DB to `<db>.before-v<N>.db` before migrating. Deletions are
+Schema changes: **append** a migration to `MIGRATIONS` in `server/src/db.ts`; never edit one
+that has been committed, even if it seems unreleased (a dev DB on another machine may have run it,
+and a database never runs the same migration twice). An extra migration costs nothing. The server copies the DB to `<db>.before-v<N>.db` before migrating. Deletions are
 tombstones (`deleted`), restorable with Undo or the page's Restore.
 
 ## UI conventions (same as sideshow)
@@ -92,6 +93,8 @@ tombstones (`deleted`), restorable with Undo or the page's Restore.
 ## Working with Evan
 
 - Commit and push only when asked.
+- Deploys with the **Update Foodlab** shortcut on ripley's desktop (it runs `scripts\update.ps1`);
+  point him to that, not the script.
 - **"Dev notes" means the live ones** on the mini PC (ripley), never this machine's dev DB:
   read `\\ripley\C\Apps\foodlab\data\dev-notes.md` (`Z:\Apps\foodlab\...` on the laptop). Read
   only; never open the live `.db` over the share.
