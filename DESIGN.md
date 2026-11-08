@@ -146,6 +146,8 @@ Tree), search, its places' pages and Groceries.
 generic. The page title is two boxes, brand then name; Quick add has a Brand box before the
 name. The name never repeats the brand: saving strips a leading brand, and Quick add splits a
 known brand off a typed or shared name ("Bell & Evans Nuggets" → Bell & Evans + "Nuggets").
+Quick add's Brand box suggests known brands as you type (+ New brand for one it doesn't know),
+and a brand that's also a place (Wegmans) fills in Sold at with it (2026-11-08).
 Brand stays its own field so brand pages or filters can come later.
 
 ### 4.4 Place (was Store)
@@ -374,8 +376,8 @@ only: tag Soda `drink` once and "drinks" finds Diet soda and every soda product.
 of* (a tag on Lemon isn't one on Lemon juice), and not for recipes (beer-battered fish isn't a
 drink). This is how drinks are grouped: "drink" is how I have something, not what it is, so it's
 a tag, and the tree stays free to say Huel is a Protein powder. The Tags page's counts are
-still the directly tagged things. A food's and a product's Tags show what they inherit (2026-10-30): faded,
-dashed chips under the tag box, not buttons, "From Beverage" on hover (`View.inheritedTags`);
+still the directly tagged things. A food's and a product's Tags show what they inherit (2026-10-30): faded
+chips under the tag box, not buttons, "From Beverage" on hover (`View.inheritedTags`);
 they're changed on the food they come from.
 
 Results are grouped Recipes · Products · Foods · Stores, ❤️ first. With several terms, things
@@ -466,7 +468,8 @@ cups to ¼ / ⅓ / ½ / ⅔ / ¾, under about ⅛ tsp "a pinch", lb ↔ oz, coun
 ### 5.5 Quick add and sharing into foodlab
 
 **+** (header on desktop, floating on the phone) opens Quick add: Food · Product · Recipe, the
-name focused, then only the everyday fields (product: food, rating, stores, meal tags). Enter
+name focused, then only the everyday fields (product: food, stores; its rating and meals are
+set on its page, 2026-11-08). Enter
 saves and opens the new page; **Add another** keeps the form open. On desktop (most adding
 happens at a 1920×1080 screen) it's a roomy dialog, about 820px wide; the phone layout gets its
 own pass later.

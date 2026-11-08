@@ -62,19 +62,21 @@ export function ProductPage({ id }: { id: string }) {
 
       <div className="fields">
         <Field label="Food">
-          {!p.notFood && (
-            <Picker
-              value={p.foodId}
-              options={view.foods.map((f) => ({ id: f.id, label: f.name }))}
-              placeholder="Which food is it? (optional)"
-              createLabel="New food"
-              onChange={(foodId) => save({ foodId })}
-              onCreate={(n) => ensureFood(n)}
-            />
-          )}
-          <label className="check">
-            <input type="checkbox" checked={p.notFood} onChange={(e) => setNotFood(e.target.checked)} /> Not food
-          </label>
+          <div className="food-row">
+            {!p.notFood && (
+              <Picker
+                value={p.foodId}
+                options={view.foods.map((f) => ({ id: f.id, label: f.name }))}
+                placeholder=""
+                createLabel="New food"
+                onChange={(foodId) => save({ foodId })}
+                onCreate={(n) => ensureFood(n)}
+              />
+            )}
+            <label className="check">
+              <input type="checkbox" checked={p.notFood} onChange={(e) => setNotFood(e.target.checked)} /> Not food
+            </label>
+          </div>
         </Field>
         <Field label="Sold at">
           <MultiPicker

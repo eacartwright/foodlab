@@ -277,9 +277,6 @@ textarea.input {
   flex: 1;
   width: auto;
 }
-.input.unset {
-  border-style: dashed;
-}
 .input.grow,
 .select.grow {
   flex: 1;
@@ -364,7 +361,6 @@ textarea::placeholder {
 /* A tag from a food this is a kind of: faded, not a button (it's changed on that food). */
 .chip-inherited {
   cursor: default;
-  border-style: dashed;
   color: var(--muted);
   font-weight: 500;
 }
@@ -794,7 +790,6 @@ textarea.title-input {
 }
 .brand-input:placeholder-shown {
   border-color: var(--border);
-  border-style: dashed;
 }
 .lede {
   margin: -4px 0 14px;
@@ -826,6 +821,13 @@ textarea.title-input {
 .field-control > .rating-input,
 .field-control > .check {
   align-self: flex-start;
+}
+/* A product's Food box with Not food beside it; Not food drops below when there's no room. */
+.food-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
 }
 .fields.compact .field {
   grid-template-columns: 80px 1fr;
@@ -1232,7 +1234,7 @@ table.parsed .input {
   padding: 6px 4px;
   border-radius: 6px;
   cursor: pointer;
-  border-bottom: 1px dotted var(--border);
+  border-bottom: 1px solid var(--border);
 }
 .ing:hover,
 .ing.open {
@@ -1462,11 +1464,15 @@ ul.grocery-list li.got .grocery-name {
 .quick-add .segmented {
   align-self: flex-start;
 }
-.name-row .input.brand-box {
-  flex: 0 1 9em;
+.name-row .picker.brand-box {
+  flex: 1 1 9em;
   min-width: 6em;
 }
-.name-row .input:not(.brand-box) {
+.name-row .brand-box .input {
+  width: 100%;
+  padding-right: 14px;
+}
+.name-row > .input {
   min-width: 12em;
 }
 /* Desktop is where most adding happens: room to breathe. The phone keeps the tight layout. */
@@ -1495,7 +1501,7 @@ ul.grocery-list li.got .grocery-name {
   .quick-add .name-row {
     gap: 12px;
   }
-  .quick-add .name-row .input.brand-box {
+  .quick-add .name-row .picker.brand-box {
     flex: 0 1 16em;
   }
   .quick-add .chips {

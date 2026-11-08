@@ -350,6 +350,107 @@ export function Picker({
   );
 }
 
+/**
+ * Free text with suggestions (a brand): typing filters the known ones like a Picker, but the
+ * text is the value, so a new one is just typed. Enter picks the highlighted suggestion, or,
+ * with nothing to pick, goes to `onEnter`.
+ */
+export function Suggest({
+  value,
+  options,
+  onChange,
+  onEnter,
+  createLabel = "New",
+  className = "",
+  placeholder,
+  autoFocus,
+  "aria-label": ariaLabel,
+}: {
+  value: string;
+  options: string[];
+  onChange: (text: string) => void;
+  onEnter?: () => void;
+  createLabel?: string;
+  className?: string;
+  placeholder?: string;
+  autoFocus?: boolean;
+  "aria-label"?: string;
+}) {
+  const name = useFieldName({ "aria-label": ariaLabel });
+  const [open, setOpen] = useState(false);
+  const [typed, setTyped] = useState(false);
+  const [active, setActive] = useState(0);
+  const listId = useId();
+  // Opening on focus shows nothing until typing: a list of every brand isn't much help.
+  const shown = open && typed && value.trim() ? filterOptions(options.map((o) => ({ id: o, label: o })), value, 12) : [];
+  const exact = shown.some((o) => nameKey(o.label) === nameKey(value));
+  const canCreate = open && typed && !!value.trim() && !exact;
+  const total = shown.length + (canCreate ? 1 : 0);
+  const pick = (text: string) => {
+    onChange(text);
+    setTyped(false);
+    setActive(0);
+  };
+  return (
+    <div className={`picker ${open ? "open" : ""} ${className}`}>
+      <input
+        aria-label={ariaLabel}
+        {...name}
+        autoFocus={autoFocus}
+        className="input big"
+        role="combobox"
+        aria-expanded={total > 0}
+        aria-controls={listId}
+        aria-autocomplete="list"
+        autoComplete="off"
+        placeholder={placeholder}
+        value={value}
+        onFocus={() => setOpen(true)}
+        onBlur={() => {
+          setOpen(false);
+          setTyped(false);
+        }}
+        onChange={(e) => {
+          onChange(e.target.value);
+          setTyped(true);
+          setActive(0);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "ArrowDown" && total) {
+            e.preventDefault();
+            setActive((a) => Math.min(a + 1, total - 1));
+          } else if (e.key === "ArrowUp" && total) {
+            e.preventDefault();
+            setActive((a) => Math.max(a - 1, 0));
+          } else if (e.key === "Enter") {
+            e.preventDefault();
+            if (active < shown.length) pick(shown[active]!.label);
+            else if (total) pick(value.trim());
+            else onEnter?.();
+          } else if (e.key === "Escape" && total) {
+            e.stopPropagation();
+            setTyped(false);
+          }
+        }}
+      />
+      {total > 0 && (
+        <ul className="picker-list" id={listId} role="listbox" onMouseDown={(e) => e.preventDefault()}>
+          {shown.map((o, n) => (
+            <li key={o.id} role="option" aria-selected={n === active} className={n === active ? "active" : ""} onClick={() => pick(o.label)}>
+              <span>{o.label}</span>
+            </li>
+          ))}
+          {canCreate && (
+            <li role="option" aria-selected={active === shown.length} className={`create ${active === shown.length ? "active" : ""}`} onClick={() => pick(value.trim())}>
+              + {createLabel} “{value.trim()}”
+            </li>
+          )}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 /** Several records: chips for the chosen ones, a picker to add more. */
 export function MultiPicker({
   values,

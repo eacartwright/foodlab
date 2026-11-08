@@ -1,5 +1,5 @@
-import { MEAL_TAGS, blank, ingredientsFromText, newId, tidyName, withoutBrand, type Id, type Rating, type ReadRecipe } from "@foodlab/shared";
-import { useEffect, useId, useState, useSyncExternalStore } from "react";
+import { MEAL_TAGS, blank, ingredientsFromText, nameKey, newId, tidyName, withoutBrand, type Id, type Rating, type ReadRecipe } from "@foodlab/shared";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { ensureFood, ensureStore } from "../actions";
 import { go, pathOf } from "../router";
 import { fetchPhoto, readLink as readFromLink, readText, viaText, type ReadReply } from "../ai";
@@ -7,7 +7,7 @@ import { uploadPhoto } from "../uploads";
 import { data, put, useData } from "../sync";
 import { showToast } from "../toast";
 import { Dialog } from "./Dialog";
-import { Field, MultiPicker, Picker, RatingInput, Segmented } from "./controls";
+import { Field, MultiPicker, Picker, RatingInput, Segmented, Suggest } from "./controls";
 
 // Quick add (DESIGN.md §5.5): a kind, a name, and only the everyday fields. Also what
 // Share to foodlab opens, with the shared page's title and link filled in.
@@ -74,11 +74,24 @@ export function QuickAdd({ init }: { init: QuickAddInit }) {
   });
   const [brand, setBrand] = useState("");
   const [name, setName] = useState(init.name ?? "");
-  const brandList = useId();
   const [link, setLink] = useState(init.link ?? "");
   const [foodId, setFoodId] = useState<Id | null>(init.foodId ?? null);
   const [notFood, setNotFood] = useState(false);
   const [storeIds, setStoreIds] = useState<Id[]>(init.storeIds ?? []);
+  // A brand that's also a place (Wegmans) is sold there: added to Sold at, and taken off again
+  // if the brand changes, unless it was picked by hand.
+  const autoStore = useRef<Id | null>(null);
+  useEffect(() => {
+    const k = nameKey(brand.trim());
+    const match = k ? view.stores.find((s) => nameKey(s.name) === k)?.id ?? null : null;
+    const was = autoStore.current;
+    if (match === was) return;
+    autoStore.current = match && !storeIds.includes(match) ? match : null;
+    setStoreIds((ids) => {
+      const next = was ? ids.filter((x) => x !== was) : ids;
+      return match && !next.includes(match) ? [...next, match] : next;
+    });
+  }, [brand]); // eslint-disable-line react-hooks/exhaustive-deps
   const [placeId, setPlaceId] = useState<Id | null>(init.placeId ?? null);
   const [rating, setRating] = useState<Rating | null>(null);
   const [tagIds, setTagIds] = useState<Id[]>([]);
@@ -204,28 +217,22 @@ export function QuickAdd({ init }: { init: QuickAddInit }) {
         <Segmented value={kind} options={KINDS} labels={LABELS} clearable={false} onChange={(k) => k && pickKind(k)} label="What" />
         <div className="inline name-row">
           {kind === "products" && (
-            <>
-              <input
-                className="input big brand-box"
-                autoFocus={!init.name}
-                placeholder="Brand"
-                value={brand}
-                list={brandList}
-                onChange={(e) => setBrand(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && add()}
-                aria-label="Brand"
-              />
-              <datalist id={brandList}>
-                {view.brands().map((b) => (
-                  <option key={b} value={b} />
-                ))}
-              </datalist>
-            </>
+            <Suggest
+              className="brand-box"
+              placeholder="Brand"
+              autoFocus={!init.name}
+              value={brand}
+              options={view.brands()}
+              onChange={setBrand}
+              onEnter={add}
+              createLabel="New brand"
+              aria-label="Brand"
+            />
           )}
           <input
             className="input big"
             autoFocus={kind !== "products" || !!init.name}
-            placeholder={kind === "products" ? "e.g. Deli Deluxe American" : kind === "recipes" ? "e.g. Ham & cheese sandwich" : kind === "dishes" ? "e.g. Burrito bowl" : "e.g. Lemon juice"}
+            placeholder={kind === "products" ? "Product name" : kind === "recipes" ? "e.g. Ham & cheese sandwich" : kind === "dishes" ? "e.g. Burrito bowl" : "e.g. Lemon juice"}
             value={name}
             onChange={(e) => setName(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && add()}
@@ -241,19 +248,21 @@ export function QuickAdd({ init }: { init: QuickAddInit }) {
             {kind === "products" && (
               <>
                 <Field label="Food">
-                  {!notFood && (
-                    <Picker
-                      value={foodId}
-                      options={view.foods.map((f) => ({ id: f.id, label: f.name }))}
-                      placeholder="Which food is it? (optional)"
-                      createLabel="New food"
-                      onChange={setFoodId}
-                      onCreate={(t) => ensureFood(t)}
-                    />
-                  )}
-                  <label className="check">
-                    <input type="checkbox" checked={notFood} onChange={(e) => setNotFood(e.target.checked)} /> Not food
-                  </label>
+                  <div className="food-row">
+                    {!notFood && (
+                      <Picker
+                        value={foodId}
+                        options={view.foods.map((f) => ({ id: f.id, label: f.name }))}
+                        placeholder=""
+                        createLabel="New food"
+                        onChange={setFoodId}
+                        onCreate={(t) => ensureFood(t)}
+                      />
+                    )}
+                    <label className="check">
+                      <input type="checkbox" checked={notFood} onChange={(e) => setNotFood(e.target.checked)} /> Not food
+                    </label>
+                  </div>
                 </Field>
                 <Field label="Sold at">
                   <MultiPicker
@@ -261,7 +270,7 @@ export function QuickAdd({ init }: { init: QuickAddInit }) {
                     options={view.stores.map((s) => ({ id: s.id, label: s.name }))}
                     onChange={setStoreIds}
                     onCreate={ensureStore}
-                    placeholder="Add a place…"
+                    placeholder=""
                     createLabel="New place"
                   />
                 </Field>
@@ -278,10 +287,13 @@ export function QuickAdd({ init }: { init: QuickAddInit }) {
                 />
               </Field>
             )}
-            <Field label="Rating">
-              <RatingInput value={rating} onChange={setRating} />
-            </Field>
-            {!(kind === "products" && notFood) && (
+            {/* A product's rating and meals are set on its page, after adding. */}
+            {kind !== "products" && (
+              <Field label="Rating">
+                <RatingInput value={rating} onChange={setRating} />
+              </Field>
+            )}
+            {kind !== "products" && (
               <Field label="For">
                 <div className="chips">
                   {MEAL_TAGS.map((t) => (
