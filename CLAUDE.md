@@ -92,6 +92,9 @@ tombstones (`deleted`), restorable with Undo or the page's Restore.
 ## Working with Evan
 
 - Commit and push only when asked.
+- **"Dev notes" means the live ones** on the mini PC (ripley), never this machine's dev DB:
+  read `\\ripley\C\Apps\foodlab\data\dev-notes.md` (`Z:\Apps\foodlab\...` on the laptop). Read
+  only; never open the live `.db` over the share.
 - Prefers the Claude desktop app / claude.ai over the terminal; give GUI steps where possible.
 - Develops on NOSTROMO, his desktop, and sometimes HPBROBOOK, his laptop (`C:\Dev\foodlab` on both). Personal phone: **Android** (always); the iPhone 13
   is sideshow's. The mini PC hosts the real app at `C:\Apps\foodlab`, port 8082
