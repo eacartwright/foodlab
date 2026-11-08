@@ -63,21 +63,50 @@ export function Markdown({ text, className = "", plain }: { text: string; classN
     }
     const bullet = /^\s*[-*•]\s+/;
     const number = /^\s*\d+[.)]\s+/;
-    for (const [re, Tag] of [
-      [bullet, "ul"],
-      [number, "ol"],
-    ] as const) {
-      if (re.test(line)) {
-        const items: ReactNode[] = [];
-        while (i < lines.length && re.test(lines[i]!)) {
-          items.push(<li key={items.length}>{inline(lines[i]!.replace(re, ""), `${key}-${items.length}`, plain)}</li>);
-          i++;
+    if (number.test(line)) {
+      // Bullets under a step belong to it (indented, and the numbering carries on past them);
+      // blank lines between steps don't break the list.
+      const start = parseInt(line.trim(), 10);
+      const items: ReactNode[] = [];
+      const next = () => {
+        let j = i;
+        while (j < lines.length && !lines[j]!.trim()) j++;
+        return j;
+      };
+      while (i < lines.length && number.test(lines[i]!)) {
+        const k = `${key}-${items.length}`;
+        const head = inline(lines[i]!.replace(number, ""), k, plain);
+        i++;
+        const subs: ReactNode[] = [];
+        for (let j = next(); j < lines.length && bullet.test(lines[j]!); j = next()) {
+          subs.push(<li key={subs.length}>{inline(lines[j]!.replace(bullet, ""), `${k}-${subs.length}`, plain)}</li>);
+          i = j + 1;
         }
-        blocks.push(<Tag key={key}>{items}</Tag>);
-        break;
+        items.push(
+          <li key={items.length}>
+            {head}
+            {subs.length > 0 && <ul>{subs}</ul>}
+          </li>,
+        );
+        const j = next();
+        if (j < lines.length && number.test(lines[j]!)) i = j;
       }
+      blocks.push(
+        <ol key={key} start={start !== 1 ? start : undefined}>
+          {items}
+        </ol>,
+      );
+      continue;
     }
-    if (bullet.test(line) || number.test(line)) continue;
+    if (bullet.test(line)) {
+      const items: ReactNode[] = [];
+      while (i < lines.length && bullet.test(lines[i]!)) {
+        items.push(<li key={items.length}>{inline(lines[i]!.replace(bullet, ""), `${key}-${items.length}`, plain)}</li>);
+        i++;
+      }
+      blocks.push(<ul key={key}>{items}</ul>);
+      continue;
+    }
     const para: string[] = [];
     while (i < lines.length && lines[i]!.trim() && !bullet.test(lines[i]!) && !number.test(lines[i]!) && !/^#{1,3}\s/.test(lines[i]!)) {
       para.push(lines[i]!);

@@ -1276,8 +1276,15 @@ table.parsed .input {
 .md h4 {
   margin: 12px 0 6px;
 }
-.instructions .md ol li {
+.instructions .md ol > li {
   margin-bottom: 8px;
+}
+.md li > ul {
+  margin: 4px 0 0;
+  padding-left: 1.2em;
+}
+.md li > ul > li {
+  margin-bottom: 2px;
 }
 
 /* ---- history ---- */
