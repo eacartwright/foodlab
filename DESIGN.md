@@ -468,7 +468,7 @@ cups to ¼ / ⅓ / ½ / ⅔ / ¾, under about ⅛ tsp "a pinch", lb ↔ oz, coun
 ### 5.5 Quick add and sharing into foodlab
 
 **+** (header on desktop, floating on the phone) opens Quick add: Food · Product · Recipe, the
-name focused, then only the everyday fields (product: food, stores; its rating and meals are
+name focused, then only the everyday fields (product: food, stores, rating; its meals are
 set on its page, 2026-11-08). Enter
 saves and opens the new page; **Add another** keeps the form open. On desktop (most adding
 happens at a 1920×1080 screen) it's a roomy dialog, about 820px wide; the phone layout gets its

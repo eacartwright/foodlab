@@ -287,12 +287,10 @@ export function QuickAdd({ init }: { init: QuickAddInit }) {
                 />
               </Field>
             )}
-            {/* A product's rating and meals are set on its page, after adding. */}
-            {kind !== "products" && (
-              <Field label="Rating">
-                <RatingInput value={rating} onChange={setRating} />
-              </Field>
-            )}
+            <Field label="Rating">
+              <RatingInput value={rating} onChange={setRating} />
+            </Field>
+            {/* A product's meals are set on its page, after adding. */}
             {kind !== "products" && (
               <Field label="For">
                 <div className="chips">
