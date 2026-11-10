@@ -167,7 +167,7 @@ export function duplicate(kind: "foods" | "products" | "recipes" | "dishes", id:
   const name = (n: string) => `${n} (copy)`;
   if (kind === "foods") {
     const f = data().state.foods[id]!;
-    put("foods", { ...f, ...copy, name: name(f.name), staple: false, notes: "" });
+    put("foods", { ...f, ...copy, name: name(f.name), staple: false, notes: "", wiki: "" });
   } else if (kind === "products") {
     const p = data().state.products[id]!;
     put("products", { ...blank.products(copy.id, name(p.name), now), ...pick(p, ["foodId", "notFood", "storage", "brand", "storeIds", "tagIds", "travels", "keepsDays", "effort", "shelfLife"]) });

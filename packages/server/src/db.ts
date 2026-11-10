@@ -241,6 +241,8 @@ const MIGRATIONS: string[] = [
   `ALTER TABLE tags ADD COLUMN aliases TEXT NOT NULL DEFAULT '[]';  -- JSON ["bright", ...]`,
   // 2026-11-09: where a product is kept: pantry | fridge | freezer, NULL = not set.
   `ALTER TABLE products ADD COLUMN storage TEXT;`,
+  // 2026-11-09: a food's Wikipedia article (a tidy URL, or '').
+  `ALTER TABLE foods ADD COLUMN wiki TEXT NOT NULL DEFAULT '';`,
 ];
 
 export type DB = DatabaseSync;
@@ -339,6 +341,7 @@ export function loadState(db: DB): State {
       notes: r.notes,
       tagIds: tagsOf.get(`foods:${r.id}`) ?? [],
       plu: r.plu,
+      wiki: r.wiki ?? "",
     } satisfies Food;
   }
   for (const r of db.prepare("SELECT * FROM stores").all() as Row[]) {
@@ -468,6 +471,7 @@ export const save = {
       shelf_life: x.shelfLife,
       notes: x.notes,
       plu: x.plu,
+      wiki: x.wiki,
     });
     setTags(db, "foods", x.id, x.tagIds);
   },

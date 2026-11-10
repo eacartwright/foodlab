@@ -39,7 +39,8 @@ export class Store {
     if (prev) rec.createdAt = prev.createdAt;
     // An app from before aliases (cached on a phone) saves a tag without them: keep the ones it has.
     if (kind === "tags" && prev && (body as { aliases?: unknown }).aliases === undefined) (rec as Records["tags"]).aliases = (prev as Records["tags"]).aliases;
-    // Same for a product's storage (2026-11-09).
+    // Same for a food's Wikipedia link and a product's storage (2026-11-09).
+    if (kind === "foods" && prev && (body as { wiki?: unknown }).wiki === undefined) (rec as Records["foods"]).wiki = (prev as Records["foods"]).wiki;
     if (kind === "products" && prev && (body as { storage?: unknown }).storage === undefined) (rec as Product).storage = (prev as Product).storage;
     this.check(kind, rec, prev);
 

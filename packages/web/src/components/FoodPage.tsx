@@ -9,6 +9,7 @@ import { ItemRow, Section } from "./rows";
 import { openQuickAdd } from "./QuickAdd";
 import { GroceryButton } from "./GroceriesPage";
 import { showToast } from "../toast";
+import { WikiAbout, WikiField } from "./Wiki";
 
 // A food: the database personality. What it is, its products best first, its kinds, its
 // forms, the recipes it's in.
@@ -53,6 +54,7 @@ export function FoodPage({ id }: { id: string }) {
         </button>
         <GroceryButton name={food.name} foodId={food.id} />
       </div>
+      {food.wiki && <WikiAbout url={food.wiki} />}
       <div className="fields">
         <Field label="Kind of">
           <Picker value={food.parentId} options={options} placeholder="Nothing (top level)" onChange={(parentId) => save({ parentId })} onCreate={(n) => ensureFood(n)} />
@@ -78,6 +80,9 @@ export function FoodPage({ id }: { id: string }) {
         )}
         <Field label="Shelf life">
           <DraftInput className="input" value={food.shelfLife} placeholder="e.g. 3 weeks opened, fridge" onCommit={(shelfLife) => save({ shelfLife })} />
+        </Field>
+        <Field label="Wikipedia">
+          <WikiField value={food.wiki ?? ""} name={food.name} onChange={(wiki) => save({ wiki })} />
         </Field>
         <Field label="Tags">
           <TagEditor value={food.tagIds} inherited={view.inheritedTags(food.id, food.tagIds, true)} onChange={(tagIds) => save({ tagIds })} />

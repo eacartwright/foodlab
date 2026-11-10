@@ -229,5 +229,8 @@ tombstones (`deleted`), restorable with Undo or the page's Restore.
   dried forms under spices, cheeses, cuts of meat, pasta shapes, canned tomatoes, flour, sugar…); pickle
   cuts folded into Dill pickles, cheese by cheese (no Block / Shredded / Sliced); 145 of 146 recipe
   lines linked. Growth rule (Evan's): foods come from recipes and what he buys or wants to try, not a catalog.
-- **Next:** food aliases + matching a line by the food name inside it ("2 cups shredded cheddar
-  cheese" → Cheddar cheese), so new recipes link themselves. Then M6 (weights).
+- 2026-11-09: Kept in filled on the live data (399 pantry, 68 fridge, 191 freezer); a first pass of flavor
+  tags over the tree (230 on 184 foods). **Wikipedia on foods** (DESIGN.md §5.13; `Food.wiki`, migration 16,
+  `server/wiki.ts`, `web/components/Wiki.tsx`: Find, About card). 116 tests; browser-checked on a copy of
+  the live DB. **Classics and AI recipes** designed (§5.14), not built.
+- **Next:** line matching + food aliases (DESIGN.md §6), then Classics (§5.14), then AI recipes. M6 (weights) after.

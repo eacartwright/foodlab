@@ -8,3 +8,4 @@ export * from "./mealTimes";
 export * from "./recipeRead";
 export * from "./ai";
 export * from "./places";
+export * from "./wiki";

@@ -106,6 +106,7 @@ by rating), **potential staple** (§4.7), **times made / last made** (log entrie
 | `shelfLife` | Optional text ("3 weeks opened, fridge"). Belongs on a form or product, not on Lemon. |
 | `plu` | The produce sticker code ("4053" = lemon), 4 or 5 digits. Asked for only on Produce, Fruit, Vegetable and their kinds (is a, not form of); searchable, and shown beside the item on the grocery list, so I learn them. |
 | `notes` | What I know about it generally (melts well, mild), substitutions, storage. |
+| `wiki` | **Wikipedia** (2026-11-09, migration 16): its article, a tidy URL (section kept: Lettuce#Varieties). See §5.13. |
 | `tags` | |
 
 **Form vs prep.** A form is its own food with its own page; a prep is a word on a recipe line
@@ -704,7 +705,64 @@ Later, if wanted: sharing a Find Me Gluten Free or Google Maps link to make a pl
 phone and hours read from the page), looking a place up by name alone (needs the model's web
 search, a few cents a lookup), "near me", and a dish's price.
 
+### 5.13 Wikipedia (learning about a food)
+
+Built 2026-11-09. A food's **Wikipedia** field: **🔍 Find** searches Wikipedia with the food's name
+(the box can be changed, or a link pasted, the mobile site's too), each hit with its picture and
+one-line description, so "Chard" or "Pepper" is picked, not guessed. Set, it shows the article's
+name (a link), **Change** and ✕. The page then shows an **About** card under the title: the
+article's first paragraph (four lines, **More**) and its picture, credited "Wikipedia ↗". It
+comes from Wikipedia's public REST interface through the server (`server/wiki.ts`,
+`GET /api/wiki/search?q=`, `GET /api/wiki/summary?url=`, asked openly as foodlab, a summary kept a
+day); offline there's no card, just the link. A disambiguation page says to pick one meaning. The
+point is learning: Endive's page says what endive is, what it's like and its relatives.
+
+Filled in bulk once (2026-11-09) by a script through the API: a food whose name is an article's
+title (plurals and "X (food)" too) gets it; the rest went to a review list. Group foods with no
+article of their own (Prepared foods) stay blank.
+
+Later: Wikidata's *subclass of* to check the Kind of tree or suggest kinds; the article's
+picture as a food's own picture.
+
+### 5.14 Classics and AI recipes (designed 2026-11-09, not built)
+
+The way from a database of what I eat to an app that helps me cook new things.
+
+**Classics** (working name): a dish as an idea, apart from any recipe for it: **Caesar salad**,
+**BLT**, **Chicken pot pie**. A new kind, `classics`, a tree like foods (**Salads › Caesar
+salad, Cobb salad**; **Sandwiches › BLT, Reuben, Cuban**; **One-pot meals**; **Soups**), each with:
+
+- a **Wikipedia** link and About card (as §5.13);
+- its **defining ingredients**, linked to foods, each *required* or *usual* (a Caesar needs
+  Romaine, Parmesan and Caesar dressing; croutons and anchovies are usual);
+- notes, tags (flavor tags too: a Caesar is `tangy` `savory` `crunchy`), and photos.
+
+A **recipe** says which classic it's a version of (`classicId`, optional), and so can a **dish**
+(Panera's Caesar). A classic's page lists my recipes for it and the dishes I've eaten, ❤️ first,
+and which of its ingredients I usually have (staples, recently bought). Search matches a recipe
+through its classic and the classic's parents ("salad" finds a Caesar recipe that never says
+salad). **Variants** (§6) become a recipe that's a version of another.
+
+**Seeding:** Wikipedia's lists (List of salads, List of sandwiches, List of soups) read into
+classics, each with its link; the AI model suggests defining ingredients from the article,
+linked to my foods, for me to check. A list grows classics the same way Quick add grows foods.
+
+**AI recipes** (after classics): a request ("a Cobb salad", "one-pot chicken dinners", "something
+tangy and crunchy for lunch") goes to the model with what the app knows: the classic and its
+defining ingredients; my foods (staples, what I buy, what I ❤️ and 👎); my rules (gluten-free,
+dairy-free notes); flavor tags and their aliases; my recipes for it so far. It answers with recipes
+in foodlab's own shape (lines already linked to my foods, missing ones named), shown in Quick add
+to keep, change or drop, never saved by itself. Cost goes through the usual meter and cap (§5.9).
+
+**Before these:** ingredient lines link themselves (§6, "Line matching"), or every AI recipe
+comes back half unlinked.
+
 ## 6. Later (designed for, not built)
+
+- **Line matching and food aliases** (next, 2026-11-09): a food's other names ("green onions",
+  "spring onions" for Scallions; "coriander" for Cilantro), and a line linked by the longest food
+  name or alias found *inside* it ("2 cups shredded cheddar cheese" → Cheddar cheese), not only an
+  exact match of the parsed food part. Needed before AI recipes (§5.14).
 
 - **Scaling** in three layers: exact quantity → human measurement (3½ tbsp) → practical, using
   the measuring tools I own. Ingredient behavior (discrete: eggs, onions; sensitive: salt,

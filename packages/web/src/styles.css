@@ -2142,3 +2142,102 @@ ul.found-list {
   display: block;
   white-space: pre-line;
 }
+
+/* A food's Wikipedia article (Wiki.tsx): the About card under the title, and Find's results. */
+.wiki-about {
+  display: flow-root;
+  margin: 4px 0 18px;
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  max-width: 46em;
+}
+.wiki-about img {
+  float: right;
+  width: 112px;
+  height: 112px;
+  object-fit: cover;
+  border-radius: var(--control-radius);
+  margin: 0 0 6px 12px;
+}
+.wiki-about p {
+  margin: 0 0 6px;
+  line-height: 1.45;
+}
+.wiki-about p:last-child {
+  margin-bottom: 0;
+}
+.wiki-about .clamp {
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.link-btn {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: var(--primary);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.link-btn:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.wiki-finder {
+  display: grid;
+  gap: 8px;
+  max-width: 34em;
+}
+.wiki-finder .inline .input {
+  flex: 1;
+  min-width: 0;
+}
+.wiki-hits {
+  display: grid;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.wiki-hit {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: var(--tap);
+  padding: 6px 10px;
+  text-align: left;
+  font: inherit;
+  color: var(--text);
+  background: var(--surface);
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+}
+.wiki-hit:last-child {
+  border-bottom: 0;
+}
+.wiki-hit:hover {
+  background: var(--surface-2);
+}
+.wiki-hit:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+.wiki-hit img,
+.wiki-thumb-none {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 6px;
+  background: var(--surface-2);
+}
+@media (max-width: 860px) {
+  .wiki-about img {
+    width: 84px;
+    height: 84px;
+  }
+}

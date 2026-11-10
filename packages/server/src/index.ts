@@ -12,6 +12,7 @@ import { FileStore, MAX_FILE } from "./files";
 import { fetchPhoto, pagePhoto, readRecipe } from "./readRecipe";
 import { writeDevNotes } from "./devNotesFile";
 import { Store } from "./store";
+import { wikiSearch, wikiSummary } from "./wiki";
 
 const PORT = Number(process.env.PORT ?? 8788);
 const DB_FILE = process.env.FOODLAB_DB ?? fileURLToPath(new URL("../../../data/foodlab.db", import.meta.url));
@@ -136,6 +137,23 @@ app.get("/api/page-photo", async (c) => {
   const photo = await pagePhoto(c.req.query("url") ?? "");
   if (!photo) return c.json({ error: "No photo there" }, 404);
   return new Response(photo.data, { headers: { "content-type": photo.type, "cache-control": "private, max-age=3600", "x-content-type-options": "nosniff" } });
+});
+
+// Wikipedia for foods (DESIGN.md §5.13): search for an article, and an article's summary.
+app.get("/api/wiki/search", async (c) => {
+  try {
+    return c.json({ hits: await wikiSearch(c.req.query("q") ?? "") });
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : "Wikipedia didn't answer" }, 502);
+  }
+});
+app.get("/api/wiki/summary", async (c) => {
+  try {
+    const s = await wikiSummary(c.req.query("url") ?? "");
+    return s ? c.json(s) : c.json({ error: "No such article" }, 404);
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : "Wikipedia didn't answer" }, 502);
+  }
 });
 
 // Pasted recipe text: the AI model reads it when AI is on, else the plain reader (recipeFromText).

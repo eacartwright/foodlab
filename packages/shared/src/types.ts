@@ -125,6 +125,8 @@ export interface Food extends Base {
   tagIds: Id[];
   /** Produce code from the sticker ("4053" = lemon); only asked for under Produce, Fruit or Vegetable. */
   plu: string;
+  /** Its Wikipedia article (2026-11-09), a tidy URL (`wikiUrl`), or "". */
+  wiki: string;
 }
 
 export interface Product extends Base, Eating {
@@ -330,6 +332,7 @@ export const blank = {
     notes: "",
     tagIds: [],
     plu: "",
+    wiki: "",
   }),
   products: (id: Id, name: string, now = Date.now()): Product => ({
     ...EMPTY_BASE(id, now),

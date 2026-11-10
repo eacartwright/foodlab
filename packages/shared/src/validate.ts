@@ -34,6 +34,7 @@ import {
   type Tag,
 } from "./types";
 import { DEFAULT_AI, modelInfo, type AiModel, type AiSettings } from "./ai";
+import { wikiArticle, wikiUrl } from "./wiki";
 
 // Turns a request body into a clean record, or says what's wrong. The server runs these on
 // every save; references to other records are checked separately (server), since that needs state.
@@ -66,6 +67,14 @@ const ids = (x: unknown, field: string): string[] => {
   if (x === undefined || x === null) return [];
   if (!Array.isArray(x)) throw new Invalid(`${field}: expected a list`);
   return [...new Set(x.map((v) => id(v, field)).filter((v): v is string => !!v))];
+};
+/** A Wikipedia article link, tidied; anything else is refused. */
+const wiki = (x: unknown): string => {
+  const s = str(x, "wiki", 1000).trim();
+  if (!s) return "";
+  const a = wikiArticle(s);
+  if (!a) throw new Invalid("wiki: expected a Wikipedia article link");
+  return wikiUrl(a);
 };
 /** A tag's other words: trimmed, lowercase, no repeats, never the tag's own name. */
 const aliases = (x: unknown, own: string): string[] => {
@@ -199,6 +208,7 @@ export const validators: { [K in Kind]: (body: unknown, id: string, now: number)
       notes: str(b.notes, "notes"),
       tagIds: ids(b.tagIds, "tagIds"),
       plu: plu(b.plu),
+      wiki: wiki(b.wiki),
     };
   },
   products(body, rid, now): Product {
