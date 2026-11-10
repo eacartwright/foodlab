@@ -239,6 +239,8 @@ const MIGRATIONS: string[] = [
   `ALTER TABLE products ADD COLUMN not_food INTEGER NOT NULL DEFAULT 0;`,
   // 2026-11-09: a tag's other words ("bright", "tart" for tangy), searched and picked like its name.
   `ALTER TABLE tags ADD COLUMN aliases TEXT NOT NULL DEFAULT '[]';  -- JSON ["bright", ...]`,
+  // 2026-11-09: where a product is kept: pantry | fridge | freezer, NULL = not set.
+  `ALTER TABLE products ADD COLUMN storage TEXT;`,
 ];
 
 export type DB = DatabaseSync;
@@ -364,6 +366,7 @@ export function loadState(db: DB): State {
       name: r.name,
       foodId: r.food_id,
       notFood: !!r.not_food,
+      storage: r.storage ?? null,
       brand: r.brand,
       storeIds: storesOf.get(r.id) ?? [],
       buyAgain: r.buy_again,
@@ -494,6 +497,7 @@ export const save = {
       name: x.name,
       food_id: x.foodId,
       not_food: x.notFood ? 1 : 0,
+      storage: x.storage,
       brand: x.brand,
       buy_again: x.buyAgain,
       shelf_life: x.shelfLife,

@@ -223,5 +223,6 @@ tombstones (`deleted`), restorable with Undo or the page's Restore.
   tags** on foods and recipes (DESIGN.md §4.9). **Tag aliases** (migration 14, `Tag.aliases`, Tags →
   Also; search and the Tags box match them; merge keeps the old name as one). 112 tests; migration
   checked on a copy of the live DB; browser-checked (desktop and phone).
-- **Next:** a Storage field on products (frozen / refrigerated, now the tree doesn't say), the
-  cheese and pickle cuts, fleshing out produce / meat / dairy / baking. Then M6 (weights).
+- 2026-11-09: **Kept in** on products (`Product.storage`: pantry / fridge / freezer, migration 15;
+  DESIGN.md §4.3). 114 tests; migration checked on a copy of the live DB; browser-checked.
+- **Next:** M6 (weights).

@@ -1,4 +1,4 @@
-import { BUY_AGAIN, productName, withoutBrand, type Product } from "@foodlab/shared";
+import { BUY_AGAIN, productName, STORAGE, STORAGE_LABEL, withoutBrand, type Product } from "@foodlab/shared";
 import { useId, useState } from "react";
 import { duplicate, ensureFood, ensureStore, remove } from "../actions";
 import { go, pathOf } from "../router";
@@ -90,6 +90,9 @@ export function ProductPage({ id }: { id: string }) {
         </Field>
         <Field label="Buy again">
           <Segmented value={p.buyAgain} options={BUY_AGAIN} labels={{ yes: "Yes", no: "No" }} onChange={(buyAgain) => save({ buyAgain })} />
+        </Field>
+        <Field label="Kept in">
+          <Segmented value={p.storage ?? null} options={STORAGE} labels={STORAGE_LABEL} onChange={(storage) => save({ storage })} />
         </Field>
         <EatingFields item={p} save={save} inheritedTags={view.inheritedTags(p.foodId, p.tagIds, false)} />
         {!p.notFood && (

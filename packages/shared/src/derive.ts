@@ -1,6 +1,7 @@
 import { nameKey } from "./ingredients";
 import {
   GF_LABEL,
+  STORAGE_WORDS,
   PLACE_TYPE_LABEL,
   SPEED_LABEL,
   nameOf,
@@ -469,7 +470,7 @@ export class View {
       if (f.staple) out.push("staple");
     } else if (kind === "products") {
       const p = x as Product;
-      out.push(nameOf(p), p.brand, p.notes, GF_LABEL[p.glutenFree]);
+      out.push(nameOf(p), p.brand, p.notes, GF_LABEL[p.glutenFree], p.storage ? STORAGE_WORDS[p.storage] : "");
       foodWords(p.foodId);
       tagWords(p.tagIds);
       kindTags(p.foodId);

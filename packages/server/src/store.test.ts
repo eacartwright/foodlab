@@ -93,6 +93,16 @@ describe("Store", () => {
     expect(() => store.put("tags", "u", { name: "x", aliases: "sour" })).toThrow(/list/);
   });
 
+  it("keeps a product's storage, and an older app's save doesn't drop it", () => {
+    store.put("products", "p", { ...blank.products("p", "Tater tots"), storage: "freezer" });
+    const { storage: _, ...old } = store.state.products.p!; // an app from before storage
+    store.put("products", "p", { ...old, notes: "crispy" });
+    expect(loadState(db).products.p!.storage).toBe("freezer");
+    store.put("products", "p", { ...store.state.products.p!, storage: null });
+    expect(store.state.products.p!.storage).toBeNull();
+    expect(() => store.put("products", "p", { ...blank.products("p", "X"), storage: "garage" })).toThrow(/storage/);
+  });
+
   it("logs rating changes by itself", () => {
     store.put("products", "p", { ...blank.products("p", "Kraft"), rating: "up" });
     store.put("products", "p", { ...blank.products("p", "Kraft"), rating: "up", notes: "same rating" });

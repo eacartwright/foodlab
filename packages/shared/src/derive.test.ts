@@ -121,6 +121,15 @@ describe("View", () => {
     expect(r.full.recipes).toEqual([]); // a recipe using soda isn't a drink
   });
 
+  it("finds products by where they're kept", () => {
+    const s = world();
+    s.products.tots = { ...blank.products("tots", "Tater tots"), storage: "freezer" };
+    s.products.milk = { ...blank.products("milk", "Whole milk"), storage: "fridge" };
+    const v = new View(s);
+    expect(v.search("frozen").full.products.map((h) => h.item.id)).toEqual(["tots"]);
+    expect(v.search("refrigerated").full.products.map((h) => h.item.id)).toEqual(["milk"]);
+  });
+
   it("finds things by a tag's aliases, and finds the tag by one", () => {
     const s = world();
     s.tags.tangy = { ...blank.tags("tangy", "tangy"), aliases: ["bright", "tart"] };

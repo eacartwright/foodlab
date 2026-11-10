@@ -126,6 +126,7 @@ first; the recipes that use it (and those using its forms); the preps used on it
 | `name` | Required. The rest of the name: "Gluten Free Chicken Breasts". |
 | `foodId` | **Product of**. Optional at capture ("unsorted"), easy to fill later. |
 | `notFood` | (2026-11-04) Toothpaste, tissues: see below. |
+| `storage` | **Kept in** (2026-11-09, migration 15): Pantry · Fridge · Freezer, blank = not set. Where it is in the store and at home. The food tree says what a thing *is*, so frozen tater tots and fresh potatoes can share a branch; this says it's frozen. Search finds it by "frozen" / "freezer", "fridge" / "refrigerated", "pantry" / "shelf-stable". |
 | `storeIds` | **Sold at**, any number of stores. |
 | `buyAgain` | yes · no · blank. Separate from rating: liked but too pricey, etc. |
 | `shelfLife` | Optional. |
@@ -814,9 +815,8 @@ rule; whether log entries need actual quantities (a recipe-instance object).
   shelf, the dairy section), without going store-specific (aisle 15 at Westwood Wegmans). Could
   group the grocery list by section. The import put "Refrigerated" in those products' notes
   until then.
-- **Storage** (2026-10-25, to try): a fixed field on products, blank · Refrigerated · Frozen
-  (shelf-stable when blank). Simpler than Found in and maybe enough for it. Wait and see whether
-  notes and the food tree (Frozen foods) already cover it once the import is in use.
+- **Storage** (2026-10-25, to try; **built 2026-11-09** as Kept in, §4.3): wanted once the food tree
+  stopped grouping by aisle (Frozen foods gone). Grouping the grocery list by it is still to try.
 - **Links in the system browser** (2026-10-31, from a dev note; **built 2026-10-31** as Settings →
   General → Outside links: In the app / Browser, shown on Android only, `web/links.ts`; **works on the
   Pixel**, 2026-10-31: Chrome hands the intent link to the browser): in the installed app on Android, outside links (recipe source, product links, links in

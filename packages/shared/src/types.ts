@@ -65,6 +65,13 @@ export const METHOD_LABEL: Record<Method, string> = { assembly: "Assembly", "no-
 export const BUY_AGAIN = ["yes", "no"] as const;
 export type BuyAgain = (typeof BUY_AGAIN)[number];
 
+/** Where a product is kept (2026-11-09): the store section it's in, and where it goes at home. Blank = not set. */
+export const STORAGE = ["pantry", "fridge", "freezer"] as const;
+export type Storage = (typeof STORAGE)[number];
+export const STORAGE_LABEL: Record<Storage, string> = { pantry: "Pantry", fridge: "Fridge", freezer: "Freezer" };
+/** The words that find it in search: "frozen" finds what's kept in the freezer. */
+export const STORAGE_WORDS: Record<Storage, string> = { pantry: "pantry shelf-stable", fridge: "fridge refrigerated", freezer: "freezer frozen" };
+
 export const LOG_KINDS = ["made", "ate", "bought", "note", "rating"] as const;
 export type LogKind = (typeof LOG_KINDS)[number];
 export const LOG_LABEL: Record<LogKind, string> = { made: "Made", ate: "Ate", bought: "Bought", note: "Note", rating: "Rating" };
@@ -130,6 +137,7 @@ export interface Product extends Base, Eating {
   /** Sold at. */
   storeIds: Id[];
   buyAgain: BuyAgain | null;
+  storage: Storage | null;
   shelfLife: string;
 }
 
@@ -329,6 +337,7 @@ export const blank = {
     name,
     foodId: null,
     notFood: false,
+    storage: null,
     brand: "",
     storeIds: [],
     buyAgain: null,

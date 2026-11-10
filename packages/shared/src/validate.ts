@@ -1,5 +1,6 @@
 import {
   BUY_AGAIN,
+  STORAGE,
   COSTS,
   EFFORTS,
   PLACE_TYPES,
@@ -214,6 +215,7 @@ export const validators: { [K in Kind]: (body: unknown, id: string, now: number)
       brand,
       storeIds: ids(b.storeIds, "storeIds"),
       buyAgain: oneOf(b.buyAgain, BUY_AGAIN, "buyAgain"),
+      storage: oneOf(b.storage, STORAGE, "storage"),
       shelfLife: str(b.shelfLife, "shelfLife", 200),
     };
   },
