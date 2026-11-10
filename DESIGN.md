@@ -1,6 +1,6 @@
 # foodlab — Design
 
-*v0.5 · 2026-10-24 · living document, edit freely*
+*v0.6 · 2026-11-09 · living document, edit freely*
 
 ## 1. Purpose
 
@@ -204,6 +204,9 @@ after half-typed lines made junk ones). Linking it is the Food box beside the li
 the parsed name typed in: pick a food, or **New food** on purpose. Changing a line's amount or
 prep keeps the food it was linked to.
 
+A line can link any food, a kind included: the level chosen says how picky the recipe is
+(Caesar → Romaine; a side salad where any greens work → Leafy greens). See §4a, parents vs leaves.
+
 ### 4.6 Eating fields (recipes, products, dishes)
 
 | Field | Values |
@@ -322,7 +325,31 @@ Answers to the ChatGPT sessions' modeling questions. Each is revisitable once th
   "shredded"; diced/minced/sliced onion are all onion.
 - **Granularity:** a separate food only if I'd **buy or substitute it differently**. Chicken
   thigh, yes; bone-in chicken thigh, only if a recipe cares; large chicken thigh, no (size goes
-  in the line: "2 large").
+  in the line: "2 large"). Romaine, spinach and arugula, yes: each is bought separately and
+  none stands in for the others in a Caesar. Spring mix, yes: it's bought as one thing.
+- **Parents vs leaves** (2026-11-09): **parents (kinds) are for browsing and flexible recipes;
+  leaves are for buying and specific recipes.**
+  - Products point at the most specific food. Wegmans Romaine Hearts is a product of Romaine;
+    "hearts" is packaging, a product detail, not a food.
+  - A recipe line points at the most specific food the recipe *really needs*: Caesar → Romaine;
+    a side salad where any greens work → Leafy greens or Lettuce. The level chosen records how
+    picky the recipe is.
+  - The **Kind of** tree follows how I shop and substitute, not loose everyday naming. Search
+    walks up the tree (§5.1), so a wrong kind makes search wrong: if Spinach were a kind of
+    Lettuce, "lettuce" would find sautéed spinach. Example:
+
+    ```
+    Leafy greens
+    ├── Lettuce
+    │   ├── Romaine
+    │   ├── Iceberg
+    │   └── Butter lettuce
+    ├── Spinach
+    ├── Arugula
+    ├── Kale
+    └── Spring mix
+    ```
+  - Most products and most recipe lines should land on leaves.
 - **Food vs product:** facts about the food in general go on the food; opinion, brand, where I
   buy it, price and package go on the product.
 - **Opinion:** 👎 / 👍 / ❤️ + buy again + tried / want to try + staple. No taste/texture/value
@@ -370,6 +397,10 @@ one term. A term matches a thing through its name, brand, notes, tags, its food 
 parents and forms, a recipe's ingredient foods (and their parents: "meat" finds a recipe with
 chicken thigh when Chicken thigh is a Meat), and its stores ("wegmans" finds what's sold there).
 Plurals match ("potatoes" = "potato").
+
+Matching through foods goes **up** the *is a* links, never down: "greens" finds a Caesar that
+uses Romaine, but "romaine" doesn't find a salad that only asks for Leafy greens, because that
+recipe doesn't call for romaine.
 
 **A food's tags count for its kinds and their products** (2026-10-29), down the *is a* links
 only: tag Soda `drink` once and "drinks" finds Diet soda and every soda product. Not down *form
@@ -746,6 +777,16 @@ page counts as leaving the box (Done on a recipe too). Lines no longer make food
 (None blocking.) To watch once there's real data: whether staple suggestions need a tighter
 rule; whether log entries need actual quantities (a recipe-instance object).
 
+- **Kinds on recipe lines** (2026-11-09, decide before much is filed this way). When a line
+  links a kind (Leafy greens), the kind usually has no products of its own, so its "Usually"
+  (hidden for now, §9) would be empty. Leaning: **roll up its kinds' products**, ❤️ first ("your
+  greens: Wegmans Spring Mix, Organic Girl Baby Spinach…"). Staple suggestions already count a
+  line toward the food *and its kinds above it* (`View.stapleSuggestions`), never toward foods
+  below: a Leafy greens line doesn't count for Romaine, which is right. The catch is the other
+  direction: one Romaine recipe and one Spinach recipe would suggest **Leafy greens** as a
+  staple, which is too vague to shop from. Watch for it; maybe suggest only foods with products,
+  or leaves.
+
 - **Found in** (2026-10-25, to try): where in a store a product is ("Refrigerated" vs the
   shelf, the dairy section), without going store-specific (aisle 15 at Westwood Wegmans). Could
   group the grocery list by section. The import put "Refrigerated" in those products' notes
@@ -767,6 +808,10 @@ rule; whether log entries need actual quantities (a recipe-instance object).
 
 Decided:
 
+- 2026-11-09: **parents vs leaves** (§4a): products and specific recipe lines land on leaves;
+  kinds are for browsing and flexible recipes; the Kind of tree follows how I shop and
+  substitute (Spinach and Arugula are Leafy greens, not Lettuce). Search matches up the tree,
+  never down (§5.1).
 - 2026-10-31: **M4**: stores become **places** (one record for Wegmans the store and Wegmans the
   hot bar), typed Grocery store / Specialty store / Restaurant, with speed (Quick / Sit-down) and
   cost ($–$$$) as filter pills. **Dishes** are what's assembled or made to order at a place;
