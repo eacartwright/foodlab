@@ -225,4 +225,9 @@ tombstones (`deleted`), restorable with Undo or the page's Restore.
   checked on a copy of the live DB; browser-checked (desktop and phone).
 - 2026-11-09: **Kept in** on products (`Product.storage`: pantry / fridge / freezer, migration 15;
   DESIGN.md §4.3). 114 tests; migration checked on a copy of the live DB; browser-checked.
-- **Next:** M6 (weights).
+- 2026-11-09, live data (through the API): ~300 base foods added (599 in all; fresh herbs with their
+  dried forms under spices, cheeses, cuts of meat, pasta shapes, canned tomatoes, flour, sugar…); pickle
+  cuts folded into Dill pickles, cheese by cheese (no Block / Shredded / Sliced); 145 of 146 recipe
+  lines linked. Growth rule (Evan's): foods come from recipes and what he buys or wants to try, not a catalog.
+- **Next:** food aliases + matching a line by the food name inside it ("2 cups shredded cheddar
+  cheese" → Cheddar cheese), so new recipes link themselves. Then M6 (weights).
