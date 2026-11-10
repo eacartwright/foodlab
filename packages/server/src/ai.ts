@@ -70,6 +70,18 @@ const PLACE_SYSTEM = `You read a restaurant's or store's web page (or text copie
 
 Copy what the text says; never guess an address, phone or hours. If it gives no locations, return an empty list.`;
 
+const ClassicIngredients = z.object({
+  ingredients: z.array(z.object({ name: z.string(), role: z.enum(["required", "usual"]), note: z.string() })),
+});
+
+const CLASSIC_SYSTEM = `You help keep a personal food database. Given a well-known dish (a "classic", such as Caesar salad or BLT) and, when there is one, its Wikipedia summary, list the ingredients that define it.
+
+- name: the ingredient as a grocery shopper would name it, plain and general ("Romaine lettuce", "Parmesan", "Bacon", "Mayonnaise", "Croutons"). One ingredient per entry; no amounts, no preparation ("chopped").
+- role: "required" when the dish isn't that dish without it (a Caesar needs romaine, Parmesan and Caesar dressing; a BLT needs bacon, lettuce, tomato and bread); "usual" when it's commonly there but optional (croutons, anchovies).
+- note: a few words only when they help ("or bacon bits", "for the dressing", "toasted"); otherwise "".
+
+Name the dish's own ingredients, not a full recipe: leave out salt, pepper, water and cooking oil unless they define it. Usually 3 to 10 entries. A family of dishes ("Salads", "Sandwiches") has no defining ingredients: return an empty list.`;
+
 export class AiStopped extends Error {}
 
 /** One kind of read: what the model is told, and the shape it answers in. */
@@ -81,6 +93,7 @@ interface Job<T> {
 
 const RECIPE_JOB: Job<z.infer<typeof Recipe>> = { name: "recipe", system: SYSTEM, schema: Recipe };
 const PLACE_JOB: Job<z.infer<typeof Place>> = { name: "place", system: PLACE_SYSTEM, schema: Place };
+const CLASSIC_JOB: Job<z.infer<typeof ClassicIngredients>> = { name: "classic_ingredients", system: CLASSIC_SYSTEM, schema: ClassicIngredients };
 
 export interface AiCall<T> {
   out: T | null;
@@ -160,6 +173,16 @@ export async function aiPlace(db: DB, ai: AiSettings, text: string): Promise<AiC
     .map((l) => ({ name: l.name.trim(), address: l.address.trim(), phone: l.phone.trim(), hours: l.hours.trim() }))
     .filter((l) => l.address || l.phone || l.hours);
   return { out: out && { locations }, ...rest };
+}
+
+/** A classic's defining ingredients (DESIGN.md §5.14), suggested for me to check; nothing is saved. */
+export async function aiClassic(db: DB, ai: AiSettings, text: string): Promise<AiCall<z.infer<typeof ClassicIngredients>>> {
+  const r = await aiCall(db, ai, CLASSIC_JOB, text, "classic", ai.model);
+  const seen = new Set<string>();
+  const ingredients = (r.out?.ingredients ?? [])
+    .map((i) => ({ name: i.name.trim(), role: i.role, note: i.note.trim() }))
+    .filter((i) => i.name && !seen.has(i.name.toLowerCase()) && seen.add(i.name.toLowerCase()));
+  return { ...r, out: r.out && { ingredients } };
 }
 
 async function aiCall<T>(db: DB, ai: AiSettings, job: Job<T>, text: string, purpose: string, model: string): Promise<AiCall<T>> {

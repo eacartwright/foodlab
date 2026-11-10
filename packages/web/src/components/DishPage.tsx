@@ -1,6 +1,6 @@
 import { type Dish } from "@foodlab/shared";
 import { useState } from "react";
-import { duplicate, ensureStore, remove } from "../actions";
+import { duplicate, ensureClassic, ensureStore, remove } from "../actions";
 import { go, listPath, pathOf } from "../router";
 import { data, put, useData } from "../sync";
 import { ConfirmDialog } from "./ConfirmDialog";
@@ -44,6 +44,16 @@ export function DishPage({ id }: { id: string }) {
             createLabel="New place"
             onChange={(placeId) => save({ placeId })}
             onCreate={(n) => ensureStore(n, { types: ["restaurant"] })}
+          />
+        </Field>
+        <Field label="Classic">
+          <Picker
+            value={d.classicId}
+            options={view.classics.map((c) => ({ id: c.id, label: c.name, also: c.aliases }))}
+            placeholder="Not a version of a classic"
+            createLabel="New classic"
+            onChange={(classicId) => save({ classicId })}
+            onCreate={(n) => ensureClassic(n)}
           />
         </Field>
         <EatingFields item={d} save={save} />

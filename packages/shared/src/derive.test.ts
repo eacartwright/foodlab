@@ -121,6 +121,24 @@ describe("View", () => {
     expect(r.full.recipes).toEqual([]); // a recipe using soda isn't a drink
   });
 
+  it("finds a recipe through its classic and the classic's kinds", () => {
+    const s = world();
+    s.foods.romaine = blank.foods("romaine", "Romaine lettuce");
+    s.classics.salads = blank.classics("salads", "Salads");
+    s.classics.caesar = { ...blank.classics("caesar", "Caesar salad"), parentId: "salads", aliases: ["Caesar"], ingredients: [{ id: "i", foodId: "romaine", role: "required", note: "" }] };
+    s.recipes.mine = { ...blank.recipes("mine", "Grilled romaine with anchovy"), classicId: "caesar" };
+    s.dishes.panera = { ...blank.dishes("panera", "Panera Caesar"), classicId: "caesar" };
+    const v = new View(s);
+    expect(v.search("salad").full.recipes.map((h) => h.item.id)).toContain("mine"); // found through Caesar salad › Salads
+    expect(v.search("salad").full.classics.map((h) => h.item.id).sort()).toEqual(["caesar", "salads"]);
+    expect(v.recipesOfClassic("salads")).toEqual([]);
+    expect(v.recipesOfClassic("salads", true).map((r) => r.id)).toEqual(["mine"]);
+    expect(v.dishesOfClassic("caesar").map((d) => d.id)).toEqual(["panera"]);
+    expect(v.classicsUsing("romaine").map((c) => c.id)).toEqual(["caesar"]);
+    expect(v.findClassic("caesar")?.id).toBe("caesar");
+    expect(v.classicAncestors("caesar").map((c) => c.id)).toEqual(["salads"]);
+  });
+
   it("matches a recipe line's food by name, alias, or the longest name inside it", () => {
     const s = world();
     const add = (id: string, name: string, aliases: string[] = []) => (s.foods[id] = { ...blank.foods(id, name), aliases });

@@ -694,8 +694,8 @@ export function Field({ label, children, htmlFor }: { label: string; children: R
   );
 }
 
-export const KIND_ICON = { recipes: "🍳", products: "🛒", dishes: "🥘", foods: "🥕", stores: "📍" } as const;
-export const KIND_ONE = { recipes: "Recipe", products: "Product", dishes: "Dish", foods: "Food", stores: "Place" } as const;
+export const KIND_ICON = { recipes: "🍳", classics: "📖", products: "🛒", dishes: "🥘", foods: "🥕", stores: "📍" } as const;
+export const KIND_ONE = { recipes: "Recipe", classics: "Classic", products: "Product", dishes: "Dish", foods: "Food", stores: "Place" } as const;
 
 /**
  * The line above a page: "🥕 FOOD › Condiment › Mustard". The kind goes to its list, each crumb

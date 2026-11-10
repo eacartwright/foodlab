@@ -101,6 +101,21 @@ export interface PlaceReply {
   message?: string;
 }
 
+export type ClassicSuggestion = { name: string; role: "required" | "usual"; note: string };
+export type ClassicReply = { ingredients?: ClassicSuggestion[]; error?: string; message?: string; model?: string; costUsd?: number; alerts?: number[]; limitUsd?: number | null };
+
+/** A classic's defining ingredients, suggested by the AI model on the server (DESIGN.md §5.14). */
+export async function suggestClassic(input: { name: string; parent: string; wiki: string }): Promise<ClassicReply> {
+  try {
+    const res = await fetch("/api/ai/classic", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(input) });
+    const r = (await res.json()) as ClassicReply;
+    aiAlert(r as ReadReply);
+    return r;
+  } catch {
+    return { error: "failed", message: "Couldn't reach foodlab (offline?)" };
+  }
+}
+
 /** A place's page (a link) or text copied from it, read on the server for its locations (DESIGN.md §5.12). */
 export async function readPlace(input: { url: string } | { text: string }): Promise<PlaceReply> {
   try {

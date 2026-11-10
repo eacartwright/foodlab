@@ -5,7 +5,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { aiOf, Invalid, KINDS, recipeFromText, type Kind, type ReadRecipe } from "@foodlab/shared";
-import { AiStopped, aiPlace, aiRead, availableModels, pagePrompt, usage, type AiResult } from "./ai";
+import { AiStopped, aiClassic, aiPlace, aiRead, availableModels, pagePrompt, usage, type AiResult } from "./ai";
 import { startBackups } from "./backup";
 import { openDb } from "./db";
 import { FileStore, MAX_FILE } from "./files";
@@ -217,6 +217,32 @@ app.post("/api/ai/place", async (c) => {
     return c.json({ locations: a.out?.locations ?? [], model: a.model, costUsd: a.costUsd, alerts: a.alerts, limitUsd: aiOf(store.state).monthlyLimitUsd });
   } catch (err) {
     return c.json({ error: "failed", message: `Couldn't read it${aiWhy(err)}` });
+  }
+});
+
+// A classic's defining ingredients (DESIGN.md §5.14): its name, what it's a kind of and its
+// Wikipedia summary go to the AI model; the app shows the suggestions, matched to my foods, to pick.
+app.post("/api/ai/classic", async (c) => {
+  const body = await jsonBody(c);
+  const name = typeof body?.name === "string" ? body.name.trim().slice(0, 200) : "";
+  const parent = typeof body?.parent === "string" ? body.parent.trim().slice(0, 200) : "";
+  const wiki = typeof body?.wiki === "string" ? body.wiki : "";
+  if (!name) return c.json({ error: "failed", message: "No name" }, 400);
+  let about = "";
+  if (wiki) {
+    try {
+      const s = await wikiSummary(wiki);
+      if (s && !s.ambiguous) about = `${s.title}: ${s.description}\n${s.extract}`;
+    } catch {
+      // Wikipedia not answering: ask without it.
+    }
+  }
+  const text = [`Dish: ${name}`, parent ? `A kind of: ${parent}` : "", about ? `Wikipedia:\n${about}` : ""].filter(Boolean).join("\n\n");
+  try {
+    const a = await aiClassic(db, aiOf(store.state), text);
+    return c.json({ ingredients: a.out?.ingredients ?? [], model: a.model, costUsd: a.costUsd, alerts: a.alerts, limitUsd: aiOf(store.state).monthlyLimitUsd });
+  } catch (err) {
+    return c.json({ error: "failed", message: `Couldn't suggest${aiWhy(err)}` });
   }
 });
 

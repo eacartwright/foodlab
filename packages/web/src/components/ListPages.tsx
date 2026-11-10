@@ -14,6 +14,7 @@ import {
   STATUS_LABEL,
   nameKey,
   productName,
+  type Classic,
   type Food,
   type FoodNode,
   type PlaceType,
@@ -23,7 +24,7 @@ import {
   type View,
 } from "@foodlab/shared";
 import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
-import { deleteTag, ensureStore, ensureTag, mergeTag, renameTag, setTagAliases } from "../actions";
+import { deleteTag, ensureClassic, ensureStore, ensureTag, mergeTag, renameTag, setTagAliases } from "../actions";
 import { showToast } from "../toast";
 import { A, go, pathOf, setQuery, useRoute } from "../router";
 import { useData } from "../sync";
@@ -1104,6 +1105,93 @@ export function DishesList() {
           </td>
         </tr>
       ))}
+    </ListShell>
+  );
+}
+
+/** Classics (DESIGN.md §5.14): the tree, each with what it needs and how many of my recipes. */
+export function ClassicsList() {
+  const { view } = useData();
+  const { query } = useRoute();
+  const f = query.get("f") ?? "";
+  const [adding, setAdding] = useState(false);
+  const [name, setName] = useState("");
+  const rows = useMemo(() => {
+    const out: { c: Classic; depth: number }[] = [];
+    if (f.trim()) {
+      for (const c of view.classics) if (match([c.name, ...(c.aliases ?? [])].join(" "), f)) out.push({ c, depth: 0 });
+      return out;
+    }
+    const walk = (list: Classic[], depth: number) => {
+      for (const c of list) {
+        out.push({ c, depth });
+        walk(view.classicKinds(c.id), depth + 1);
+      }
+    };
+    walk(view.classics.filter((c) => !c.parentId || !view.classic(c.parentId) || view.classic(c.parentId)!.deleted), 0);
+    return out;
+  }, [view, f]);
+  const create = () => {
+    if (!name.trim()) return;
+    const id = ensureClassic(name);
+    setName("");
+    setAdding(false);
+    go(pathOf("classics", id));
+  };
+  return (
+    <ListShell
+      title="Classics"
+      icon={KIND_ICON.classics}
+      count={rows.length}
+      add={() => setAdding(true)}
+      filters={
+        adding && (
+          <span className="inline">
+            <input
+              className="input"
+              aria-label="New classic"
+              autoFocus
+              value={name}
+              enterKeyHint="done"
+              onChange={(e) => setName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") create();
+                else if (e.key === "Escape") setAdding(false);
+              }}
+            />
+            <button className="btn primary" disabled={!name.trim()} onClick={create}>
+              Add
+            </button>
+            <button className="btn subtle" onClick={() => setAdding(false)}>
+              Cancel
+            </button>
+          </span>
+        )
+      }
+      empty={view.classics.length ? "No classics match." : "No classics yet: + Add one (Caesar salad, BLT…)."}
+      head={
+        <tr>
+          <th>Classic</th>
+          <th className="hide-sm">Needs</th>
+          <th className="num">Recipes</th>
+        </tr>
+      }
+    >
+      {rows.map(({ c, depth }) => {
+        const needs = c.ingredients.filter((i) => i.role === "required").map((i) => view.food(i.foodId)?.name).filter(Boolean);
+        const n = view.recipesOfClassic(c.id, true).length;
+        return (
+          <tr key={c.id}>
+            <td style={{ paddingLeft: `${0.6 + depth * 1.25}rem` }}>
+              <A href={pathOf("classics", c.id)} className={view.classicKinds(c.id).length ? "strong" : undefined}>
+                {c.name}
+              </A>
+            </td>
+            <td className="hide-sm muted small">{needs.join(", ")}</td>
+            <td className="num">{n || <span className="muted">0</span>}</td>
+          </tr>
+        );
+      })}
     </ListShell>
   );
 }

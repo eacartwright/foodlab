@@ -13,9 +13,10 @@ import {
   type Id,
   type Recipe,
   type RecipeIngredient,
+  type View,
 } from "@foodlab/shared";
 import { useEffect, useState } from "react";
-import { addLog, duplicate, ensureFood, remove, setIngredientFood } from "../actions";
+import { addLog, duplicate, ensureClassic, ensureFood, remove, setIngredientFood } from "../actions";
 import { Markdown } from "../markdown";
 import { A, go, pathOf, setQuery, useRoute } from "../router";
 import { data, put, useData } from "../sync";
@@ -71,7 +72,7 @@ function RecipeView({ r }: { r: Recipe }) {
   return (
     <article className="page recipe">
       {r.deleted && <Deleted onRestore={() => save({ deleted: false })} />}
-      <PageKind kind="recipes">
+      <PageKind kind="recipes" trail={classicTrail(view, r.classicId)}>
         <span className="spacer" />
         <button className="btn" onClick={() => setQuery({ edit: "1" })}>
           ✏️ Edit
@@ -318,6 +319,16 @@ function RecipeEdit({ r }: { r: Recipe }) {
       </div>
 
       <div className="fields">
+        <Field label="Classic">
+          <Picker
+            value={r.classicId}
+            options={view.classics.map((c) => ({ id: c.id, label: c.name, also: c.aliases }))}
+            placeholder="Not a version of a classic"
+            createLabel="New classic"
+            onChange={(classicId) => save({ classicId })}
+            onCreate={(n) => ensureClassic(n)}
+          />
+        </Field>
         <Field label="Ingredients">
           <DraftTextarea
             className="input mono-ish"
@@ -426,4 +437,11 @@ function RecipeEdit({ r }: { r: Recipe }) {
       )}
     </article>
   );
+}
+
+/** RECIPE › Salads › Caesar salad: the classic a recipe or dish is a version of, and what that's a kind of. */
+export function classicTrail(view: View, classicId: string | null): { href: string; label: string }[] {
+  const c = view.classic(classicId);
+  if (!c || c.deleted) return [];
+  return [...[...view.classicAncestors(c.id)].reverse(), c].map((x) => ({ href: pathOf("classics", x.id), label: x.name }));
 }

@@ -20,6 +20,8 @@ export interface QuickAddInit {
   foodId?: Id;
   storeIds?: Id[];
   placeId?: Id;
+  /** A recipe or dish opened from a classic's page is a version of it. */
+  classicId?: Id;
 }
 
 let open: QuickAddInit | null = null;
@@ -174,7 +176,7 @@ export function QuickAdd({ init }: { init: QuickAddInit }) {
       const b = brand.trim() || view.brands().find((x) => withoutBrand(n, x) !== n) || "";
       put("products", { ...blank.products(id, withoutBrand(n, b)), brand: b, foodId: notFood ? null : foodId, notFood, storeIds, rating, tagIds: notFood ? [] : tagIds, links, status });
     } else if (kind === "dishes") {
-      put("dishes", { ...blank.dishes(id, n), placeId, rating, tagIds, links, status });
+      put("dishes", { ...blank.dishes(id, n), placeId, rating, tagIds, links, status, classicId: init.classicId ?? null });
     } else {
       const fromRead = read
         ? {
@@ -186,7 +188,7 @@ export function QuickAdd({ init }: { init: QuickAddInit }) {
             ingredients: ingredientsFromText(read.ingredients.join("\n"), [], (f) => data().view.matchFood(f)?.id),
           }
         : {};
-      put("recipes", { ...blank.recipes(id, n), ...fromRead, rating, tagIds, links, status });
+      put("recipes", { ...blank.recipes(id, n), ...fromRead, rating, tagIds, links, status, classicId: init.classicId ?? null });
       // The suggested photo goes up after: the recipe is saved (and opens) without waiting for it.
       if (read && photo && usePhoto) void addSuggested(id, n, photo.blob);
     }

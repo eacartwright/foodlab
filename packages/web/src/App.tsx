@@ -3,8 +3,9 @@ import { DevNotesDialog } from "./components/DevNotes";
 import { EatPage } from "./components/EatPage";
 import { FoodPage } from "./components/FoodPage";
 import { GroceriesPage } from "./components/GroceriesPage";
-import { DishesList, FoodsList, PlacesList, ProductsList, RecipesList, TagsList } from "./components/ListPages";
+import { ClassicsList, DishesList, FoodsList, PlacesList, ProductsList, RecipesList, TagsList } from "./components/ListPages";
 import { DishPage } from "./components/DishPage";
+import { ClassicPage } from "./components/ClassicPage";
 import { ProductPage } from "./components/ProductPage";
 import { closeQuickAddFromBack, fromShare, openQuickAdd, QuickAdd, useQuickAdd } from "./components/QuickAdd";
 import { RecipePage } from "./components/RecipePage";
@@ -24,6 +25,7 @@ const NAV = [
   { href: "/foods", label: "Foods", icon: "🥕" },
   { href: "/products", label: "Products", icon: "🛒" },
   { href: "/recipes", label: "Recipes", icon: "🍳" },
+  { href: "/classics", label: "Classics", icon: "📖" },
   { href: "/dishes", label: "Dishes", icon: "🥘" },
   { href: "/places", label: "Places", icon: "📍" },
   { href: "/staples", label: "Staples", icon: "⭐" },
@@ -42,13 +44,14 @@ const isTyping = (el: EventTarget | null) => el instanceof HTMLElement && (el.is
 
 function Page() {
   const { path, query } = useRoute();
-  const m = /^\/(foods|products|recipes|stores|places|dishes)\/([^/]+)$/.exec(path);
+  const m = /^\/(foods|products|recipes|stores|places|dishes|classics)\/([^/]+)$/.exec(path);
   if (m) {
     const id = decodeURIComponent(m[2]!);
     if (m[1] === "foods") return <FoodPage key={id} id={id} />;
     if (m[1] === "products") return <ProductPage key={id} id={id} />;
     if (m[1] === "recipes") return <RecipePage key={id} id={id} />;
     if (m[1] === "dishes") return <DishPage key={id} id={id} />;
+    if (m[1] === "classics") return <ClassicPage key={id} id={id} />;
     return <PlacePage key={id} id={id} />;
   }
   switch (path) {
@@ -67,6 +70,8 @@ function Page() {
       return <PlacesList />;
     case "/dishes":
       return <DishesList />;
+    case "/classics":
+      return <ClassicsList />;
     case "/staples":
       return <StaplesPage />;
     case "/tags":

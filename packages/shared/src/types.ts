@@ -181,6 +181,39 @@ export interface Dish extends Base, Eating {
   name: string;
   /** Where. Null = not said yet. */
   placeId: Id | null;
+  /** The classic it's a version of (Panera's Caesar → Caesar salad), or null. */
+  classicId: Id | null;
+}
+
+/** How much a classic needs an ingredient: a Caesar needs romaine; croutons are usual. */
+export const CLASSIC_ROLES = ["required", "usual"] as const;
+export type ClassicRole = (typeof CLASSIC_ROLES)[number];
+export const CLASSIC_ROLE_LABEL: Record<ClassicRole, string> = { required: "Needs", usual: "Usually" };
+
+export interface ClassicIngredient {
+  id: Id;
+  foodId: Id;
+  role: ClassicRole;
+  /** "the dressing", "or bacon bits". */
+  note: string;
+}
+
+/**
+ * A dish as an idea, apart from any recipe for it (DESIGN.md §5.14): Caesar salad, BLT. A tree
+ * like foods (Salads › Caesar salad). Recipes and dishes say which classic they're a version of.
+ */
+export interface Classic extends Base {
+  name: string;
+  /** Kind of: Caesar salad → Salads. */
+  parentId: Id | null;
+  /** Other names ("Cobb", "BLT sandwich"). */
+  aliases: string[];
+  /** Its Wikipedia article (as on foods). */
+  wiki: string;
+  notes: string;
+  tagIds: Id[];
+  /** What defines it, in order. */
+  ingredients: ClassicIngredient[];
 }
 
 export interface RecipeIngredient {
@@ -207,6 +240,8 @@ export interface Recipe extends Base, Eating {
   instructions: string;
   /** In order. */
   ingredients: RecipeIngredient[];
+  /** The classic it's a version of (DESIGN.md §5.14), or null. */
+  classicId: Id | null;
 }
 
 export type TagKind = "meal" | "personal";
@@ -278,6 +313,7 @@ export interface Records {
   stores: Store;
   recipes: Recipe;
   dishes: Dish;
+  classics: Classic;
   tags: Tag;
   log: LogEntry;
   devnotes: DevNote;
@@ -285,13 +321,13 @@ export interface Records {
   settings: Settings;
 }
 export type Kind = keyof Records;
-export const KINDS: Kind[] = ["foods", "products", "stores", "recipes", "dishes", "tags", "log", "devnotes", "groceries", "settings"];
+export const KINDS: Kind[] = ["foods", "products", "stores", "recipes", "dishes", "classics", "tags", "log", "devnotes", "groceries", "settings"];
 export type AnyRecord = Records[Kind];
 
 /** Everything, keyed by id per kind. Deleted records are included (tombstones). */
 export type State = { [K in Kind]: Record<Id, Records[K]> } & { rev: number };
 
-export const emptyState = (): State => ({ rev: 0, foods: {}, products: {}, stores: {}, recipes: {}, dishes: {}, tags: {}, log: {}, devnotes: {}, groceries: {}, settings: {} });
+export const emptyState = (): State => ({ rev: 0, foods: {}, products: {}, stores: {}, recipes: {}, dishes: {}, classics: {}, tags: {}, log: {}, devnotes: {}, groceries: {}, settings: {} });
 
 /** The fixed meal tags (DESIGN.md §4.9), seeded with these ids. */
 export const MEAL_TAGS: { id: Id; name: string }[] = [
@@ -365,7 +401,8 @@ export const blank = {
     links: [],
     tagIds: [],
   }),
-  dishes: (id: Id, name: string, now = Date.now()): Dish => ({ ...EMPTY_BASE(id, now), ...EMPTY_EATING(), name, placeId: null }),
+  dishes: (id: Id, name: string, now = Date.now()): Dish => ({ ...EMPTY_BASE(id, now), ...EMPTY_EATING(), name, placeId: null, classicId: null }),
+  classics: (id: Id, name: string, now = Date.now()): Classic => ({ ...EMPTY_BASE(id, now), name, parentId: null, aliases: [], wiki: "", notes: "", tagIds: [], ingredients: [] }),
   recipes: (id: Id, name: string, now = Date.now()): Recipe => ({
     ...EMPTY_BASE(id, now),
     ...EMPTY_EATING(),
@@ -378,6 +415,7 @@ export const blank = {
     cookMin: null,
     instructions: "",
     ingredients: [],
+    classicId: null,
   }),
   tags: (id: Id, name: string, now = Date.now()): Tag => ({ ...EMPTY_BASE(id, now), name, kind: "personal", aliases: [] }),
   devnotes: (id: Id, text: string, path: string, now = Date.now()): DevNote => ({ ...EMPTY_BASE(id, now), text, path, done: false, files: [] }),

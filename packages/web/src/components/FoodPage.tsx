@@ -166,6 +166,16 @@ export function FoodPage({ id }: { id: string }) {
         )}
       </Section>
 
+      {view.classicsUsing(food.id).length > 0 && (
+        <Section title="In classics" count={view.classicsUsing(food.id).length}>
+          <div className="rows">
+            {view.classicsUsing(food.id).map((c) => (
+              <ItemRow key={c.id} view={view} kind="classics" item={c} showKind={false} />
+            ))}
+          </div>
+        </Section>
+      )}
+
       <div className="page-foot">
         {!food.deleted && (
           <button className="btn danger" onClick={() => setConfirm(true)}>

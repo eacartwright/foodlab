@@ -6,6 +6,7 @@ import {
   SPEED_LABEL,
   nameOf,
   today,
+  type Classic,
   type Dish,
   type Effort,
   type Food,
@@ -44,6 +45,7 @@ export class View {
   readonly stores: Store[];
   readonly recipes: Recipe[];
   readonly dishes: Dish[];
+  readonly classics: Classic[];
   readonly tags: Tag[];
   readonly groceries: GroceryItem[];
   /** Foods by `nameKey` of their name, then of their aliases (a name wins). */
@@ -56,6 +58,11 @@ export class View {
   private readonly childrenOf = new Map<Id, Food[]>();
   private readonly formsOf = new Map<Id, Food[]>();
   private readonly logByItem = new Map<Id, LogEntry[]>();
+  private readonly classicKids = new Map<Id, Classic[]>();
+  private readonly classicByKey = new Map<string, Classic>();
+  private readonly recipesByClassic = new Map<Id, Recipe[]>();
+  private readonly dishesByClassic = new Map<Id, Dish[]>();
+  private readonly classicsByFood = new Map<Id, Classic[]>();
 
   constructor(readonly state: State) {
     this.foods = live(state.foods).sort(byName);
@@ -63,6 +70,7 @@ export class View {
     this.stores = live(state.stores).sort(byName);
     this.recipes = live(state.recipes).sort(byName);
     this.dishes = live(state.dishes ?? {}).sort(byName);
+    this.classics = live(state.classics ?? {}).sort(byName);
     this.tags = live(state.tags).sort((a, b) => (a.kind === b.kind ? (a.kind === "meal" ? 0 : byName(a, b)) : a.kind === "meal" ? -1 : 1));
 
     const push = <K, V>(m: Map<K, V[]>, k: K, v: V) => {
@@ -84,6 +92,13 @@ export class View {
         this.maxWords = Math.max(this.maxWords, key.split(" ").length);
       }
     }
+    for (const c of this.classics) {
+      if (c.parentId) push(this.classicKids, c.parentId, c);
+      for (const n of [c.name, ...(c.aliases ?? [])]) if (!this.classicByKey.has(nameKey(n))) this.classicByKey.set(nameKey(n), c);
+      for (const i of c.ingredients ?? []) push(this.classicsByFood, i.foodId, c);
+    }
+    for (const r of this.recipes) if (r.classicId) push(this.recipesByClassic, r.classicId, r);
+    for (const d of this.dishes) if (d.classicId) push(this.dishesByClassic, d.classicId, d);
     for (const p of this.products) {
       if (p.foodId) push(this.productsByFood, p.foodId, p);
       for (const s of p.storeIds) push(this.productsByStore, s, p);
@@ -136,6 +151,38 @@ export class View {
   productsAt = (storeId: Id) => this.productsByStore.get(storeId) ?? [];
   /** A place's dishes, best first. */
   dishesAt = (placeId: Id) => this.dishesByPlace.get(placeId) ?? [];
+
+  // ---- classics (DESIGN.md §5.14) ----
+  classic = (id: Id | null | undefined) => (id ? this.state.classics?.[id] : undefined);
+  /** The classic with this name or alias. */
+  findClassic = (name: string) => this.classicByKey.get(nameKey(name));
+  classicKinds = (id: Id) => this.classicKids.get(id) ?? [];
+  /** The classics above one, nearest first: Caesar salad → Salads. */
+  classicAncestors(id: Id): Classic[] {
+    const out: Classic[] = [];
+    const seen = new Set<Id>([id]);
+    for (let c = this.classic(this.classic(id)?.parentId); c && !c.deleted && !seen.has(c.id); c = this.classic(c.parentId)) {
+      seen.add(c.id);
+      out.push(c);
+    }
+    return out;
+  }
+  /** A classic and every classic under it. */
+  classicDescendants(id: Id): Classic[] {
+    const out: Classic[] = [];
+    const walk = (x: Id) => {
+      for (const k of this.classicKinds(x)) if (!out.includes(k)) (out.push(k), walk(k.id));
+    };
+    walk(id);
+    return out;
+  }
+  /** My recipes for a classic and its kinds ("Salads" lists every salad recipe). */
+  recipesOfClassic = (id: Id, below = false) =>
+    below ? [id, ...this.classicDescendants(id).map((c) => c.id)].flatMap((x) => this.recipesByClassic.get(x) ?? []) : (this.recipesByClassic.get(id) ?? []);
+  dishesOfClassic = (id: Id, below = false) =>
+    below ? [id, ...this.classicDescendants(id).map((c) => c.id)].flatMap((x) => this.dishesByClassic.get(x) ?? []) : (this.dishesByClassic.get(id) ?? []);
+  /** Classics that name this food as an ingredient. */
+  classicsUsing = (foodId: Id) => this.classicsByFood.get(foodId) ?? [];
   childrenOfFood = (foodId: Id) => this.childrenOf.get(foodId) ?? [];
   formsOfFood = (foodId: Id) => this.formsOf.get(foodId) ?? [];
   recipesUsing = (foodId: Id) => this.recipesByFood.get(foodId) ?? [];
@@ -490,8 +537,14 @@ export class View {
   }
 
   /** The words a thing can be found by, lowercased. */
-  private haystack(kind: SearchKind, x: Food | Product | Recipe | Store | Dish): string[] {
+  private haystack(kind: SearchKind, x: Food | Product | Recipe | Store | Dish | Classic): string[] {
     const out: string[] = [x.name];
+    // A recipe or dish is found through its classic and the classic's kinds ("salad" finds a Caesar).
+    const classicWords = (id: Id | null) => {
+      const c = this.classic(id);
+      if (!c || c.deleted) return;
+      for (const k of [c, ...this.classicAncestors(c.id)]) out.push(k.name, ...(k.aliases ?? []));
+    };
     const foodWords = (id: Id | null) => {
       const f = this.food(id);
       if (!f || f.deleted) return;
@@ -527,8 +580,15 @@ export class View {
         foodWords(i.foodId);
       }
       tagWords(r.tagIds);
+      classicWords(r.classicId);
+    } else if (kind === "classics") {
+      const c = x as Classic;
+      out.push(c.notes, ...(c.aliases ?? []), ...this.classicAncestors(c.id).map((a) => a.name));
+      for (const i of c.ingredients) foodWords(i.foodId);
+      tagWords(c.tagIds);
     } else if (kind === "dishes") {
       const d = x as Dish;
+      classicWords(d.classicId);
       out.push(d.notes, GF_LABEL[d.glutenFree]);
       const place = d.placeId ? this.store(d.placeId) : undefined;
       if (place && !place.deleted) out.push(place.name);
@@ -562,6 +622,7 @@ export class View {
       }
     };
     consider("recipes", this.recipes);
+    consider("classics", this.classics);
     consider("products", this.products);
     consider("dishes", this.dishes);
     consider("foods", this.foods);
@@ -608,9 +669,10 @@ export class View {
   }
 
   /** Recently changed things, for the empty search page. */
-  recent(n = 12): ({ kind: SearchKind; item: Food | Product | Recipe | Store | Dish })[] {
+  recent(n = 12): ({ kind: SearchKind; item: Food | Product | Recipe | Store | Dish | Classic })[] {
     const all = [
       ...this.recipes.map((item) => ({ kind: "recipes" as const, item })),
+      ...this.classics.map((item) => ({ kind: "classics" as const, item })),
       ...this.products.map((item) => ({ kind: "products" as const, item })),
       ...this.dishes.map((item) => ({ kind: "dishes" as const, item })),
       ...this.foods.map((item) => ({ kind: "foods" as const, item })),
@@ -648,9 +710,9 @@ export interface EatFilter {
   showDown?: boolean;
 }
 
-export const SEARCH_KINDS = ["recipes", "products", "dishes", "foods", "stores"] as const;
+export const SEARCH_KINDS = ["recipes", "classics", "products", "dishes", "foods", "stores"] as const;
 export type SearchKind = (typeof SEARCH_KINDS)[number];
-type SearchItem<K extends SearchKind> = K extends "recipes" ? Recipe : K extends "products" ? Product : K extends "dishes" ? Dish : K extends "foods" ? Food : Store;
+type SearchItem<K extends SearchKind> = K extends "recipes" ? Recipe : K extends "classics" ? Classic : K extends "products" ? Product : K extends "dishes" ? Dish : K extends "foods" ? Food : Store;
 /** A tag a food or product gets from a food above it; `offAt` is where it was switched off ("Not here"), if it was. */
 export type InheritedTag = { tag: Tag; from: Food; offAt: Food | null };
 
@@ -663,7 +725,7 @@ export interface SearchResults {
   /** How many full matches. */
   count: number;
 }
-const emptyGroups = (): SearchGroups => ({ recipes: [], products: [], dishes: [], foods: [], stores: [] });
+const emptyGroups = (): SearchGroups => ({ recipes: [], classics: [], products: [], dishes: [], foods: [], stores: [] });
 
 /** Lowercase, letters/digits/spaces only, each word singular (so "potatoes" finds "potato"). */
 function norm(s: string): string {

@@ -4,6 +4,7 @@ import {
   fileUrl,
   RATING_EMOJI,
   nameOf,
+  type Classic,
   type Dish,
   type Food,
   type Product,
@@ -18,7 +19,7 @@ import { KIND_ICON, KIND_ONE } from "./controls";
 
 // One line per thing, used by search, Eat, lists and pages.
 
-type Item = Food | Product | Recipe | Store | Dish;
+type Item = Food | Product | Recipe | Store | Dish | Classic;
 
 export function Rating({ value }: { value: Product["rating"] }) {
   return value ? (
@@ -30,7 +31,17 @@ export function Rating({ value }: { value: Product["rating"] }) {
 
 /** What to show under a thing's name. */
 export function subline(view: View, kind: SearchKind, item: Item, hideFood = false): ReactNode {
-  if (kind === "recipes") return "";
+  if (kind === "recipes") {
+    const c = view.classic((item as Recipe).classicId);
+    return c && !c.deleted && !hideFood ? `a ${c.name}` : "";
+  }
+  if (kind === "classics") {
+    const c = item as Classic;
+    const up = view.classic(c.parentId);
+    const n = view.recipesOfClassic(c.id, true).length;
+    const needs = c.ingredients.filter((i) => i.role === "required").map((i) => view.food(i.foodId)?.name).filter(Boolean);
+    return [up && !up.deleted ? `a kind of ${up.name}` : null, needs.length ? needs.join(", ") : null, n ? `${n} recipe${n === 1 ? "" : "s"}` : null].filter(Boolean).join(" · ");
+  }
   if (kind === "dishes") {
     if (hideFood) return ""; // under its place already
     const place = (item as Dish).placeId ? view.store((item as Dish).placeId!) : undefined;

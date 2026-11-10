@@ -2254,3 +2254,61 @@ ul.found-list {
     height: 84px;
   }
 }
+
+/* A classic's ingredients (ClassicPage.tsx): name, Needs / Usually, a note, ✕. */
+.classic-ings {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.classic-ing {
+  display: grid;
+  grid-template-columns: minmax(9em, 1.2fr) auto minmax(8em, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+}
+.classic-ing-name {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.classic-ing .classic-ing-note {
+  min-width: 0;
+  margin-left: 0;
+  font-weight: 400;
+  max-width: none;
+}
+/* ✨ Suggest's picks, under the Ingredients heading. */
+.suggest-box {
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  max-width: 34em;
+}
+.suggest-box .check {
+  align-items: flex-start;
+}
+@media (max-width: 860px) {
+  .classic-ings {
+    gap: 12px;
+  }
+  .classic-ing {
+    grid-template-columns: auto 1fr auto;
+    grid-template-areas: "name name x" "role note note";
+    row-gap: 4px;
+  }
+  .classic-ing-name {
+    grid-area: name;
+  }
+  .classic-ing .segmented {
+    grid-area: role;
+  }
+  .classic-ing .classic-ing-note {
+    grid-area: note;
+  }
+  .classic-ing > .btn {
+    grid-area: x;
+  }
+}

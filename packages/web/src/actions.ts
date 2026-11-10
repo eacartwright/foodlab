@@ -10,6 +10,7 @@ import {
   tidyName,
   today,
   type DevNote,
+  type Classic,
   type Food,
   type GroceryItem,
   type GroceryUsual,
@@ -46,6 +47,33 @@ export function ensureStore(name: string, extra: Partial<Store> = {}): Id {
   const s = { ...blank.stores(newId(), tidyName(name)), ...extra };
   put("stores", s);
   return s.id;
+}
+
+/** The classic with this name or alias, made if there's none (DESIGN.md §5.14). */
+export function ensureClassic(name: string, extra: Partial<Classic> = {}): Id {
+  const found = data().view.findClassic(name);
+  if (found) return found.id;
+  const c = { ...blank.classics(newId(), tidyName(name)), ...extra };
+  put("classics", c);
+  return c.id;
+}
+
+/** A classic's other names, as typed on its page; one that's another classic's name or alias is left off. */
+export function setClassicAliases(c: Classic, text: string) {
+  const now = data().state.classics[c.id] ?? c;
+  const { view } = data();
+  const taken: string[] = [];
+  const words = text
+    .split(",")
+    .map((w) => w.trim().replace(/\s+/g, " "))
+    .filter((w) => {
+      if (!w || nameKey(w) === nameKey(now.name)) return false;
+      const o = view.findClassic(w);
+      if (o && o.id !== now.id) taken.push(`“${w}” (already ${o.name})`);
+      return !o || o.id === now.id;
+    });
+  put("classics", { ...now, aliases: [...new Map(words.map((w) => [nameKey(w), w])).values()] });
+  if (taken.length) showToast(`Left off: ${taken.join(", ")}`);
 }
 
 export function ensureTag(name: string): Id {

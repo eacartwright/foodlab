@@ -93,6 +93,34 @@ describe("Store", () => {
     expect(() => store.put("tags", "u", { name: "x", aliases: "sour" })).toThrow(/list/);
   });
 
+  it("saves classics with their ingredients, refuses loops, and keeps a recipe's classic through an older app's save", () => {
+    store.put("foods", "romaine", blank.foods("romaine", "Romaine lettuce"));
+    store.put("foods", "parm", blank.foods("parm", "Parmesan"));
+    store.put("classics", "salads", blank.classics("salads", "Salads"));
+    store.put("classics", "caesar", {
+      ...blank.classics("caesar", "Caesar salad"),
+      parentId: "salads",
+      aliases: ["Caesar"],
+      wiki: "https://en.wikipedia.org/wiki/Caesar_salad",
+      ingredients: [
+        { id: "a", foodId: "romaine", role: "required", note: "" },
+        { id: "b", foodId: "parm", role: "usual", note: "shaved" },
+        { id: "c", foodId: "romaine", role: "usual", note: "twice" }, // a food once
+      ],
+    });
+    const back = loadState(db).classics.caesar!;
+    expect(back.ingredients.map((i) => [i.foodId, i.role, i.note])).toEqual([["romaine", "required", ""], ["parm", "usual", "shaved"]]);
+    expect([back.parentId, back.aliases, back.wiki]).toEqual(["salads", ["Caesar"], "https://en.wikipedia.org/wiki/Caesar_salad"]);
+    expect(() => store.put("classics", "salads", { ...blank.classics("salads", "Salads"), parentId: "caesar" })).toThrow(/inside itself/);
+    expect(() => store.put("classics", "x", { ...blank.classics("x", "X"), ingredients: [{ id: "a", foodId: "nope", role: "required" }] })).toThrow(Invalid);
+
+    store.put("recipes", "r", { ...blank.recipes("r", "My Caesar"), classicId: "caesar" });
+    const { classicId: _, ...old } = store.state.recipes.r!;
+    store.put("recipes", "r", { ...old, notes: "extra lemon" });
+    expect(loadState(db).recipes.r!.classicId).toBe("caesar");
+    expect(() => store.put("dishes", "d", { ...blank.dishes("d", "Panera's Caesar"), classicId: "nope" })).toThrow(/classic/);
+  });
+
   it("tidies a food's aliases and keeps them through an older app's save", () => {
     store.put("foods", "s", { ...blank.foods("s", "Scallions"), aliases: [" green  onions ", "Green onion", "scallion", "spring onions"] });
     expect(store.state.foods.s!.aliases).toEqual(["green onions", "spring onions"]); // no repeats, not its own name

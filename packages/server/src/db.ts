@@ -1,7 +1,7 @@
 import { DatabaseSync } from "node:sqlite";
 import { existsSync, mkdirSync } from "node:fs";
 import { dirname } from "node:path";
-import { DEFAULT_AI, emptyState, type Attachment, type DevNote, type Dish, type Photo, type Settings, type Food, type GroceryItem, type Id, type LogEntry, type Product, type Recipe, type RecipeIngredient, type State, type Store, type Tag } from "@foodlab/shared";
+import { DEFAULT_AI, emptyState, type Attachment, type Classic, type ClassicIngredient, type DevNote, type Dish, type Photo, type Settings, type Food, type GroceryItem, type Id, type LogEntry, type Product, type Recipe, type RecipeIngredient, type State, type Store, type Tag } from "@foodlab/shared";
 
 // SQLite persistence: ordinary relational tables, one row per record, links in their own tables
 // (product_stores, recipe_ingredients, item_tags), so the file reads well in any SQLite browser
@@ -247,6 +247,35 @@ const MIGRATIONS: string[] = [
   `ALTER TABLE foods ADD COLUMN tags_off TEXT NOT NULL DEFAULT '[]';  -- JSON [tagId, ...]`,
   // 2026-11-09: a food's other names ("green onions" for Scallions).
   `ALTER TABLE foods ADD COLUMN aliases TEXT NOT NULL DEFAULT '[]';  -- JSON ["green onions", ...]`,
+  // 2026-11-09: classics, a dish as an idea (Caesar salad), a tree like foods, with its defining
+  // ingredients; recipes and dishes say which one they're a version of. Tags in item_tags
+  // (item_kind classics).
+  `
+  CREATE TABLE classics (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    parent_id TEXT,
+    aliases TEXT NOT NULL DEFAULT '[]',  -- JSON ["BLT sandwich", ...]
+    wiki TEXT NOT NULL DEFAULT '',
+    notes TEXT NOT NULL DEFAULT '',
+    deleted INTEGER NOT NULL DEFAULT 0,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    rev INTEGER NOT NULL
+  );
+  CREATE TABLE classic_ingredients (
+    classic_id TEXT NOT NULL,
+    id TEXT NOT NULL,
+    position INTEGER NOT NULL,
+    food_id TEXT NOT NULL,
+    role TEXT NOT NULL DEFAULT 'usual',  -- required | usual
+    note TEXT NOT NULL DEFAULT '',
+    PRIMARY KEY (classic_id, id)
+  );
+  CREATE INDEX classic_ingredients_food ON classic_ingredients(food_id);
+  ALTER TABLE recipes ADD COLUMN classic_id TEXT;
+  ALTER TABLE dishes ADD COLUMN classic_id TEXT;
+  `,
 ];
 
 export type DB = DatabaseSync;
@@ -334,6 +363,24 @@ export function loadState(db: DB): State {
     });
     ingredientsOf.set(r.recipe_id, list);
   }
+  const classicIngredientsOf = new Map<Id, ClassicIngredient[]>();
+  for (const r of db.prepare("SELECT * FROM classic_ingredients ORDER BY classic_id, position").all() as Row[]) {
+    const list = classicIngredientsOf.get(r.classic_id) ?? [];
+    list.push({ id: r.id, foodId: r.food_id, role: r.role, note: r.note });
+    classicIngredientsOf.set(r.classic_id, list);
+  }
+  for (const r of db.prepare("SELECT * FROM classics").all() as Row[]) {
+    s.classics[r.id] = {
+      ...base(r),
+      name: r.name,
+      parentId: r.parent_id,
+      aliases: JSON.parse(r.aliases),
+      wiki: r.wiki,
+      notes: r.notes,
+      tagIds: tagsOf.get(`classics:${r.id}`) ?? [],
+      ingredients: classicIngredientsOf.get(r.id) ?? [],
+    } satisfies Classic;
+  }
   for (const r of db.prepare("SELECT * FROM foods").all() as Row[]) {
     s.foods[r.id] = {
       ...base(r),
@@ -366,7 +413,7 @@ export function loadState(db: DB): State {
     } satisfies Store;
   }
   for (const r of db.prepare("SELECT * FROM dishes").all() as Row[]) {
-    s.dishes[r.id] = { ...base(r), ...eating(r, tagsOf.get(`dishes:${r.id}`) ?? []), name: r.name, placeId: r.place_id } satisfies Dish;
+    s.dishes[r.id] = { ...base(r), ...eating(r, tagsOf.get(`dishes:${r.id}`) ?? []), name: r.name, placeId: r.place_id, classicId: r.classic_id ?? null } satisfies Dish;
   }
   for (const r of db.prepare("SELECT * FROM products").all() as Row[]) {
     s.products[r.id] = {
@@ -395,6 +442,7 @@ export function loadState(db: DB): State {
       cookMin: r.cook_min,
       instructions: r.instructions,
       ingredients: ingredientsOf.get(r.id) ?? [],
+      classicId: r.classic_id ?? null,
     } satisfies Recipe;
   }
   for (const r of db.prepare("SELECT * FROM tags").all() as Row[]) {
@@ -460,7 +508,7 @@ function upsert(db: DB, table: string, cols: Record<string, unknown>) {
   );
 }
 
-function setTags(db: DB, kind: "foods" | "products" | "recipes" | "stores" | "dishes", id: Id, tagIds: Id[]) {
+function setTags(db: DB, kind: "foods" | "products" | "recipes" | "stores" | "dishes" | "classics", id: Id, tagIds: Id[]) {
   db.prepare("DELETE FROM item_tags WHERE item_kind = ? AND item_id = ?").run(kind, id);
   const ins = db.prepare("INSERT INTO item_tags (item_kind, item_id, tag_id) VALUES (?, ?, ?)");
   for (const t of tagIds) ins.run(kind, id, t);
@@ -499,8 +547,15 @@ export const save = {
     setTags(db, "stores", x.id, x.tagIds);
   },
   dishes(db: DB, x: Dish) {
-    upsert(db, "dishes", { ...baseCols(x), ...eatingCols(x), name: x.name, place_id: x.placeId });
+    upsert(db, "dishes", { ...baseCols(x), ...eatingCols(x), name: x.name, place_id: x.placeId, classic_id: x.classicId });
     setTags(db, "dishes", x.id, x.tagIds);
+  },
+  classics(db: DB, x: Classic) {
+    upsert(db, "classics", { ...baseCols(x), name: x.name, parent_id: x.parentId, aliases: JSON.stringify(x.aliases), wiki: x.wiki, notes: x.notes });
+    setTags(db, "classics", x.id, x.tagIds);
+    db.prepare("DELETE FROM classic_ingredients WHERE classic_id = ?").run(x.id);
+    const ins = db.prepare("INSERT INTO classic_ingredients (classic_id, id, position, food_id, role, note) VALUES (?, ?, ?, ?, ?, ?)");
+    x.ingredients.forEach((i, n) => ins.run(x.id, i.id, n, i.foodId, i.role, i.note));
   },
   products(db: DB, x: Product) {
     upsert(db, "products", {
@@ -531,6 +586,7 @@ export const save = {
       prep_min: x.prepMin,
       cook_min: x.cookMin,
       instructions: x.instructions,
+      classic_id: x.classicId,
     });
     setTags(db, "recipes", x.id, x.tagIds);
     db.prepare("DELETE FROM recipe_ingredients WHERE recipe_id = ?").run(x.id);

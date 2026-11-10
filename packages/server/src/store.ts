@@ -44,6 +44,7 @@ export class Store {
     if (kind === "foods" && prev && (body as { tagsOff?: unknown }).tagsOff === undefined) (rec as Records["foods"]).tagsOff = (prev as Records["foods"]).tagsOff;
     if (kind === "foods" && prev && (body as { aliases?: unknown }).aliases === undefined) (rec as Records["foods"]).aliases = (prev as Records["foods"]).aliases;
     if (kind === "products" && prev && (body as { storage?: unknown }).storage === undefined) (rec as Product).storage = (prev as Product).storage;
+    if ((kind === "recipes" || kind === "dishes") && prev && (body as { classicId?: unknown }).classicId === undefined) (rec as Recipe | Dish).classicId = (prev as Recipe | Dish).classicId;
     this.check(kind, rec, prev);
 
     const log: LogEntry[] = [];
@@ -116,6 +117,17 @@ export class Store {
           seen.add(i.id);
         }
         tags(r.tagIds);
+        need(s.classics, r.classicId, "classic");
+        break;
+      }
+      case "classics": {
+        const c = rec as Records["classics"];
+        need(s.classics, c.parentId, "parent");
+        for (let p = c.parentId, n = 0; p; p = s.classics[p]?.parentId ?? null, n++) {
+          if (p === c.id || n > 100) throw new Invalid("A classic can't be inside itself");
+        }
+        c.ingredients.forEach((i) => need(s.foods, i.foodId, "ingredient food"));
+        tags(c.tagIds);
         break;
       }
       case "stores":
@@ -124,6 +136,7 @@ export class Store {
       case "dishes": {
         const d = rec as Dish;
         need(s.stores, d.placeId, "place");
+        need(s.classics, d.classicId, "classic");
         tags(d.tagIds);
         break;
       }

@@ -1,10 +1,13 @@
 import {
   BUY_AGAIN,
+  CLASSIC_ROLES,
   STORAGE,
   COSTS,
   EFFORTS,
   PLACE_TYPES,
   SPEEDS,
+  type Classic,
+  type ClassicIngredient,
   type Dish,
   GF,
   MEAL_TAGS,
@@ -198,6 +201,19 @@ function locations(b: In): PlaceLocation[] {
   return list.map(location);
 }
 
+function classicIngredient(x: unknown, i: number): ClassicIngredient {
+  const b = obj(x);
+  const f = `ingredients[${i}]`;
+  const foodId = id(b.foodId, `${f}.foodId`);
+  if (!foodId) throw new Invalid(`${f}.foodId: required`);
+  return {
+    id: id(b.id, `${f}.id`) ?? `${i}`,
+    foodId,
+    role: oneOf(b.role, CLASSIC_ROLES, `${f}.role`) ?? "usual",
+    note: str(b.note, `${f}.note`, 300).trim(),
+  };
+}
+
 function ingredient(x: unknown, i: number): RecipeIngredient {
   const b = obj(x);
   const f = `ingredients[${i}]`;
@@ -269,7 +285,25 @@ export const validators: { [K in Kind]: (body: unknown, id: string, now: number)
   },
   dishes(body, rid, now): Dish {
     const b = obj(body);
-    return { ...base(b, rid, now), ...eating(b), name: name(b.name), placeId: id(b.placeId, "placeId") };
+    return { ...base(b, rid, now), ...eating(b), name: name(b.name), placeId: id(b.placeId, "placeId"), classicId: id(b.classicId, "classicId") };
+  },
+  classics(body, rid, now): Classic {
+    const b = obj(body);
+    const list = b.ingredients === undefined || b.ingredients === null ? [] : b.ingredients;
+    if (!Array.isArray(list)) throw new Invalid("ingredients: expected a list");
+    if (list.length > 100) throw new Invalid("ingredients: too many");
+    const seen = new Set<string>();
+    const ingredients = list.map(classicIngredient).filter((i) => !seen.has(i.foodId) && seen.add(i.foodId)); // a food once
+    return {
+      ...base(b, rid, now),
+      name: name(b.name),
+      parentId: id(b.parentId, "parentId"),
+      aliases: foodAliases(b.aliases, b.name),
+      wiki: wiki(b.wiki),
+      notes: str(b.notes, "notes"),
+      tagIds: ids(b.tagIds, "tagIds"),
+      ingredients,
+    };
   },
   recipes(body, rid, now): Recipe {
     const b = obj(body);
@@ -288,6 +322,7 @@ export const validators: { [K in Kind]: (body: unknown, id: string, now: number)
       cookMin: num(b.cookMin, "cookMin", 0, 100_000),
       instructions: str(b.instructions, "instructions", 100_000),
       ingredients: list.map(ingredient),
+      classicId: id(b.classicId, "classicId"),
     };
   },
   tags(body, rid, now): Tag {

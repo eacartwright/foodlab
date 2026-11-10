@@ -736,7 +736,7 @@ article of their own (Prepared foods) stay blank.
 Later: Wikidata's *subclass of* to check the Kind of tree or suggest kinds; the article's
 picture as a food's own picture.
 
-### 5.14 Classics and AI recipes (designed 2026-11-09, not built)
+### 5.14 Classics and AI recipes (classics built 2026-11-09; AI recipes designed, not built)
 
 The way from a database of what I eat to an app that helps me cook new things.
 
@@ -768,6 +768,28 @@ to keep, change or drop, never saved by itself. Cost goes through the usual mete
 
 **Before these:** ingredient lines link themselves (§6, "Line matching"), or every AI recipe
 comes back half unlinked.
+
+**As built (2026-11-09, migration 19; `Classic`, `classics` / `classic_ingredients` tables,
+`recipes.classic_id`, `dishes.classic_id`):** 📖 **Classics** in the sidebar, after Recipes: the
+tree (groups bold, kinds indented), what each needs and how many of my recipes (its kinds'
+too); + Add asks for a name and opens the new classic. A classic's page: the About card, **Kind
+of**, **Also called**, **Wikipedia**, tags (no meal chips: those are for what I eat), notes;
+**Ingredients**, each a food with **Needs / Usually** and a short note, ★ when it's a staple,
+✕; **+ Ingredient** (any food, or a new one) and **✨ Suggest** (`POST /api/ai/classic`: the name,
+its parent and its Wikipedia summary to the model; the answers, matched to my foods with
+`matchFood`, come back as a checklist, "new food" where there's none, and only what I tick is
+added); **My recipes** (its kinds' too), **+ One of mine** links an existing recipe, **+ New
+recipe** opens Quick add with it set; **Dishes I've eaten**; **Kinds**. A recipe's header reads
+RECIPE › Salads › Caesar salad; its **Classic** is set in Edit, a dish's on its page. A food's
+page lists the classics it's in. Search has a Classics group and finds recipes and dishes
+through their classic and its kinds.
+
+Seeded on the live data the same day: nine groups (Salads, Sandwiches, Soups and stews,
+One-pot meals, Pasta dishes, Chicken dishes, Breakfast, Mexican dishes, Appetizers and sides)
+and about 75 popular classics with their Wikipedia articles and defining ingredients, plus the
+foods they needed (Anchovies, Capers, Sauerkraut…); my recipes linked where it was clear
+(Butter chicken, Breakfast pizza ×2, Deviled eggs, Disco fries under Poutine…). Grows like
+foods: from what I cook and want to try, not a catalog.
 
 ## 6. Later (designed for, not built)
 

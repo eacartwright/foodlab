@@ -238,4 +238,9 @@ tombstones (`deleted`), restorable with Undo or the page's Restore.
   (Also called, `Food.aliases`, migration 18) and **line matching** (`View.matchFood`: longest name or
   alias inside a line; `nameKey` folds accents); Settings → Data → **Link lines**. 120 tests; migrations
   checked on a copy of the live DB; browser-checked (desktop and phone).
-- **Next:** Classics (DESIGN.md §5.14), then AI recipes. M6 (weights) after.
+- 2026-11-09: **Classics** (DESIGN.md §5.14; migration 19: `classics`, `classic_ingredients`,
+  `recipes.classic_id`, `dishes.classic_id`): `ClassicPage.tsx`, `ClassicsList` in `ListPages.tsx`,
+  `View.classic*` / `recipesOfClassic` / `classicsUsing` / `findClassic`, search group, recipe header
+  crumbs, ✨ Suggest (`aiClassic`, `POST /api/ai/classic`). 122 tests; migration and the seed checked on
+  a copy of the live DB; browser-checked (desktop and phone).
+- **Next:** AI recipes (DESIGN.md §5.14). M6 (weights) after.
