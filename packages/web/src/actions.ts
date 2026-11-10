@@ -4,6 +4,7 @@ import {
   nameOf,
   newId,
   nameKey,
+  parseLine,
   productName,
   swapTag,
   tidyName,
@@ -66,6 +67,12 @@ function retag(tag: Tag, to: Tag | null) {
     const now = data().state[u.kind][u.id]!;
     put(u.kind, { ...now, tagIds: swapTag(now.tagIds, tag.id, to?.id ?? null) });
   }
+  // Foods with it switched off ("Not here") get the merged tag switched off instead, or lose it.
+  const offs = data().view.foods.filter((f) => (f.tagsOff ?? []).includes(tag.id)).map((f) => ({ id: f.id, before: f.tagsOff }));
+  for (const o of offs) {
+    const now = data().state.foods[o.id]!;
+    put("foods", { ...now, tagsOff: swapTag(now.tagsOff ?? [], tag.id, to?.id ?? null) });
+  }
   const gone = data().state.tags[tag.id] ?? tag;
   put("tags", { ...gone, deleted: true });
   const intoBefore = to ? (data().state.tags[to.id] ?? to) : null;
@@ -82,6 +89,10 @@ function retag(tag: Tag, to: Tag | null) {
         if (!now) continue;
         const ids = to && !u.hadTo ? now.tagIds.filter((t) => t !== to.id) : now.tagIds;
         put(u.kind, { ...now, tagIds: ids.includes(tag.id) ? ids : [...ids, tag.id] });
+      }
+      for (const o of offs) {
+        const now = data().state.foods[o.id];
+        if (now) put("foods", { ...now, tagsOff: o.before });
       }
     },
   });
@@ -110,6 +121,65 @@ export function setTagAliases(tag: Tag, text: string) {
     });
   put("tags", { ...now, aliases: [...new Set(words)] });
   if (taken.length) showToast(`Left off: ${taken.join(", ")}`);
+}
+
+/**
+ * A food's other names, as typed on its page ("green onions, spring onions"). A name that's
+ * already another food's name or alias is left off, with a toast: one name, one food.
+ */
+export function setFoodAliases(food: Food, text: string) {
+  const now = data().state.foods[food.id] ?? food;
+  const { view } = data();
+  const taken: string[] = [];
+  const words = text
+    .split(",")
+    .map((w) => w.trim().replace(/\s+/g, " "))
+    .filter((w) => {
+      if (!w || nameKey(w) === nameKey(now.name)) return false;
+      const o = view.findFood(w);
+      if (o && o.id !== now.id) taken.push(`“${w}” (already ${o.name})`);
+      return !o || o.id === now.id;
+    });
+  put("foods", { ...now, aliases: [...new Map(words.map((w) => [nameKey(w), w])).values()] });
+  if (taken.length) showToast(`Left off: ${taken.join(", ")}`);
+}
+
+/**
+ * Link every recipe line that has no food to the one it names, if there is one (Settings → Data →
+ * Link lines): after adding foods or aliases, older recipes catch up. Undo unlinks them again.
+ */
+export function linkLines(): number {
+  const { view } = data();
+  const done: { recipeId: Id; lineIds: Id[] }[] = [];
+  for (const r0 of view.recipes) {
+    const r = data().state.recipes[r0.id] ?? r0;
+    const ids: Id[] = [];
+    const ingredients = r.ingredients.map((i) => {
+      if (i.foodId) return i;
+      const p = parseLine(i.line);
+      const f = p.food ? view.matchFood(p.food) : undefined;
+      if (!f) return i;
+      ids.push(i.id);
+      return { ...i, foodId: f.id };
+    });
+    if (ids.length) {
+      put("recipes", { ...r, ingredients });
+      done.push({ recipeId: r.id, lineIds: ids });
+    }
+  }
+  const n = done.reduce((sum, d) => sum + d.lineIds.length, 0);
+  if (n)
+    showToast(`Linked ${n} line${n === 1 ? "" : "s"} in ${done.length} recipe${done.length === 1 ? "" : "s"}`, {
+      label: "Undo",
+      run: () => {
+        for (const d of done) {
+          const r = data().state.recipes[d.recipeId];
+          if (r) put("recipes", { ...r, ingredients: r.ingredients.map((i) => (d.lineIds.includes(i.id) ? { ...i, foodId: null } : i)) });
+        }
+      },
+    });
+  else showToast("No lines to link: every line is linked or names no food");
+  return n;
 }
 
 /** Personal tags are stored lowercase, like `ensureTag` makes them. */

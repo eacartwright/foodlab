@@ -144,7 +144,7 @@ function GroceryRow({ g, editing, onEdit }: { g: GroceryItem; editing: boolean; 
             <Field label="Food">
               <Picker
                 value={g.foodId}
-                options={view.foods.map((f) => ({ id: f.id, label: f.name }))}
+                options={view.foods.map((f) => ({ id: f.id, label: f.name, also: f.aliases }))}
                 placeholder="Which food? (optional)"
                 createLabel="New food"
                 onChange={(foodId) => saveGrocery(g, { foodId, productId: foodId && product && product.foodId !== foodId ? null : g.productId })}

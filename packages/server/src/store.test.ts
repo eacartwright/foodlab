@@ -93,6 +93,24 @@ describe("Store", () => {
     expect(() => store.put("tags", "u", { name: "x", aliases: "sour" })).toThrow(/list/);
   });
 
+  it("tidies a food's aliases and keeps them through an older app's save", () => {
+    store.put("foods", "s", { ...blank.foods("s", "Scallions"), aliases: [" green  onions ", "Green onion", "scallion", "spring onions"] });
+    expect(store.state.foods.s!.aliases).toEqual(["green onions", "spring onions"]); // no repeats, not its own name
+    const { aliases: _, ...old } = store.state.foods.s!;
+    store.put("foods", "s", { ...old, notes: "x" });
+    expect(loadState(db).foods.s!.aliases).toEqual(["green onions", "spring onions"]);
+  });
+
+  it("keeps a food's switched-off tags and Wikipedia link through an older app's save", () => {
+    store.put("tags", "sweet", { name: "sweet" });
+    store.put("foods", "f", { ...blank.foods("f", "Citrus"), tagsOff: ["sweet"], wiki: "https://en.m.wikipedia.org/wiki/Citrus" });
+    const { tagsOff: _a, wiki: _b, ...old } = store.state.foods.f!;
+    store.put("foods", "f", { ...old, notes: "sour" });
+    const back = loadState(db).foods.f!;
+    expect([back.tagsOff, back.wiki, back.notes]).toEqual([["sweet"], "https://en.wikipedia.org/wiki/Citrus", "sour"]);
+    expect(() => store.put("foods", "g", { ...blank.foods("g", "X"), tagsOff: ["nope"] })).toThrow(Invalid);
+  });
+
   it("keeps a product's storage, and an older app's save doesn't drop it", () => {
     store.put("products", "p", { ...blank.products("p", "Tater tots"), storage: "freezer" });
     const { storage: _, ...old } = store.state.products.p!; // an app from before storage

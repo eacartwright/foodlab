@@ -5,13 +5,14 @@ import {
   RATING_LABEL,
   nameKey,
   type Food,
+  type InheritedTag,
   type Id,
   type Rating,
   type Tag,
 } from "@foodlab/shared";
 import { createContext, useContext, useEffect, useId, useRef, useState, type InputHTMLAttributes, type ReactNode, type TextareaHTMLAttributes } from "react";
 import { ensureTag } from "../actions";
-import { A, listPath } from "../router";
+import { A, listPath, pathOf } from "../router";
 import { useData } from "../sync";
 
 // Inputs that edit a record in place and save as you go.
@@ -558,9 +559,27 @@ export function Segmented<T extends string>({
 
 /** Meal tags as chips, then personal tags. */
 /** A tag a thing gets from a food it's a kind of: shown, not edited here. */
-export type InheritedTag = { tag: Tag; from: Food };
+export type { InheritedTag } from "@foodlab/shared";
 
-export function TagEditor({ value, onChange, inherited = [], noMeals }: { value: Id[]; onChange: (ids: Id[]) => void; inherited?: InheritedTag[]; noMeals?: boolean }) {
+/**
+ * `inherited`: tags from the foods above, faded, each a link to the food it comes from. On a food
+ * (`here` + `onOff`) each gets ✕ to switch it off here and below, and one switched off here gets ↺.
+ */
+export function TagEditor({
+  value,
+  onChange,
+  inherited = [],
+  noMeals,
+  here,
+  onOff,
+}: {
+  value: Id[];
+  onChange: (ids: Id[]) => void;
+  inherited?: InheritedTag[];
+  noMeals?: boolean;
+  here?: Food;
+  onOff?: (tagId: Id, off: boolean) => void;
+}) {
   const { view } = useData();
   const personal = view.tags.filter((t) => t.kind === "personal");
   const toggle = (id: Id) => onChange(value.includes(id) ? value.filter((v) => v !== id) : [...value, id]);
@@ -585,12 +604,26 @@ export function TagEditor({ value, onChange, inherited = [], noMeals }: { value:
       />
       {inherited.length > 0 && (
         <div className="chips">
-          {inherited.map(({ tag, from }) => (
-            <span key={tag.id} className="chip chip-inherited" title={`From ${from.name}`}>
-              {tag.name}
-              <span className="sr-only"> (from {from.name})</span>
-            </span>
-          ))}
+          {inherited.map(({ tag, from, offAt }) => {
+            const offHere = !!offAt && !!here && offAt.id === here.id;
+            const where = offAt ? `, switched off ${offHere ? "here" : `at ${offAt.name}`}` : "";
+            const button = !!onOff && (!offAt || offHere);
+            return (
+              <span key={tag.id} className={`chip chip-inherited${button ? " chip-set" : ""}${offAt ? " chip-off" : ""}`} title={`From ${from.name}${where}`}>
+                <A href={pathOf("foods", from.id)}>{tag.name}</A>
+                <span className="sr-only">
+                  {" "}
+                  (from {from.name}
+                  {where})
+                </span>
+                {button && (
+                  <button aria-label={offAt ? `Switch “${tag.name}” back on here` : `Switch “${tag.name}” off here`} title={offAt ? "Back on" : "Not here"} onClick={() => onOff!(tag.id, !offAt)}>
+                    {offAt ? "↺" : "✕"}
+                  </button>
+                )}
+              </span>
+            );
+          })}
         </div>
       )}
     </div>

@@ -35,6 +35,7 @@ import {
 } from "./types";
 import { DEFAULT_AI, modelInfo, type AiModel, type AiSettings } from "./ai";
 import { wikiArticle, wikiUrl } from "./wiki";
+import { nameKey } from "./ingredients";
 
 // Turns a request body into a clean record, or says what's wrong. The server runs these on
 // every save; references to other records are checked separately (server), since that needs state.
@@ -75,6 +76,23 @@ const wiki = (x: unknown): string => {
   const a = wikiArticle(s);
   if (!a) throw new Invalid("wiki: expected a Wikipedia article link");
   return wikiUrl(a);
+};
+/** A food's other names: trimmed, no repeats, never its own name. Case kept ("Rotel"). */
+const foodAliases = (x: unknown, own: unknown): string[] => {
+  if (x === undefined || x === null) return [];
+  if (!Array.isArray(x)) throw new Invalid("aliases: expected a list");
+  if (x.length > 50) throw new Invalid("aliases: too many");
+  const ownKey = nameKey(typeof own === "string" ? own : "");
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const v of x) {
+    const a = str(v, "aliases", 100).trim().replace(/\s+/g, " ");
+    const k = nameKey(a);
+    if (!k || k === ownKey || seen.has(k)) continue;
+    seen.add(k);
+    out.push(a);
+  }
+  return out;
 };
 /** A tag's other words: trimmed, lowercase, no repeats, never the tag's own name. */
 const aliases = (x: unknown, own: string): string[] => {
@@ -209,6 +227,8 @@ export const validators: { [K in Kind]: (body: unknown, id: string, now: number)
       tagIds: ids(b.tagIds, "tagIds"),
       plu: plu(b.plu),
       wiki: wiki(b.wiki),
+      tagsOff: ids(b.tagsOff, "tagsOff"),
+      aliases: foodAliases(b.aliases, b.name),
     };
   },
   products(body, rid, now): Product {

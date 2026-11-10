@@ -234,7 +234,7 @@ function IngredientCard({ r, i }: { r: Recipe; i: RecipeIngredient }) {
           autoFocus
           aria-label="Food"
           value={i.foodId}
-          options={view.foods.map((f) => ({ id: f.id, label: f.name }))}
+          options={view.foods.map((f) => ({ id: f.id, label: f.name, also: f.aliases }))}
           placeholder="Which food?"
           createLabel="New food"
           onChange={(foodId) => {
@@ -324,7 +324,7 @@ function RecipeEdit({ r }: { r: Recipe }) {
             rows={5}
             aria-label="Ingredients"
             value={r.ingredients.map((i) => i.line).join("\n")}
-            onCommit={(text) => save({ ingredients: ingredientsFromText(text, (data().state.recipes[r.id] ?? r).ingredients, (n) => data().view.findFood(n)?.id) })}
+            onCommit={(text) => save({ ingredients: ingredientsFromText(text, (data().state.recipes[r.id] ?? r).ingredients, (n) => data().view.matchFood(n)?.id) })}
           />
           {r.ingredients.length > 0 && (
             <table className="parsed">
@@ -343,7 +343,7 @@ function RecipeEdit({ r }: { r: Recipe }) {
                       <Picker
                         aria-label={`Food for ${i.line}`}
                         value={i.foodId}
-                        options={view.foods.map((f) => ({ id: f.id, label: f.name }))}
+                        options={view.foods.map((f) => ({ id: f.id, label: f.name, also: f.aliases }))}
                         placeholder="No food"
                         startText={parseLine(i.line).food}
                         createLabel="New food"

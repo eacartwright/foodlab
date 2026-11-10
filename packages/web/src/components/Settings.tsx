@@ -17,6 +17,7 @@ import {
   type Settings,
 } from "@foodlab/shared";
 import { useEffect, useState } from "react";
+import { linkLines } from "../actions";
 import { aiAlert, money, photoFromLink, photoless, type ReadReply } from "../ai";
 import { FONTS, fontChoice, loaded, setFont, type FontSlot } from "../fonts";
 import { ALL_SANS } from "../fonts-sans";
@@ -237,11 +238,26 @@ function DataSection() {
         </button>
       </Field>
       <FindPhotos />
+      <LinkLines />
     </div>
   );
 }
 
 /** Recipes saved with a link and no photo get their page's picture of the dish, one at a time. */
+/** Settings → Data → Link lines: recipe lines with no food, linked to the food they name (actions.linkLines). */
+function LinkLines() {
+  const { view } = useData();
+  const open = view.recipes.reduce((n, r) => n + r.ingredients.filter((i) => !i.foodId).length, 0);
+  return (
+    <Field label="Recipe lines">
+      <p className="small">{open ? `${plural(open, "line")} with no food` : "Every line has a food"}</p>
+      <button className="btn" disabled={!open} onClick={() => linkLines()}>
+        🔗 Link lines
+      </button>
+    </Field>
+  );
+}
+
 function FindPhotos() {
   const { state } = useData();
   const [run, setRun] = useState<{ done: number; of: number; found: number } | null>(null);

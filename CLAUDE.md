@@ -233,4 +233,9 @@ tombstones (`deleted`), restorable with Undo or the page's Restore.
   tags over the tree (230 on 184 foods). **Wikipedia on foods** (DESIGN.md §5.13; `Food.wiki`, migration 16,
   `server/wiki.ts`, `web/components/Wiki.tsx`: Find, About card). 116 tests; browser-checked on a copy of
   the live DB. **Classics and AI recipes** designed (§5.14), not built.
-- **Next:** line matching + food aliases (DESIGN.md §6), then Classics (§5.14), then AI recipes. M6 (weights) after.
+- 2026-11-09: 495 Wikipedia links saved on the live data. **Not here** (`Food.tagsOff`, migration 17;
+  DESIGN.md §5.1): inherited tag chips link to their food, ✕ switches one off below. **Food aliases**
+  (Also called, `Food.aliases`, migration 18) and **line matching** (`View.matchFood`: longest name or
+  alias inside a line; `nameKey` folds accents); Settings → Data → **Link lines**. 120 tests; migrations
+  checked on a copy of the live DB; browser-checked (desktop and phone).
+- **Next:** Classics (DESIGN.md §5.14), then AI recipes. M6 (weights) after.

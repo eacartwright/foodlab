@@ -107,6 +107,8 @@ by rating), **potential staple** (§4.7), **times made / last made** (log entrie
 | `plu` | The produce sticker code ("4053" = lemon), 4 or 5 digits. Asked for only on Produce, Fruit, Vegetable and their kinds (is a, not form of); searchable, and shown beside the item on the grocery list, so I learn them. |
 | `notes` | What I know about it generally (melts well, mild), substitutions, storage. |
 | `wiki` | **Wikipedia** (2026-11-09, migration 16): its article, a tidy URL (section kept: Lettuce#Varieties). See §5.13. |
+| `aliases` | **Also called** (2026-11-09, migration 18): other names, comma-separated on the page ("green onions, spring onions" for Scallions). Found, searched, offered in every food picker and matched in recipe lines like the name; a name wins over an alias. One name, one food: a name that's already another food's name or alias is left off, with a toast. |
+| `tagsOff` | **Not here** (2026-11-09, migration 17): tags from the foods above switched off here and for everything under it. See §5.1. |
 | `tags` | |
 
 **Form vs prep.** A form is its own food with its own page; a prep is a word on a recipe line
@@ -429,7 +431,17 @@ a tag, and the tree stays free to say Huel is a Protein powder. The Tags page's 
 still the directly tagged things. A tag's aliases count as its words (§4.9): "bright" finds
 what's tagged tangy. A food's and a product's Tags show what they inherit (2026-10-30): faded
 chips under the tag box, not buttons, "From Beverage" on hover (`View.inheritedTags`);
-they're changed on the food they come from.
+they're changed on the food they come from. Since 2026-11-09 each faded chip (filled, no border) links
+to the food it comes from.
+
+**Not here** (2026-11-09): a tag from above can be switched off on a food, for it and everything
+under it (`Food.tagsOff`). Tag Fruit `sweet` once and switch it off on Citrus: Lemon and Lime aren't
+sweet, Apple still is. On a food's page each inherited chip has ✕ (*Not here*); a switched-off one
+stays, struck through, with ↺ where it was switched off (below that, it just says where). Walking
+up the tree, a food's tags count unless a food below switched them off; a food's own tag always
+counts (`View.foodTagIds`, `View.inheritedTags`). Products inherit the same way but have no
+switches of their own: their own tags say what's different. Merging or deleting a tag rewrites
+switches too.
 
 Results are grouped Recipes · Products · Foods · Stores, ❤️ first. With several terms, things
 matching only some of them follow under **Partial matches**, most terms first, each saying
@@ -759,10 +771,12 @@ comes back half unlinked.
 
 ## 6. Later (designed for, not built)
 
-- **Line matching and food aliases** (next, 2026-11-09): a food's other names ("green onions",
-  "spring onions" for Scallions; "coriander" for Cilantro), and a line linked by the longest food
-  name or alias found *inside* it ("2 cups shredded cheddar cheese" → Cheddar cheese), not only an
-  exact match of the parsed food part. Needed before AI recipes (§5.14).
+- **Line matching and food aliases**: *built 2026-11-09*. A recipe line links to its food by name
+  or alias exactly, or else by the longest food name or alias found word for word *inside* its food
+  part ("packed cheddar cheese shredded" → Cheddar cheese, "juice of 1 lime" → Lime, "crushed red
+  pepper flakes" → Red pepper flakes, not Pepper); `View.matchFood`. Accents don't count ("creme
+  fraiche" = Crème fraîche). Settings → Data → **Link lines** links every line with no food that now
+  names one (after adding foods or aliases), with Undo.
 
 - **Scaling** in three layers: exact quantity → human measurement (3½ tbsp) → practical, using
   the measuring tools I own. Ingredient behavior (discrete: eggs, onions; sensitive: salt,

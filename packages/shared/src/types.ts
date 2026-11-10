@@ -127,6 +127,10 @@ export interface Food extends Base {
   plu: string;
   /** Its Wikipedia article (2026-11-09), a tidy URL (`wikiUrl`), or "". */
   wiki: string;
+  /** Tags from the foods it's a kind of, switched off here and for everything under it ("Not here", 2026-11-09): Citrus off `sweet` from Fruit. */
+  tagsOff: Id[];
+  /** Other names (2026-11-09): "green onions" for Scallions. Found, matched in recipe lines and searched like the name. */
+  aliases: string[];
 }
 
 export interface Product extends Base, Eating {
@@ -333,6 +337,8 @@ export const blank = {
     tagIds: [],
     plu: "",
     wiki: "",
+    tagsOff: [],
+    aliases: [],
   }),
   products: (id: Id, name: string, now = Date.now()): Product => ({
     ...EMPTY_BASE(id, now),

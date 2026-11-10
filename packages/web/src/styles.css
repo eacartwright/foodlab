@@ -358,11 +358,24 @@ textarea::placeholder {
   clip-path: inset(50%);
   white-space: nowrap;
 }
-/* A tag from a food this is a kind of: faded, not a button (it's changed on that food). */
+/* A tag from a food this is a kind of: faded, a link to that food; struck through when it's
+   switched off here or above ("Not here"). */
 .chip-inherited {
   cursor: default;
   color: var(--muted);
   font-weight: 500;
+  background: var(--surface-2);
+  border-color: transparent;
+}
+.chip-inherited a {
+  color: inherit;
+  text-decoration: none;
+}
+.chip-inherited a:hover {
+  text-decoration: underline;
+}
+.chip-off a {
+  text-decoration: line-through;
 }
 .chip-set {
   border-radius: var(--control-radius);

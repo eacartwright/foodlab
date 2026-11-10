@@ -1,6 +1,6 @@
 import type { Food } from "@foodlab/shared";
 import { useState } from "react";
-import { duplicate, ensureFood, remove } from "../actions";
+import { duplicate, ensureFood, remove, setFoodAliases } from "../actions";
 import { go, pathOf } from "../router";
 import { data, put, useData } from "../sync";
 import { DraftInput, DraftTextarea, Field, PageKind, Picker, TagEditor, TitleInput } from "./controls";
@@ -19,12 +19,13 @@ export function FoodPage({ id }: { id: string }) {
   const food = state.foods[id];
   const [adding, setAdding] = useState<"form" | "kind" | null>(null);
   const [confirm, setConfirm] = useState(false);
+  const [aliasReset, setAliasReset] = useState(0);
   if (!food) return <NotFound what="food" />;
   const save = (patch: Partial<Food>) => put("foods", { ...(data().state.foods[id] ?? food), ...patch });
 
   // A food can't sit inside (or be a form of) itself or anything below it.
   const below = new Set([food.id, ...view.descendants(food.id).map((f) => f.id)]);
-  const options = view.foods.filter((f) => !below.has(f.id)).map((f) => ({ id: f.id, label: f.name }));
+  const options = view.foods.filter((f) => !below.has(f.id)).map((f) => ({ id: f.id, label: f.name, also: f.aliases }));
   const parent = view.food(food.parentId);
   const formOf = view.food(food.formOfId);
   const path = [...view.ancestors(food.id)].reverse();
@@ -36,7 +37,7 @@ export function FoodPage({ id }: { id: string }) {
   const preps = view.prepsOf(food.id);
   // A new form or kind can't be this food or anything above it, and isn't one already.
   const above = new Set([food.id, ...view.ancestors(food.id).map((f) => f.id)]);
-  const addable = (have: Food[]) => view.foods.filter((f) => !above.has(f.id) && !have.includes(f)).map((f) => ({ id: f.id, label: f.name }));
+  const addable = (have: Food[]) => view.foods.filter((f) => !above.has(f.id) && !have.includes(f)).map((f) => ({ id: f.id, label: f.name, also: f.aliases }));
   // Builds on the latest copy of the other food (it may have just been made).
   const link = (otherId: string, patch: Partial<Food>) => {
     const other = data().state.foods[otherId];
@@ -81,11 +82,31 @@ export function FoodPage({ id }: { id: string }) {
         <Field label="Shelf life">
           <DraftInput className="input" value={food.shelfLife} placeholder="e.g. 3 weeks opened, fridge" onCommit={(shelfLife) => save({ shelfLife })} />
         </Field>
+        <Field label="Also called">
+          <DraftInput
+            key={`aliases-${aliasReset}`}
+            className="input"
+            value={(food.aliases ?? []).join(", ")}
+            onCommit={(text) => {
+              setFoodAliases(food, text);
+              setAliasReset((n) => n + 1); // shows what was kept, if a name was left off
+            }}
+          />
+        </Field>
         <Field label="Wikipedia">
           <WikiField value={food.wiki ?? ""} name={food.name} onChange={(wiki) => save({ wiki })} />
         </Field>
         <Field label="Tags">
-          <TagEditor value={food.tagIds} inherited={view.inheritedTags(food.id, food.tagIds, true)} onChange={(tagIds) => save({ tagIds })} />
+          <TagEditor
+            value={food.tagIds}
+            inherited={view.inheritedTags(food.id, food.tagIds, true)}
+            onChange={(tagIds) => save({ tagIds })}
+            here={food}
+            onOff={(tagId, off) => {
+              const now = (data().state.foods[id] ?? food).tagsOff ?? [];
+              save({ tagsOff: off ? [...now.filter((t) => t !== tagId), tagId] : now.filter((t) => t !== tagId) });
+            }}
+          />
         </Field>
         <Field label="Notes">
           <DraftTextarea className="input" rows={3} value={food.notes} placeholder="What it's like, substitutions, storage…" onCommit={(notes) => save({ notes })} />

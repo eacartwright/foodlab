@@ -121,6 +121,52 @@ describe("View", () => {
     expect(r.full.recipes).toEqual([]); // a recipe using soda isn't a drink
   });
 
+  it("matches a recipe line's food by name, alias, or the longest name inside it", () => {
+    const s = world();
+    const add = (id: string, name: string, aliases: string[] = []) => (s.foods[id] = { ...blank.foods(id, name), aliases });
+    add("cheddar", "Cheddar cheese");
+    add("cheese", "Cheese");
+    add("scallion", "Scallions", ["green onions", "spring onions"]);
+    add("pepper", "Pepper", ["black pepper"]);
+    add("flakes", "Red pepper flakes", ["crushed red pepper"]);
+    add("lime", "Lime");
+    add("creme", "Crème fraîche");
+    add("rotel", "Diced tomatoes with green chiles", ["Rotel"]);
+    const v = new View(s);
+    const m = (t: string) => v.matchFood(t)?.name;
+    expect(m("packed cheddar cheese shredded")).toBe("Cheddar cheese");
+    expect(m("green onions")).toBe("Scallions");
+    expect(m("3 green onion")).toBe("Scallions");
+    expect(m("crushed red pepper flakes")).toBe("Red pepper flakes");
+    expect(m("freshly ground black pepper")).toBe("Pepper");
+    expect(m("juice of 1 lime")).toBe("Lime");
+    expect(m("creme fraiche")).toBe("Crème fraîche");
+    expect(m("can rotel diced tomatoes with mild green chilies")).toBe("Diced tomatoes with green chiles");
+    expect(m("brown gravy")).toBeUndefined();
+    expect(v.findFood("Spring onions")?.name).toBe("Scallions");
+    expect(v.search("spring onion").full.foods.map((h) => h.item.name)).toEqual(["Scallions"]);
+  });
+
+  it("switches an inherited tag off for a food and what's under it (Not here)", () => {
+    const s = world();
+    s.tags.sweet = blank.tags("sweet", "sweet");
+    s.foods.fruit = { ...blank.foods("fruit", "Fruit"), tagIds: ["sweet"] };
+    s.foods.citrus = { ...blank.foods("citrus", "Citrus"), parentId: "fruit", tagsOff: ["sweet"] };
+    s.foods.lemon2 = { ...blank.foods("lemon2", "Meyer lemon"), parentId: "citrus" };
+    s.foods.orange = { ...blank.foods("orange", "Blood orange"), parentId: "citrus", tagIds: ["sweet"] }; // its own tag wins
+    s.foods.apple = { ...blank.foods("apple", "Apple"), parentId: "fruit" };
+    s.products.meyer = { ...blank.products("meyer", "Meyer lemons"), foodId: "lemon2" };
+    const v = new View(s);
+    const found = v.search("sweet");
+    expect(found.full.foods.map((h) => h.item.id).sort()).toEqual(["apple", "fruit", "lemon", "orange"]); // the world's Lemon is right under Fruit
+    expect(found.full.products).toEqual([]);
+    const shown = (id: string, skip = true) => v.inheritedTags(id, s.foods[id]!.tagIds, skip).map((x) => `${x.tag.name} from ${x.from.name}${x.offAt ? ` off at ${x.offAt.name}` : ""}`);
+    expect(shown("citrus")).toEqual(["sweet from Fruit off at Citrus"]);
+    expect(shown("lemon2")).toEqual(["sweet from Fruit off at Citrus"]);
+    expect(shown("apple")).toEqual(["sweet from Fruit"]);
+    expect(shown("orange")).toEqual([]); // it has its own
+  });
+
   it("finds products by where they're kept", () => {
     const s = world();
     s.products.tots = { ...blank.products("tots", "Tater tots"), storage: "freezer" };

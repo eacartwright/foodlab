@@ -183,7 +183,7 @@ export function QuickAdd({ init }: { init: QuickAddInit }) {
             prepMin: read.prepMin,
             cookMin: read.cookMin,
             instructions: read.instructions,
-            ingredients: ingredientsFromText(read.ingredients.join("\n"), [], (f) => data().view.findFood(f)?.id),
+            ingredients: ingredientsFromText(read.ingredients.join("\n"), [], (f) => data().view.matchFood(f)?.id),
           }
         : {};
       put("recipes", { ...blank.recipes(id, n), ...fromRead, rating, tagIds, links, status });
@@ -252,7 +252,7 @@ export function QuickAdd({ init }: { init: QuickAddInit }) {
                     {!notFood && (
                       <Picker
                         value={foodId}
-                        options={view.foods.map((f) => ({ id: f.id, label: f.name }))}
+                        options={view.foods.map((f) => ({ id: f.id, label: f.name, also: f.aliases }))}
                         placeholder=""
                         createLabel="New food"
                         onChange={setFoodId}

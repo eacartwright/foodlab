@@ -66,7 +66,7 @@ export function ProductPage({ id }: { id: string }) {
             {!p.notFood && (
               <Picker
                 value={p.foodId}
-                options={view.foods.map((f) => ({ id: f.id, label: f.name }))}
+                options={view.foods.map((f) => ({ id: f.id, label: f.name, also: f.aliases }))}
                 placeholder=""
                 createLabel="New food"
                 onChange={(foodId) => save({ foodId })}

@@ -46,7 +46,9 @@ export class View {
   readonly dishes: Dish[];
   readonly tags: Tag[];
   readonly groceries: GroceryItem[];
+  /** Foods by `nameKey` of their name, then of their aliases (a name wins). */
   private readonly foodByKey = new Map<string, Food>();
+  private maxWords = 1;
   private readonly productsByFood = new Map<Id, Product[]>();
   private readonly productsByStore = new Map<Id, Product[]>();
   private readonly dishesByPlace = new Map<Id, Dish[]>();
@@ -71,8 +73,16 @@ export class View {
     for (const f of this.foods) {
       const key = nameKey(f.name);
       if (!this.foodByKey.has(key)) this.foodByKey.set(key, f);
+      this.maxWords = Math.max(this.maxWords, key.split(" ").length);
       if (f.parentId) push(this.childrenOf, f.parentId, f);
       if (f.formOfId) push(this.formsOf, f.formOfId, f);
+    }
+    for (const f of this.foods) {
+      for (const a of f.aliases ?? []) {
+        const key = nameKey(a);
+        if (key && !this.foodByKey.has(key)) this.foodByKey.set(key, f);
+        this.maxWords = Math.max(this.maxWords, key.split(" ").length);
+      }
     }
     for (const p of this.products) {
       if (p.foodId) push(this.productsByFood, p.foodId, p);
@@ -95,7 +105,26 @@ export class View {
   tag = (id: Id) => this.state.tags[id];
 
   /** The live food with this name (plurals and case ignored). */
+  /** The food with this name or alias ("Green onions" → Scallions). */
   findFood = (name: string) => this.foodByKey.get(nameKey(name));
+
+  /**
+   * The food a recipe line's text is about: its name or an alias, exactly, or else the longest
+   * one found inside it, word for word ("packed cheddar cheese shredded" → Cheddar cheese, "juice
+   * of 1 lime" → Lime). The longest wins ("red pepper flakes" over "pepper"), then the first.
+   */
+  matchFood = (text: string): Food | undefined => {
+    const exact = this.findFood(text);
+    if (exact) return exact;
+    const words = nameKey(text).split(" ").filter(Boolean);
+    for (let n = Math.min(this.maxWords, words.length); n >= 1; n--) {
+      for (let i = 0; i + n <= words.length; i++) {
+        const f = this.foodByKey.get(words.slice(i, i + n).join(" "));
+        if (f) return f;
+      }
+    }
+    return undefined;
+  };
   findStore = (name: string) => this.stores.find((s) => nameKey(s.name) === nameKey(name));
   /** The tag with this name, or else the one with it as an alias ("bright" → tangy). */
   findTag = (name: string) => {
@@ -417,17 +446,34 @@ export class View {
    * with the food it comes from; not the ones it has itself. A food passes its own id (it's
    * skipped), a product its food's (that food's tags count too).
    */
-  inheritedTags(foodId: Id | null, own: Id[], skipFirst: boolean): { tag: Tag; from: Food }[] {
-    const out: { tag: Tag; from: Food }[] = [];
+  inheritedTags(foodId: Id | null, own: Id[], skipFirst: boolean): InheritedTag[] {
+    const out: InheritedTag[] = [];
     const seen = new Set(own);
-    for (const from of this.kindsUp(foodId).slice(skipFirst ? 1 : 0)) {
-      for (const t of from.tagIds) {
-        const tag = this.tag(t);
-        if (tag && !tag.deleted && !seen.has(t)) {
-          seen.add(t);
-          out.push({ tag, from });
+    // Up the tree: a food's tags count unless a food below switched them off (tagsOff), and a
+    // food's tagsOff then applies to everything above it. Off ones are listed too, with where.
+    const off = new Map<Id, Food>();
+    this.kindsUp(foodId).forEach((from, i) => {
+      if (i >= (skipFirst ? 1 : 0)) {
+        for (const t of from.tagIds) {
+          const tag = this.tag(t);
+          if (tag && !tag.deleted && !seen.has(t)) {
+            seen.add(t);
+            out.push({ tag, from, offAt: off.get(t) ?? null });
+          }
         }
       }
+      for (const t of from.tagsOff ?? []) if (!off.has(t)) off.set(t, from);
+    });
+    return out;
+  }
+
+  /** The tags that count for a food (or a product of it): its own and its kinds', less those switched off. */
+  foodTagIds(foodId: Id | null): Id[] {
+    const out: Id[] = [];
+    const off = new Set<Id>();
+    for (const f of this.kindsUp(foodId)) {
+      for (const t of f.tagIds) if (!off.has(t)) out.push(t);
+      for (const t of f.tagsOff ?? []) off.add(t);
     }
     return out;
   }
@@ -449,7 +495,7 @@ export class View {
     const foodWords = (id: Id | null) => {
       const f = this.food(id);
       if (!f || f.deleted) return;
-      out.push(f.name, ...this.ancestors(f.id).map((a) => a.name));
+      out.push(f.name, ...(f.aliases ?? []), ...this.ancestors(f.id).map((a) => a.name));
     };
     const tagWords = (ids: Id[]) => {
       for (const t of ids) {
@@ -460,12 +506,10 @@ export class View {
     // A tag on a food counts for its kinds and their products ("drink" on Soda finds Diet soda
     // and every soda bought), down the "is a" links only. Not for recipes: a recipe with beer
     // in it isn't a drink.
-    const kindTags = (foodId: Id | null) => {
-      for (const f of this.kindsUp(foodId)) tagWords(f.tagIds);
-    };
+    const kindTags = (foodId: Id | null) => tagWords(this.foodTagIds(foodId));
     if (kind === "foods") {
       const f = x as Food;
-      out.push(f.notes, f.plu, ...this.ancestors(f.id).map((a) => a.name));
+      out.push(f.notes, f.plu, ...(f.aliases ?? []), ...this.ancestors(f.id).map((a) => a.name));
       kindTags(f.id);
       if (f.staple) out.push("staple");
     } else if (kind === "products") {
@@ -607,6 +651,9 @@ export interface EatFilter {
 export const SEARCH_KINDS = ["recipes", "products", "dishes", "foods", "stores"] as const;
 export type SearchKind = (typeof SEARCH_KINDS)[number];
 type SearchItem<K extends SearchKind> = K extends "recipes" ? Recipe : K extends "products" ? Product : K extends "dishes" ? Dish : K extends "foods" ? Food : Store;
+/** A tag a food or product gets from a food above it; `offAt` is where it was switched off ("Not here"), if it was. */
+export type InheritedTag = { tag: Tag; from: Food; offAt: Food | null };
+
 export type SearchHit = { [K in SearchKind]: { kind: K; item: SearchItem<K>; hits: number; matched: string[] } }[SearchKind];
 export type SearchGroups = { [K in SearchKind]: Extract<SearchHit, { kind: K }>[] };
 export interface SearchResults {

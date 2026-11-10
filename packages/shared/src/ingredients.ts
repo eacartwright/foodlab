@@ -224,6 +224,8 @@ export function ingredientsFromText(text: string, before: RecipeIngredient[], fi
  */
 export function nameKey(name: string): string {
   return name
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "") // accents off: "crème fraîche" = "creme fraiche"
     .toLowerCase()
     .replace(/['’]s\b/g, "")
     .replace(/['’]/g, "")

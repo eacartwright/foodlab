@@ -41,6 +41,8 @@ export class Store {
     if (kind === "tags" && prev && (body as { aliases?: unknown }).aliases === undefined) (rec as Records["tags"]).aliases = (prev as Records["tags"]).aliases;
     // Same for a food's Wikipedia link and a product's storage (2026-11-09).
     if (kind === "foods" && prev && (body as { wiki?: unknown }).wiki === undefined) (rec as Records["foods"]).wiki = (prev as Records["foods"]).wiki;
+    if (kind === "foods" && prev && (body as { tagsOff?: unknown }).tagsOff === undefined) (rec as Records["foods"]).tagsOff = (prev as Records["foods"]).tagsOff;
+    if (kind === "foods" && prev && (body as { aliases?: unknown }).aliases === undefined) (rec as Records["foods"]).aliases = (prev as Records["foods"]).aliases;
     if (kind === "products" && prev && (body as { storage?: unknown }).storage === undefined) (rec as Product).storage = (prev as Product).storage;
     this.check(kind, rec, prev);
 
@@ -95,6 +97,7 @@ export class Store {
         if (f.parentId && v.wouldLoop(f.id, f.parentId)) throw new Invalid("A food can't be inside itself");
         if (f.formOfId && v.wouldLoop(f.id, f.formOfId)) throw new Invalid("A food can't be a form of itself");
         tags(f.tagIds);
+        tags(f.tagsOff);
         break;
       }
       case "products": {
