@@ -202,6 +202,8 @@ export interface Option {
   id: Id;
   label: string;
   hint?: string;
+  /** Other words that find it (a tag's aliases); one that matches shows as its hint. */
+  also?: string[];
 }
 
 /** Best matches first: names starting with the text, then words starting with it, then containing it. */
@@ -210,10 +212,19 @@ function filterOptions(options: Option[], text: string, limit = 40): Option[] {
   if (!t) return options.slice(0, limit);
   const k = nameKey(t);
   const scored: [number, Option][] = [];
+  const score = (label: string) => {
+    const l = label.toLowerCase();
+    return l.startsWith(t) || nameKey(label) === k ? 0 : l.includes(` ${t}`) ? 1 : l.includes(t) ? 2 : -1;
+  };
   for (const o of options) {
-    const l = o.label.toLowerCase();
-    const s = l.startsWith(t) || nameKey(o.label) === k ? 0 : l.includes(` ${t}`) ? 1 : l.includes(t) ? 2 : -1;
-    if (s >= 0) scored.push([s, o]);
+    const s = score(o.label);
+    if (s >= 0) {
+      scored.push([s, o]);
+      continue;
+    }
+    // "bright" finds tangy, after the options it starts.
+    const word = o.also?.find((a) => score(a) >= 0);
+    if (word) scored.push([1 + score(word), { ...o, hint: word }]);
   }
   return scored
     .sort((a, b) => a[0] - b[0] || a[1].label.localeCompare(b[1].label))
@@ -263,7 +274,7 @@ export function Picker({
   const input = useRef<HTMLInputElement>(null);
   const listId = useId();
   const shown = open ? filterOptions(options.filter((o) => o.id !== value || !keepOpen), text) : [];
-  const exact = shown.some((o) => nameKey(o.label) === nameKey(text));
+  const exact = shown.some((o) => nameKey(o.label) === nameKey(text) || o.also?.some((a) => nameKey(a) === nameKey(text)));
   const canCreate = !!onCreate && !!text.trim() && !exact;
   const total = shown.length + (canCreate ? 1 : 0);
 
@@ -566,7 +577,7 @@ export function TagEditor({ value, onChange, inherited = [], noMeals }: { value:
       )}
       <MultiPicker
         values={value.filter((id) => !MEAL_TAGS.some((m) => m.id === id))}
-        options={personal.map((t) => ({ id: t.id, label: t.name }))}
+        options={personal.map((t) => ({ id: t.id, label: t.name, also: t.aliases }))}
         onChange={(ids) => onChange([...value.filter((id) => MEAL_TAGS.some((m) => m.id === id)), ...ids])}
         onCreate={ensureTag}
         placeholder="Add a tag…"

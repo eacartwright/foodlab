@@ -81,6 +81,18 @@ describe("Store", () => {
     expect(() => store.put("foods", "c", { name: "  " })).toThrow(/required/);
   });
 
+  it("keeps a tag's aliases, tidied, and an older app's save doesn't drop them", () => {
+    store.put("tags", "t", { name: "tangy", aliases: [" Bright ", "tart", "tart", "tangy", ""] });
+    expect(store.state.tags.t!.aliases).toEqual(["bright", "tart"]);
+    store.put("tags", "t", { name: "tangy", kind: "personal" }); // no aliases field: an app from before them
+    expect(store.state.tags.t!.aliases).toEqual(["bright", "tart"]);
+    store.put("tags", "t", { name: "tangy", aliases: [] });
+    expect(store.state.tags.t!.aliases).toEqual([]);
+    store.put("tags", "t", { name: "tangy", aliases: ["sour"] });
+    expect(loadState(db).tags.t!.aliases).toEqual(["sour"]);
+    expect(() => store.put("tags", "u", { name: "x", aliases: "sour" })).toThrow(/list/);
+  });
+
   it("logs rating changes by itself", () => {
     store.put("products", "p", { ...blank.products("p", "Kraft"), rating: "up" });
     store.put("products", "p", { ...blank.products("p", "Kraft"), rating: "up", notes: "same rating" });

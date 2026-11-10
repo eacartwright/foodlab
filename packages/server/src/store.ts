@@ -37,6 +37,8 @@ export class Store {
     const rec = validators[kind](body, id, now) as Records[K];
     const prev = this.state[kind][id] as Records[K] | undefined;
     if (prev) rec.createdAt = prev.createdAt;
+    // An app from before aliases (cached on a phone) saves a tag without them: keep the ones it has.
+    if (kind === "tags" && prev && (body as { aliases?: unknown }).aliases === undefined) (rec as Records["tags"]).aliases = (prev as Records["tags"]).aliases;
     this.check(kind, rec, prev);
 
     const log: LogEntry[] = [];

@@ -96,7 +96,11 @@ export class View {
   /** The live food with this name (plurals and case ignored). */
   findFood = (name: string) => this.foodByKey.get(nameKey(name));
   findStore = (name: string) => this.stores.find((s) => nameKey(s.name) === nameKey(name));
-  findTag = (name: string) => this.tags.find((t) => nameKey(t.name) === nameKey(name));
+  /** The tag with this name, or else the one with it as an alias ("bright" → tangy). */
+  findTag = (name: string) => {
+    const k = nameKey(name);
+    return this.tags.find((t) => nameKey(t.name) === k) ?? this.tags.find((t) => (t.aliases ?? []).some((a) => nameKey(a) === k));
+  };
 
   productsOf = (foodId: Id) => this.productsByFood.get(foodId) ?? [];
   productsAt = (storeId: Id) => this.productsByStore.get(storeId) ?? [];
@@ -449,7 +453,7 @@ export class View {
     const tagWords = (ids: Id[]) => {
       for (const t of ids) {
         const tag = this.tag(t);
-        if (tag && !tag.deleted) out.push(tag.name);
+        if (tag && !tag.deleted) out.push(tag.name, ...(tag.aliases ?? []));
       }
     };
     // A tag on a food counts for its kinds and their products ("drink" on Soda finds Diet soda

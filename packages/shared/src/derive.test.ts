@@ -121,6 +121,20 @@ describe("View", () => {
     expect(r.full.recipes).toEqual([]); // a recipe using soda isn't a drink
   });
 
+  it("finds things by a tag's aliases, and finds the tag by one", () => {
+    const s = world();
+    s.tags.tangy = { ...blank.tags("tangy", "tangy"), aliases: ["bright", "tart"] };
+    s.tags.brightly = blank.tags("brightly", "bright"); // a name wins over an alias
+    s.foods.pickles = { ...blank.foods("pickles", "Pickles"), tagIds: ["tangy"] };
+    s.recipes.soup = { ...blank.recipes("soup", "Lemon soup"), tagIds: ["tangy"] };
+    const v = new View(s);
+    expect(v.search("tart").full.foods.map((h) => h.item.id)).toEqual(["pickles"]);
+    expect(v.search("tart").full.recipes.map((h) => h.item.id)).toEqual(["soup"]);
+    expect(v.findTag("Tart")?.id).toBe("tangy");
+    expect(v.findTag("bright")?.id).toBe("brightly");
+    expect(v.findTag("sour")).toBeUndefined();
+  });
+
   it("lists the tags a food or product inherits, nearest first, without its own", () => {
     const s = world();
     s.tags.drink = blank.tags("drink", "drink");

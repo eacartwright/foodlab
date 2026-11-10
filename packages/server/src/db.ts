@@ -237,6 +237,8 @@ const MIGRATIONS: string[] = [
   `,
   // 2026-11-04: products that aren't food (toothpaste, tissues): on the grocery list, never in Eat.
   `ALTER TABLE products ADD COLUMN not_food INTEGER NOT NULL DEFAULT 0;`,
+  // 2026-11-09: a tag's other words ("bright", "tart" for tangy), searched and picked like its name.
+  `ALTER TABLE tags ADD COLUMN aliases TEXT NOT NULL DEFAULT '[]';  -- JSON ["bright", ...]`,
 ];
 
 export type DB = DatabaseSync;
@@ -384,7 +386,7 @@ export function loadState(db: DB): State {
     } satisfies Recipe;
   }
   for (const r of db.prepare("SELECT * FROM tags").all() as Row[]) {
-    s.tags[r.id] = { ...base(r), name: r.name, kind: r.kind } satisfies Tag;
+    s.tags[r.id] = { ...base(r), name: r.name, kind: r.kind, aliases: JSON.parse(r.aliases ?? "[]") } satisfies Tag;
   }
   for (const r of db.prepare("SELECT * FROM log_entries").all() as Row[]) {
     s.log[r.id] = {
@@ -521,7 +523,7 @@ export const save = {
     x.ingredients.forEach((i, n) => ins.run(x.id, i.id, n, i.line, i.foodId, i.quantity, i.unit, i.prep, i.optional ? 1 : 0, i.note));
   },
   tags(db: DB, x: Tag) {
-    upsert(db, "tags", { ...baseCols(x), name: x.name, kind: x.kind });
+    upsert(db, "tags", { ...baseCols(x), name: x.name, kind: x.kind, aliases: JSON.stringify(x.aliases) });
   },
   log(db: DB, x: LogEntry) {
     upsert(db, "log_entries", {

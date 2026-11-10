@@ -66,6 +66,14 @@ const ids = (x: unknown, field: string): string[] => {
   if (!Array.isArray(x)) throw new Invalid(`${field}: expected a list`);
   return [...new Set(x.map((v) => id(v, field)).filter((v): v is string => !!v))];
 };
+/** A tag's other words: trimmed, lowercase, no repeats, never the tag's own name. */
+const aliases = (x: unknown, own: string): string[] => {
+  if (x === undefined || x === null) return [];
+  if (!Array.isArray(x)) throw new Invalid("aliases: expected a list");
+  if (x.length > 50) throw new Invalid("aliases: too many");
+  const out = x.map((v) => str(v, "aliases", 100).trim().replace(/\s+/g, " ").toLowerCase()).filter((v) => v && v !== own.toLowerCase());
+  return [...new Set(out)];
+};
 const FILE_ID = /^[0-9a-f-]{36}$/;
 const fileId = (x: unknown, field: string): string => {
   if (typeof x !== "string" || !FILE_ID.test(x)) throw new Invalid(`${field}: expected a file id`);
@@ -252,7 +260,8 @@ export const validators: { [K in Kind]: (body: unknown, id: string, now: number)
   },
   tags(body, rid, now): Tag {
     const b = obj(body);
-    return { ...base(b, rid, now), name: name(b.name), kind: b.kind === "meal" ? "meal" : "personal" };
+    const n = name(b.name);
+    return { ...base(b, rid, now), name: n, kind: b.kind === "meal" ? "meal" : "personal", aliases: aliases(b.aliases, n) };
   },
   log(body, rid, now): LogEntry {
     const b = obj(body);

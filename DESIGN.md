@@ -267,6 +267,23 @@ Shared by everything, two kinds:
 
 "Contains lemon" is **not** a tag: search derives it from ingredients (§5.1).
 
+**Flavor tags** (2026-11-09): personal tags for how something tastes, kept to a short list so
+they get used: `sweet` · `savory` · `salty` · `spicy` · `tangy` · `lemony` · `smoky` · `creamy` ·
+`cheesy` · `crunchy` · `fresh` · `rich`. Flavor belongs to the finished thing, so they go on
+**recipes** one by one, and on a **food** only when every kind and product under it tastes that
+way (Desserts `sweet`, Hot sauce `spicy`, Pickles `tangy`, Potato chips `salty` `crunchy`): a
+food's tag never reaches a recipe that uses it (§5.1), and a recipe with lemon in it isn't
+necessarily lemony. `lemony` is narrower than `tangy`, not the same, so lemony things get both.
+Flavors that differ inside one food (rice crisps: Caramel vs Buffalo Ranch) go on the products.
+
+**Aliases** (2026-11-09, migration 14, `Tag.aliases`): other words for a tag (tangy: sour, tart,
+bright, acidic, zesty). Search matches them like the name; a Tags box picks the tag when one is
+typed ("bright" adds tangy, the alias shown beside it), so tagging stays one word and searching
+takes any. A word means one tag: one that's already another tag's name or alias is left off,
+with a toast (checked in the app, not on the server, so an Undo arriving in either order never
+bounces). A name wins over an alias (`View.findTag`). An alias is the **same** meaning: a
+narrower word (lemony) is its own tag.
+
 ### 4.10 Grocery item
 
 Groceries is **one standing list of things I buy, and each one is either needed or not**. No
@@ -407,7 +424,8 @@ only: tag Soda `drink` once and "drinks" finds Diet soda and every soda product.
 of* (a tag on Lemon isn't one on Lemon juice), and not for recipes (beer-battered fish isn't a
 drink). This is how drinks are grouped: "drink" is how I have something, not what it is, so it's
 a tag, and the tree stays free to say Huel is a Protein powder. The Tags page's counts are
-still the directly tagged things. A food's and a product's Tags show what they inherit (2026-10-30): faded
+still the directly tagged things. A tag's aliases count as its words (§4.9): "bright" finds
+what's tagged tangy. A food's and a product's Tags show what they inherit (2026-10-30): faded
 chips under the tag box, not buttons, "From Beverage" on hover (`View.inheritedTags`);
 they're changed on the food they come from.
 
@@ -634,6 +652,11 @@ another tag's asks to **merge** instead. **Merge…** picks the tag to merge int
 tagged with this one gets that one (no repeats) and this one goes. **✕** deletes a tag and takes
 it off everything. Merge and delete rewrite the tagged items, so nothing points at a gone tag,
 and both have Undo.
+
+**Also** (2026-11-09): a personal tag's aliases (§4.9), comma-separated, edited in their own
+column (on the phone, under the name). The filter matches them too. A rename to a word that's
+another tag's alias asks to merge into that tag. A merge keeps the merged tag's name and aliases
+as aliases of the one it went into, so the old word still finds things; Undo takes them back off.
 
 ### 5.11 Photos and files
 

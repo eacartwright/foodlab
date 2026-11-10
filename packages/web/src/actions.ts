@@ -57,7 +57,8 @@ export function ensureTag(name: string): Id {
 
 /**
  * Merge (`to`) or delete (`to` null) a personal tag: every food, product and recipe with it
- * gets `to` instead, or loses it, so nothing points at a gone tag. Undo puts them back.
+ * gets `to` instead, or loses it, so nothing points at a gone tag. A merge keeps the gone tag's
+ * name and aliases as `to`'s aliases, so the old words still find things. Undo puts them back.
  */
 function retag(tag: Tag, to: Tag | null) {
   const uses = data().view.tagged(tag.id).map(({ kind, item }) => ({ kind, id: item.id, hadTo: !!to && item.tagIds.includes(to.id) }));
@@ -65,12 +66,16 @@ function retag(tag: Tag, to: Tag | null) {
     const now = data().state[u.kind][u.id]!;
     put(u.kind, { ...now, tagIds: swapTag(now.tagIds, tag.id, to?.id ?? null) });
   }
-  put("tags", { ...(data().state.tags[tag.id] ?? tag), deleted: true });
+  const gone = data().state.tags[tag.id] ?? tag;
+  put("tags", { ...gone, deleted: true });
+  const intoBefore = to ? (data().state.tags[to.id] ?? to) : null;
+  if (intoBefore) put("tags", { ...intoBefore, aliases: [...new Set([...(intoBefore.aliases ?? []), gone.name.toLowerCase(), ...(gone.aliases ?? [])])] });
   const n = uses.length;
   const what = `${n} thing${n === 1 ? "" : "s"}`;
   showToast(to ? `Merged “${tag.name}” into “${to.name}” (${what})` : `Deleted “${tag.name}”${n ? ` from ${what}` : ""}`, {
     label: "Undo",
     run: () => {
+      if (intoBefore) put("tags", { ...(data().state.tags[intoBefore.id] ?? intoBefore), aliases: intoBefore.aliases ?? [] });
       put("tags", { ...(data().state.tags[tag.id] ?? tag), deleted: false });
       for (const u of uses) {
         const now = data().state[u.kind][u.id];
@@ -83,6 +88,29 @@ function retag(tag: Tag, to: Tag | null) {
 }
 export const mergeTag = (tag: Tag, into: Tag) => retag(tag, into);
 export const deleteTag = (tag: Tag) => retag(tag, null);
+
+/**
+ * A tag's other words, as typed in the Tags page ("bright, tart"). A word that's already another
+ * tag's name or alias is left off, with a toast: one word, one tag. (Checked here, not on the
+ * server, so an Undo arriving in either order never bounces.)
+ */
+export function setTagAliases(tag: Tag, text: string) {
+  const now = data().state.tags[tag.id] ?? tag;
+  const own = now.name.toLowerCase();
+  const others = data().view.tags.filter((t) => t.id !== tag.id);
+  const taken: string[] = [];
+  const words = text
+    .split(",")
+    .map((w) => w.trim().replace(/\s+/g, " ").toLowerCase())
+    .filter((w) => {
+      if (!w || w === own) return false;
+      const o = others.find((t) => nameKey(t.name) === nameKey(w) || (t.aliases ?? []).some((a) => nameKey(a) === nameKey(w)));
+      if (o) taken.push(nameKey(o.name) === nameKey(w) ? `“${w}” (a tag of its own)` : `“${w}” (already “${o.name}”)`);
+      return !o;
+    });
+  put("tags", { ...now, aliases: [...new Set(words)] });
+  if (taken.length) showToast(`Left off: ${taken.join(", ")}`);
+}
 
 /** Personal tags are stored lowercase, like `ensureTag` makes them. */
 export function renameTag(tag: Tag, name: string) {

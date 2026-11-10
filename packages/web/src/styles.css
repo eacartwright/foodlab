@@ -1008,6 +1008,17 @@ table.parsed th {
 .cell-input:hover {
   border-color: var(--border);
 }
+/* A tag's other words (Tags): plain, not bold; on the phone, under the name. */
+.cell-input.alias-input {
+  font-weight: 400;
+  color: var(--muted);
+}
+.cell-input.alias-input:focus {
+  color: var(--text);
+}
+.narrow-only {
+  display: none;
+}
 .tag-actions {
   width: 1%;
   white-space: nowrap;
@@ -1868,6 +1879,9 @@ ul.notes li.done .note-text {
   }
   .wide-only {
     display: none;
+  }
+  .narrow-only {
+    display: block;
   }
   .field,
   .fields.compact .field {

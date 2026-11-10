@@ -23,7 +23,7 @@ import {
   type View,
 } from "@foodlab/shared";
 import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
-import { deleteTag, ensureStore, ensureTag, mergeTag, renameTag } from "../actions";
+import { deleteTag, ensureStore, ensureTag, mergeTag, renameTag, setTagAliases } from "../actions";
 import { showToast } from "../toast";
 import { A, go, pathOf, setQuery, useRoute } from "../router";
 import { useData } from "../sync";
@@ -729,7 +729,7 @@ export function TagsList() {
   const { view } = useData();
   const { query } = useRoute();
   const f = query.get("f") ?? "";
-  const rows = useMemo(() => view.tags.filter((t) => match(t.name, f)), [view, f]);
+  const rows = useMemo(() => view.tags.filter((t) => match([t.name, ...(t.aliases ?? [])].join(" "), f)), [view, f]);
   const uses = (t: Tag) => view.tagged(t.id).length;
   const { sorted, th } = useSort(rows, {
     name: { value: (t) => (t.kind === "meal" ? "" : t.name) }, // meal tags stay first, in their order
@@ -744,6 +744,19 @@ export function TagsList() {
     if (other && other.id !== t.id) setTimeout(() => setMerging({ tag: t, into: other }));
     else renameTag(t, name);
   };
+  // Other words for a tag, comma-separated: in their own column, or under the name on the phone.
+  const aliasInput = (t: Tag) => (
+    <DraftInput
+      key={`${t.id}-${reset}`}
+      className="input cell-input alias-input"
+      value={(t.aliases ?? []).join(", ")}
+      aria-label={`Other words for “${t.name}”`}
+      onCommit={(text) => {
+        setTagAliases(t, text);
+        setReset((r) => r + 1); // shows what was kept, if a word was left off
+      }}
+    />
+  );
   // A tag is just a name with no page, so + Add asks for it here and stays open for the next.
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState("");
@@ -789,6 +802,7 @@ export function TagsList() {
       head={
         <tr>
           {th("name", "Tag")}
+          <th className="wide-only">Also</th>
           {th("uses", "Used", "num", "Used on")}
           <th className="tag-actions" aria-label="Merge or delete" />
         </tr>
@@ -805,9 +819,13 @@ export function TagsList() {
                   {t.name} <span className="muted small">meal</span>
                 </span>
               ) : (
-                <DraftInput key={`${t.id}-${reset}`} className="input cell-input" value={t.name} required aria-label="Tag name" onCommit={(name) => rename(t, name)} />
+                <>
+                  <DraftInput key={`${t.id}-${reset}`} className="input cell-input" value={t.name} required aria-label="Tag name" onCommit={(name) => rename(t, name)} />
+                  <div className="narrow-only">{aliasInput(t)}</div>
+                </>
               )}
             </td>
+            <td className="wide-only">{!meal && aliasInput(t)}</td>
             <td className="num">
               {n ? (
                 <A href={meal ? `/eat?tag=${t.id}` : `/?q=${encodeURIComponent(t.name)}`}>{n}</A>

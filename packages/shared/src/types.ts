@@ -199,6 +199,8 @@ export type TagKind = "meal" | "personal";
 export interface Tag extends Base {
   name: string;
   kind: TagKind;
+  /** Other words for it (2026-11-09): "bright", "tart" for tangy. Searched and picked like the name. Lowercase. */
+  aliases: string[];
 }
 
 export type LogTarget = "recipes" | "products" | "dishes";
@@ -359,7 +361,7 @@ export const blank = {
     instructions: "",
     ingredients: [],
   }),
-  tags: (id: Id, name: string, now = Date.now()): Tag => ({ ...EMPTY_BASE(id, now), name, kind: "personal" }),
+  tags: (id: Id, name: string, now = Date.now()): Tag => ({ ...EMPTY_BASE(id, now), name, kind: "personal", aliases: [] }),
   devnotes: (id: Id, text: string, path: string, now = Date.now()): DevNote => ({ ...EMPTY_BASE(id, now), text, path, done: false, files: [] }),
   settings: (now = Date.now()): Settings => ({ ...EMPTY_BASE(SETTINGS_ID, now), mealTimes: DEFAULT_MEAL_TIMES, ai: DEFAULT_AI }),
   groceries: (id: Id, name: string, now = Date.now()): GroceryItem => ({
