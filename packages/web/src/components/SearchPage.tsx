@@ -53,7 +53,7 @@ export function SearchPage() {
       {!results.terms.length ? (
         <>
           <Section title="What can I eat?">
-            <div className="chips">
+            <div className="chips meal-chips">
               {MEAL_TAGS.map((t) => (
                 <A key={t.id} className={`chip ${t.id === now ? "chip-on" : ""}`} href={`/eat?tag=${t.id}`}>
                   {t.name}

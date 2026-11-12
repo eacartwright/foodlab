@@ -39,12 +39,15 @@ export function ProductPage({ id }: { id: string }) {
     <article className="page">
       {p.deleted && <Deleted onRestore={() => save({ deleted: false })} />}
       {/* The food's whole path, like a food page's, ending at the food itself. */}
-      <PageKind kind="products" trail={food ? [...[...view.ancestors(food.id)].reverse(), food].map((f) => ({ href: pathOf("foods", f.id), label: f.name })) : []} />
+      <PageKind kind="products" trail={food ? [...[...view.ancestors(food.id)].reverse(), food].map((f) => ({ href: pathOf("foods", f.id), label: f.name })) : []}>
+        {/* Up here, not beside the title: a long name gets the whole width. */}
+        <span className="spacer" />
+        <GroceryButton name={productName(p)} foodId={p.foodId} productId={p.id} />
+      </PageKind>
       {/* Brand, then name: reads as the whole name ("Bell & Evans" "Gluten Free Chicken Breasts"). */}
       <div className="title-row product-title">
         <DraftInput className="title-input brand-input" value={p.brand} placeholder="Brand" aria-label="Brand" list={brands} onCommit={(brand) => save({ brand })} />
         <TitleInput value={p.name} required aria-label="Name" onCommit={(name) => save({ name })} />
-        <GroceryButton name={productName(p)} foodId={p.foodId} productId={p.id} />
         <datalist id={brands}>
           {view.brands().map((b) => (
             <option key={b} value={b} />

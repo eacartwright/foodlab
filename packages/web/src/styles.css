@@ -783,16 +783,19 @@ textarea.title-input {
   overflow: hidden;
   line-height: 1.2;
 }
-/* A product's title is two boxes, brand then name, that read as one name. */
+/* A product's title is two boxes, brand then name, that read as one name. A long name grows
+   downward, its first line level with the brand (same font, line height, padding and border). */
 .product-title {
   flex-wrap: wrap;
-  gap: 0 4px;
+  align-items: flex-start;
+  gap: 0;
 }
 .product-title .title-input {
   flex: 1 1 12em;
 }
 .product-title .brand-input {
   flex: 0 1 auto;
+  line-height: 1.2;
   field-sizing: content;
   min-width: 1em;
   max-width: 100%;
@@ -1915,6 +1918,21 @@ ul.notes li.done .note-text {
   }
   .title-row textarea.title-input {
     flex: 1 1 100%;
+  }
+  /* A product's name stays beside its brand, growing downward. */
+  .title-row.product-title {
+    gap: 0;
+  }
+  .product-title textarea.title-input {
+    flex: 1 1 8em;
+  }
+  /* The five meals on one line (Dessert used to wrap and push the page down). */
+  .meal-chips {
+    gap: 4px;
+  }
+  .meal-chips .chip {
+    padding: 0 8px;
+    font-size: 0.88rem;
   }
   .recipe-title {
     font-size: 1.6rem;
