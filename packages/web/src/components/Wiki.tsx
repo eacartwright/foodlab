@@ -27,7 +27,7 @@ export function useWikiSummary(url: string): { summary: WikiSummary | null; fail
   return { summary: summaries.get(url) ?? null, failed };
 }
 
-/** The article's first paragraph and picture, credited to Wikipedia. Nothing while offline. */
+/** The article's first paragraph and picture. Nothing while offline. */
 export function WikiAbout({ url }: { url: string }) {
   const { summary } = useWikiSummary(url);
   const [open, setOpen] = useState(false);
@@ -37,19 +37,14 @@ export function WikiAbout({ url }: { url: string }) {
     <section className="wiki-about" aria-label="About">
       {summary.thumb && <img src={summary.thumb} alt="" loading="lazy" />}
       <p className={open ? "" : "clamp"}>{summary.extract}</p>
-      <p className="small muted">
-        {summary.extract.length > 260 && (
-          <>
-            <button className="link-btn" onClick={() => setOpen(!open)}>
-              {open ? "Less" : "More"}
-            </button>{" "}
-            ·{" "}
-          </>
-        )}
-        <a href={summary.url} target="_blank" rel="noopener noreferrer">
-          Wikipedia ↗
-        </a>
-      </p>
+      {/* No link here: the Wikipedia field below has it (and credits the article). */}
+      {summary.extract.length > 260 && (
+        <p className="small muted">
+          <button className="link-btn" onClick={() => setOpen(!open)}>
+            {open ? "Less" : "More"}
+          </button>
+        </p>
+      )}
     </section>
   );
 }

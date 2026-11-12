@@ -728,6 +728,12 @@ textarea::placeholder {
   letter-spacing: 0;
   font-size: 1rem;
 }
+/* Buttons at the right end of that line (Staple, + Groceries), kept together if they wrap. */
+.kind-actions {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
 /* "🥕 Food" above a page: back to its list, looking like the label it was (lighter on hover). */
 .page-kind .kind-link {
   color: inherit;
@@ -2182,7 +2188,6 @@ ul.found-list {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  max-width: 46em;
 }
 .wiki-about img {
   float: right;

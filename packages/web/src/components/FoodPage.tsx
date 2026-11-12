@@ -3,7 +3,15 @@ import { useState } from "react";
 import { duplicate, ensureFood, remove, setFoodAliases } from "../actions";
 import { go, pathOf } from "../router";
 import { data, put, useData } from "../sync";
-import { DraftInput, DraftTextarea, Field, PageKind, Picker, TagEditor, TitleInput } from "./controls";
+import {
+  DraftInput,
+  DraftTextarea,
+  Field,
+  PageKind,
+  Picker,
+  TagEditor,
+  TitleInput,
+} from "./controls";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { ItemRow, Section } from "./rows";
 import { openQuickAdd } from "./QuickAdd";
@@ -21,11 +29,17 @@ export function FoodPage({ id }: { id: string }) {
   const [confirm, setConfirm] = useState(false);
   const [aliasReset, setAliasReset] = useState(0);
   if (!food) return <NotFound what="food" />;
-  const save = (patch: Partial<Food>) => put("foods", { ...(data().state.foods[id] ?? food), ...patch });
+  const save = (patch: Partial<Food>) =>
+    put("foods", { ...(data().state.foods[id] ?? food), ...patch });
 
   // A food can't sit inside (or be a form of) itself or anything below it.
-  const below = new Set([food.id, ...view.descendants(food.id).map((f) => f.id)]);
-  const options = view.foods.filter((f) => !below.has(f.id)).map((f) => ({ id: f.id, label: f.name, also: f.aliases }));
+  const below = new Set([
+    food.id,
+    ...view.descendants(food.id).map((f) => f.id),
+  ]);
+  const options = view.foods
+    .filter((f) => !below.has(f.id))
+    .map((f) => ({ id: f.id, label: f.name, also: f.aliases }));
   const parent = view.food(food.parentId);
   const formOf = view.food(food.formOfId);
   const path = [...view.ancestors(food.id)].reverse();
@@ -37,7 +51,10 @@ export function FoodPage({ id }: { id: string }) {
   const preps = view.prepsOf(food.id);
   // A new form or kind can't be this food or anything above it, and isn't one already.
   const above = new Set([food.id, ...view.ancestors(food.id).map((f) => f.id)]);
-  const addable = (have: Food[]) => view.foods.filter((f) => !above.has(f.id) && !have.includes(f)).map((f) => ({ id: f.id, label: f.name, also: f.aliases }));
+  const addable = (have: Food[]) =>
+    view.foods
+      .filter((f) => !above.has(f.id) && !have.includes(f))
+      .map((f) => ({ id: f.id, label: f.name, also: f.aliases }));
   // Builds on the latest copy of the other food (it may have just been made).
   const link = (otherId: string, patch: Partial<Food>) => {
     const other = data().state.foods[otherId];
@@ -47,21 +64,53 @@ export function FoodPage({ id }: { id: string }) {
   return (
     <article className="page">
       {food.deleted && <Deleted onRestore={() => save({ deleted: false })} />}
-      <PageKind kind="foods" trail={path.map((f) => ({ href: pathOf("foods", f.id), label: f.name }))} />
+      {/* Staple and + Groceries up here, not beside the title: a long name gets the whole width. */}
+      <PageKind
+        kind="foods"
+        trail={path.map((f) => ({
+          href: pathOf("foods", f.id),
+          label: f.name,
+        }))}
+      >
+        <span className="kind-actions">
+          <button
+            className={`btn staple ${food.staple ? "on" : ""}`}
+            aria-pressed={food.staple}
+            onClick={() => save({ staple: !food.staple })}
+            title="Something I want to keep in the house"
+          >
+            {food.staple ? "★ Staple" : "☆ Staple"}
+          </button>
+          <GroceryButton name={food.name} foodId={food.id} />
+        </span>
+      </PageKind>
       <div className="title-row">
-        <TitleInput value={food.name} required aria-label="Name" onCommit={(name) => save({ name })} />
-        <button className={`btn staple ${food.staple ? "on" : ""}`} aria-pressed={food.staple} onClick={() => save({ staple: !food.staple })} title="Something I want to keep in the house">
-          {food.staple ? "★ Staple" : "☆ Staple"}
-        </button>
-        <GroceryButton name={food.name} foodId={food.id} />
+        <TitleInput
+          value={food.name}
+          required
+          aria-label="Name"
+          onCommit={(name) => save({ name })}
+        />
       </div>
       {food.wiki && <WikiAbout url={food.wiki} />}
       <div className="fields">
         <Field label="Kind of">
-          <Picker value={food.parentId} options={options} placeholder="Nothing (top level)" onChange={(parentId) => save({ parentId })} onCreate={(n) => ensureFood(n)} />
+          <Picker
+            value={food.parentId}
+            options={options}
+            placeholder="Nothing (top level)"
+            onChange={(parentId) => save({ parentId })}
+            onCreate={(n) => ensureFood(n)}
+          />
         </Field>
         <Field label="Form of">
-          <Picker value={food.formOfId} options={options} placeholder="Not a form of anything" onChange={(formOfId) => save({ formOfId })} onCreate={(n) => ensureFood(n)} />
+          <Picker
+            value={food.formOfId}
+            options={options}
+            placeholder="Not a form of anything"
+            onChange={(formOfId) => save({ formOfId })}
+            onCreate={(n) => ensureFood(n)}
+          />
         </Field>
         {(food.plu || view.isProduce(food.id)) && (
           <Field label="PLU">
@@ -80,7 +129,12 @@ export function FoodPage({ id }: { id: string }) {
           </Field>
         )}
         <Field label="Shelf life">
-          <DraftInput className="input" value={food.shelfLife} placeholder="e.g. 3 weeks opened, fridge" onCommit={(shelfLife) => save({ shelfLife })} />
+          <DraftInput
+            className="input"
+            value={food.shelfLife}
+            placeholder="e.g. 3 weeks opened, fridge"
+            onCommit={(shelfLife) => save({ shelfLife })}
+          />
         </Field>
         <Field label="Also called">
           <DraftInput
@@ -94,7 +148,11 @@ export function FoodPage({ id }: { id: string }) {
           />
         </Field>
         <Field label="Wikipedia">
-          <WikiField value={food.wiki ?? ""} name={food.name} onChange={(wiki) => save({ wiki })} />
+          <WikiField
+            value={food.wiki ?? ""}
+            name={food.name}
+            onChange={(wiki) => save({ wiki })}
+          />
         </Field>
         <Field label="Tags">
           <TagEditor
@@ -104,61 +162,157 @@ export function FoodPage({ id }: { id: string }) {
             here={food}
             onOff={(tagId, off) => {
               const now = (data().state.foods[id] ?? food).tagsOff ?? [];
-              save({ tagsOff: off ? [...now.filter((t) => t !== tagId), tagId] : now.filter((t) => t !== tagId) });
+              save({
+                tagsOff: off
+                  ? [...now.filter((t) => t !== tagId), tagId]
+                  : now.filter((t) => t !== tagId),
+              });
             }}
           />
         </Field>
         <Field label="Notes">
-          <DraftTextarea className="input" rows={3} value={food.notes} placeholder="What it's like, substitutions, storage…" onCommit={(notes) => save({ notes })} />
+          <DraftTextarea
+            className="input"
+            rows={3}
+            value={food.notes}
+            placeholder="What it's like, substitutions, storage…"
+            onCommit={(notes) => save({ notes })}
+          />
         </Field>
       </div>
-      {(parent?.deleted || formOf?.deleted) && <p className="warn small">Points at a deleted food.</p>}
+      {(parent?.deleted || formOf?.deleted) && (
+        <p className="warn small">Points at a deleted food.</p>
+      )}
 
       <Section
         title="Products"
         count={products.length}
         actions={
-          <button className="btn subtle" onClick={() => openQuickAdd({ kind: "products", foodId: food.id })}>
+          <button
+            className="btn subtle"
+            onClick={() => openQuickAdd({ kind: "products", foodId: food.id })}
+          >
             + Product
           </button>
         }
       >
         {products.length ? (
-          <div className="rows">{products.map((p) => <ItemRow key={p.id} view={view} kind="products" item={p} showKind={false} hideFood />)}</div>
+          <div className="rows">
+            {products.map((p) => (
+              <ItemRow
+                key={p.id}
+                view={view}
+                kind="products"
+                item={p}
+                showKind={false}
+                hideFood
+              />
+            ))}
+          </div>
         ) : (
-          <p className="empty-line">None yet: add the ones you buy (and the ones you didn't like).</p>
+          <p className="empty-line">
+            None yet: add the ones you buy (and the ones you didn't like).
+          </p>
         )}
       </Section>
 
-      <Section title="Kinds" count={kinds.length} actions={<button className="btn subtle" onClick={() => setAdding("kind")}>+ Kind</button>}>
-        {adding === "kind" && <AddFood label="Add a kind (e.g. Roma tomato)" options={addable(kinds)} onDone={() => setAdding(null)} link={(f) => link(f, { parentId: food.id })} />}
+      <Section
+        title="Kinds"
+        count={kinds.length}
+        actions={
+          <button className="btn subtle" onClick={() => setAdding("kind")}>
+            + Kind
+          </button>
+        }
+      >
+        {adding === "kind" && (
+          <AddFood
+            label="Add a kind (e.g. Roma tomato)"
+            options={addable(kinds)}
+            onDone={() => setAdding(null)}
+            link={(f) => link(f, { parentId: food.id })}
+          />
+        )}
         {kinds.length > 0 ? (
-          <div className="rows">{kinds.map((f) => <ItemRow key={f.id} view={view} kind="foods" item={f} showKind={false} />)}</div>
+          <div className="rows">
+            {kinds.map((f) => (
+              <ItemRow
+                key={f.id}
+                view={view}
+                kind="foods"
+                item={f}
+                showKind={false}
+              />
+            ))}
+          </div>
         ) : (
           adding !== "kind" && <p className="empty-line">No kinds yet.</p>
         )}
       </Section>
 
-      <Section title="Forms" count={forms.length} actions={<button className="btn subtle" onClick={() => setAdding("form")}>+ Form</button>}>
-        {adding === "form" && <AddFood label="Add a form (e.g. Lemon juice)" options={addable(forms)} onDone={() => setAdding(null)} link={(f) => link(f, { formOfId: food.id })} />}
+      <Section
+        title="Forms"
+        count={forms.length}
+        actions={
+          <button className="btn subtle" onClick={() => setAdding("form")}>
+            + Form
+          </button>
+        }
+      >
+        {adding === "form" && (
+          <AddFood
+            label="Add a form (e.g. Lemon juice)"
+            options={addable(forms)}
+            onDone={() => setAdding(null)}
+            link={(f) => link(f, { formOfId: food.id })}
+          />
+        )}
         {forms.length > 0 ? (
-          <div className="rows">{forms.map((f) => <ItemRow key={f.id} view={view} kind="foods" item={f} showKind={false} />)}</div>
+          <div className="rows">
+            {forms.map((f) => (
+              <ItemRow
+                key={f.id}
+                view={view}
+                kind="foods"
+                item={f}
+                showKind={false}
+              />
+            ))}
+          </div>
         ) : (
-          adding !== "form" && <p className="empty-line">Things made from it that you buy or use on their own (juice, zest you buy dried).</p>
+          adding !== "form" && (
+            <p className="empty-line">
+              Things made from it that you buy or use on their own (juice, zest
+              you buy dried).
+            </p>
+          )
         )}
         {preps.length > 0 && (
-          <p className="small muted">
-            In recipes as: {preps.join(", ")}
-          </p>
+          <p className="small muted">In recipes as: {preps.join(", ")}</p>
         )}
       </Section>
 
       <Section title="Used in" count={used.length + viaForms.length}>
         {used.length + viaForms.length ? (
           <div className="rows">
-            {used.map((r) => <ItemRow key={r.id} view={view} kind="recipes" item={r} showKind={false} />)}
+            {used.map((r) => (
+              <ItemRow
+                key={r.id}
+                view={view}
+                kind="recipes"
+                item={r}
+                showKind={false}
+              />
+            ))}
             {viaForms.map((r) => (
-              <ItemRow key={r.id} view={view} kind="recipes" item={r} showKind={false} extra={<span className="row-sub muted">through a form</span>} />
+              <ItemRow
+                key={r.id}
+                view={view}
+                kind="recipes"
+                item={r}
+                showKind={false}
+                extra={<span className="row-sub muted">through a form</span>}
+              />
             ))}
           </div>
         ) : (
@@ -170,7 +324,13 @@ export function FoodPage({ id }: { id: string }) {
         <Section title="In classics" count={view.classicsUsing(food.id).length}>
           <div className="rows">
             {view.classicsUsing(food.id).map((c) => (
-              <ItemRow key={c.id} view={view} kind="classics" item={c} showKind={false} />
+              <ItemRow
+                key={c.id}
+                view={view}
+                kind="classics"
+                item={c}
+                showKind={false}
+              />
             ))}
           </div>
         </Section>
@@ -182,7 +342,11 @@ export function FoodPage({ id }: { id: string }) {
             Delete
           </button>
         )}
-        <button className="btn subtle" onClick={() => duplicate("foods", food.id)} title="A copy with the same kind of, form of and tags">
+        <button
+          className="btn subtle"
+          onClick={() => duplicate("foods", food.id)}
+          title="A copy with the same kind of, form of and tags"
+        >
           Duplicate
         </button>
       </div>
@@ -210,10 +374,30 @@ export function FoodPage({ id }: { id: string }) {
 }
 
 /** + Form / + Kind: pick a food I already have (it gets linked here) or make a new one. */
-function AddFood({ label, options, link, onDone }: { label: string; options: { id: string; label: string }[]; link: (id: string) => void; onDone: () => void }) {
+function AddFood({
+  label,
+  options,
+  link,
+  onDone,
+}: {
+  label: string;
+  options: { id: string; label: string }[];
+  link: (id: string) => void;
+  onDone: () => void;
+}) {
   return (
     <div className="inline-add">
-      <Picker value={null} options={options} placeholder={label} aria-label={label} autoFocus keepOpen createLabel="New food" onChange={(id) => id && link(id)} onCreate={(n) => ensureFood(n)} />
+      <Picker
+        value={null}
+        options={options}
+        placeholder={label}
+        aria-label={label}
+        autoFocus
+        keepOpen
+        createLabel="New food"
+        onChange={(id) => id && link(id)}
+        onCreate={(n) => ensureFood(n)}
+      />
       <button className="btn" onClick={onDone}>
         Done
       </button>

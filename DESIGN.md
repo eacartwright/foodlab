@@ -723,7 +723,8 @@ Built 2026-11-09. A food's **Wikipedia** field: **🔍 Find** searches Wikipedia
 (the box can be changed, or a link pasted, the mobile site's too), each hit with its picture and
 one-line description, so "Chard" or "Pepper" is picked, not guessed. Set, it shows the article's
 name (a link), **Change** and ✕. The page then shows an **About** card under the title: the
-article's first paragraph (four lines, **More**) and its picture, credited "Wikipedia ↗". It
+article's first paragraph (four lines, **More**) and its picture, as wide as the fields; no link of
+its own (2026-11-11: the Wikipedia field's link credits it). It
 comes from Wikipedia's public REST interface through the server (`server/wiki.ts`,
 `GET /api/wiki/search?q=`, `GET /api/wiki/summary?url=`, asked openly as foodlab, a summary kept a
 day); offline there's no card, just the link. A disambiguation page says to pick one meaning. The

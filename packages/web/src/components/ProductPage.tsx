@@ -41,8 +41,9 @@ export function ProductPage({ id }: { id: string }) {
       {/* The food's whole path, like a food page's, ending at the food itself. */}
       <PageKind kind="products" trail={food ? [...[...view.ancestors(food.id)].reverse(), food].map((f) => ({ href: pathOf("foods", f.id), label: f.name })) : []}>
         {/* Up here, not beside the title: a long name gets the whole width. */}
-        <span className="spacer" />
-        <GroceryButton name={productName(p)} foodId={p.foodId} productId={p.id} />
+        <span className="kind-actions">
+          <GroceryButton name={productName(p)} foodId={p.foodId} productId={p.id} />
+        </span>
       </PageKind>
       {/* Brand, then name: reads as the whole name ("Bell & Evans" "Gluten Free Chicken Breasts"). */}
       <div className="title-row product-title">
