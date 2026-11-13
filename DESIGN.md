@@ -610,6 +610,8 @@ get, beside the word in the sidebar and drawer, on the icon in the phone's tab b
   shopping**, which syncs, so the trip ends on the phone and the desktop alike. Tapping the
   checked box again undoes it (no separate Undo). Then they quietly join Usual. They never pile up.
 - Tapping an item opens its row: name, this time's note, food, product, Not needed, Delete.
+- On a touch screen, swiping an item left shows **Remove** (= Not needed, with Undo); a long swipe
+  does it straight away. A mouse never swipes. `SwipeRow.tsx` is generic: any list can use it.
 - **Usual**: everything I've bought that isn't needed, most-bought first, plus staples (§4.7)
   not yet on it. One tap = needed. Typing in the add box filters it, then offers foods and
   products I haven't bought yet (not 👎 ones); Enter adds the text as typed, linked to the food

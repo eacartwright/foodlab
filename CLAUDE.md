@@ -243,4 +243,7 @@ tombstones (`deleted`), restorable with Undo or the page's Restore.
   `View.classic*` / `recipesOfClassic` / `classicsUsing` / `findClassic`, search group, recipe header
   crumbs, ✨ Suggest (`aiClassic`, `POST /api/ai/classic`). 122 tests; migration and the seed checked on
   a copy of the live DB; browser-checked (desktop and phone).
+- 2026-11-12: **swipe to remove** on the grocery list (touch only; `components/SwipeRow.tsx`, plain pointer
+  events + `touch-action: pan-y`). Checked headless with real touch events: short swipe snaps back, half opens
+  Remove, tap elsewhere closes, long swipe removes.
 - **Next:** AI recipes (DESIGN.md §5.14). M6 (weights) after.

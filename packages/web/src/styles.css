@@ -1441,6 +1441,38 @@ ul.grocery-list li.got .grocery-name {
   font-weight: 400;
   text-decoration: line-through;
 }
+/* SwipeRow: the row slides left over its action (touch only). */
+.swipe {
+  position: relative;
+  flex-basis: 100%;
+  overflow: hidden;
+  touch-action: pan-y;
+}
+.swipe-front {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 4px 10px;
+  background: var(--bg);
+}
+.swipe-settle {
+  transition: transform 0.18s ease-out;
+}
+.swipe-action {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  border: 0;
+  background: var(--danger);
+  color: var(--surface);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.swipe:not(.swipe-open) .swipe-action {
+  visibility: hidden;
+}
 .grocery-edit {
   flex-basis: 100%;
   padding: 4px 0 12px 42px;

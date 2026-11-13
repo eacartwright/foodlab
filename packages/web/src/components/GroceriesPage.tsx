@@ -6,6 +6,7 @@ import { useData } from "../sync";
 import { showToast } from "../toast";
 import { DraftInput, Field, Picker } from "./controls";
 import { Section } from "./rows";
+import { SwipeRow } from "./SwipeRow";
 
 // Groceries (DESIGN.md §4.10, §5.8): one standing list. Each thing I buy is needed or not;
 // checking it off sends it back to Usual, one tap from the list again. Phone-first: it's used
@@ -117,6 +118,12 @@ export function GroceriesPage() {
   );
 }
 
+/** Off the list without counting it as bought (back to Usual), with Undo. */
+function notNeeded(g: GroceryItem) {
+  saveGrocery(g, { need: false, note: "" });
+  showToast(`${g.name} is off the list`, { label: "Undo", run: () => saveGrocery(g, { need: true, note: g.note }) });
+}
+
 function GroceryRow({ g, editing, onEdit }: { g: GroceryItem; editing: boolean; onEdit: () => void }) {
   const { view } = useData();
   const stores = view.groceryStores(g);
@@ -125,13 +132,15 @@ function GroceryRow({ g, editing, onEdit }: { g: GroceryItem; editing: boolean; 
   const products = (food ? view.productsOf(food.id) : view.products).map((p) => ({ id: p.id, label: productName(p) }));
   return (
     <li className={editing ? "editing" : ""}>
-      <input type="checkbox" checked={false} aria-label={`Got ${g.name}`} onChange={() => gotGrocery(g)} />
-      <button className="grocery-main" onClick={onEdit} aria-expanded={editing} title="Note, food, product">
-        <span className="grocery-name">{g.name}</span>
-        {g.note && <span className="grocery-note"> · {g.note}</span>}
-        {food?.plu && <span className="muted grocery-plu" title="PLU"> · {food.plu}</span>}
-        {stores.length > 0 && <span className="muted small grocery-stores">{stores.map((s) => s.name).join(", ")}</span>}
-      </button>
+      <SwipeRow label="Remove" onAction={() => notNeeded(g)} disabled={editing}>
+        <input type="checkbox" checked={false} aria-label={`Got ${g.name}`} onChange={() => gotGrocery(g)} />
+        <button className="grocery-main" onClick={onEdit} aria-expanded={editing} title="Note, food, product">
+          <span className="grocery-name">{g.name}</span>
+          {g.note && <span className="grocery-note"> · {g.note}</span>}
+          {food?.plu && <span className="muted grocery-plu" title="PLU"> · {food.plu}</span>}
+          {stores.length > 0 && <span className="muted small grocery-stores">{stores.map((s) => s.name).join(", ")}</span>}
+        </button>
+      </SwipeRow>
       {editing && (
         <div className="grocery-edit fields compact">
           <Field label="Name">
@@ -166,10 +175,7 @@ function GroceryRow({ g, editing, onEdit }: { g: GroceryItem; editing: boolean; 
             <span className="spacer" />
             <button
               className="btn subtle"
-              onClick={() => {
-                saveGrocery(g, { need: false, note: "" });
-                showToast(`${g.name} is off the list`, { label: "Undo", run: () => saveGrocery(g, { need: true, note: g.note }) });
-              }}
+              onClick={() => notNeeded(g)}
               title="Off the list without counting it as bought"
             >
               Not needed
