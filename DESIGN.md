@@ -807,8 +807,16 @@ next one. A tip says what it's about instead, and foodlab finds the recipes.
 | `name` | The tip in a few words ("Drop the thin outer ring"). Required. |
 | `text` | More, if it needs it (light Markdown). Shown under the name. |
 | `foodIds` | The foods it's about. A food's **kinds count** (is-a only): a tip on Onion is on Yellow onion and Red onion, not on Onion powder (a form). Blank = a general tip, added to recipes by hand. |
-| `when` | **Always** · **Cooked** (a Cook or Bake recipe) · **Raw** (No-cook or Assembly). A recipe with no method gets them all. |
+| `kind` | **Tip** (a rule of thumb) · **Technique** (how to do something: cut an onion, sharpen a knife). 2026-11-14. |
+| `when` | **Always** · **Cooked** (a Cook or Bake recipe) · **Raw** (No-cook or Assembly). A recipe with no method gets them all. Tips only (hidden on a technique). |
+| `links` | A video, an article. The first is a button on the tip's page: ▶ youtube.com ↗ (🔗 on a tip). |
 | `tagIds` | Personal tags, no meals. |
+
+**Techniques are tips** (2026-11-14), not their own kind: they differ in length, not shape, and
+one list means never wondering where something went. A technique with no foods (sharpening a knife)
+just lives in the list and search. A technique on a food is **not listed on its recipes** (the same
+video on every onion recipe would soon go unseen): it shows in the **ingredient card** when I tap
+"1 onion, diced", 🎬 with its link. Added to a recipe by hand, it's listed like a tip.
 
 **On a recipe** (`View.recipeTips`): every tip on one of its ingredients' foods whose When fits
 the method, in ingredient order (then by name), then the ones **added by hand** (`Recipe.tipIds`).
@@ -824,12 +832,13 @@ them the ones through foods as faded chips, ✕ to switch one off and ↺ to swi
 
 **A tip's page** (💡 TIP): Foods, When, More, Tags; **On recipes** (+ Recipe adds it by hand, or
 switches it back on there); **Switched off on**, each with Show it. **Tips** in the sidebar lists
-them all (filter by name, text, foods, tags) with + Add. **A food's page** lists its tips and its
+them all (filter by name, text, foods, tags; Tips and techniques / Tips / Techniques) with + Add
+(Techniques chosen = a new one is a technique). **Search** has a Tips group: a tip is found by its
+name, text, foods (and what they are), tags, and "technique". The page header says 🎬 TECHNIQUE on one. **A food's page** lists its tips and its
 kinds' ("from Onion"); + Tip adds an existing one to the food or makes a new one on it.
 
 Recipe **Notes** stay for what's about that one recipe (from its author or me); a tip is for what
-holds across recipes. Techniques ("dicing an onion", §6) can be tips with more text until they need
-more than that. Not yet: tips in search, tips on products or dishes.
+holds across recipes. Not yet: tips on products or dishes, or on equipment.
 
 ## 6. Later (designed for, not built)
 
@@ -845,8 +854,8 @@ more than that. Not yet: tips in search, tips on products or dishes.
   leavening) decides how to round. *Built 2026-10-27 (§5.4)*: exact → kitchen measures, counted
   things in halves; not yet "the tools I own" or salt and leavening rounded more carefully.
 - **Weight alongside volume** (`grams` on ingredients), with a volume/weight toggle.
-- **Techniques** as their own pages ("dicing an onion"), linked from instructions. Tips (§5.15)
-  cover the short ones; a technique can be a tip with more text until it needs more.
+- **Techniques** linked from instructions ("dice the onion" → how to dice). Techniques themselves
+  are tips (§5.15).
 - **Variants** (my version, small batch). Until then, log entries and notes cover it.
 - **Substitutions** as links. Until then, food notes.
 - **Inventory**: counts on foods or products, if they ever earn their keep. The shopping list

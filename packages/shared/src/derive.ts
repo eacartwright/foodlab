@@ -1,6 +1,7 @@
 import { nameKey } from "./ingredients";
 import {
   GF_LABEL,
+  TIP_KIND_LABEL,
   STORAGE_WORDS,
   PLACE_TYPE_LABEL,
   SPEED_LABEL,
@@ -180,7 +181,8 @@ export class View {
     const off = new Set(r.tipsOff ?? []);
     for (const i of r.ingredients) {
       for (const { tip, from } of this.tipsForFood(i.foodId)) {
-        if (seen.has(tip.id) || (done && tip.when !== "always" && tip.when !== done)) continue;
+        // A technique (how to cut an onion) isn't listed on every recipe: it's in the ingredient card.
+        if (seen.has(tip.id) || tip.kind === "technique" || (done && tip.when !== "always" && tip.when !== done)) continue;
         seen.add(tip.id);
         out.push({ tip, via: from, off: off.has(tip.id) });
       }
@@ -190,6 +192,15 @@ export class View {
       if (tip && !tip.deleted && !seen.has(id)) (seen.add(id), out.push({ tip, via: null, off: false }));
     }
     return out;
+  }
+  /**
+   * Tapping an ingredient: the tips that show on the recipe through this line's food, and its
+   * techniques (how to cut an onion), which show only here.
+   */
+  ingredientTips(r: Recipe, foodId: Id | null): Tip[] {
+    const mine = this.tipsForFood(foodId).map((x) => x.tip);
+    const shown = this.recipeTips(r).filter((x) => !x.off && x.via && mine.includes(x.tip)).map((x) => x.tip);
+    return [...shown, ...mine.filter((t) => t.kind === "technique" && !(r.tipsOff ?? []).includes(t.id))];
   }
   /** The recipes a tip shows on (✕'d ones left out). */
   recipesWithTip = (tipId: Id) => this.recipes.filter((r) => this.recipeTips(r).some((x) => x.tip.id === tipId && !x.off));
@@ -580,7 +591,7 @@ export class View {
   }
 
   /** The words a thing can be found by, lowercased. */
-  private haystack(kind: SearchKind, x: Food | Product | Recipe | Store | Dish | Classic): string[] {
+  private haystack(kind: SearchKind, x: Food | Product | Recipe | Store | Dish | Classic | Tip): string[] {
     const out: string[] = [x.name];
     // A recipe or dish is found through its classic and the classic's kinds ("salad" finds a Caesar).
     const classicWords = (id: Id | null) => {
@@ -629,6 +640,11 @@ export class View {
       out.push(c.notes, ...(c.aliases ?? []), ...this.classicAncestors(c.id).map((a) => a.name));
       for (const i of c.ingredients) foodWords(i.foodId);
       tagWords(c.tagIds);
+    } else if (kind === "tips") {
+      const t = x as Tip;
+      out.push(t.text, TIP_KIND_LABEL[t.kind]);
+      for (const f of t.foodIds) foodWords(f);
+      tagWords(t.tagIds);
     } else if (kind === "dishes") {
       const d = x as Dish;
       classicWords(d.classicId);
@@ -669,6 +685,7 @@ export class View {
     consider("products", this.products);
     consider("dishes", this.dishes);
     consider("foods", this.foods);
+    consider("tips", this.tips);
     consider("stores", this.stores);
     for (const g of [empty.full, empty.partial]) {
       for (const k of SEARCH_KINDS) {
@@ -712,13 +729,14 @@ export class View {
   }
 
   /** Recently changed things, for the empty search page. */
-  recent(n = 12): ({ kind: SearchKind; item: Food | Product | Recipe | Store | Dish | Classic })[] {
+  recent(n = 12): ({ kind: SearchKind; item: Food | Product | Recipe | Store | Dish | Classic | Tip })[] {
     const all = [
       ...this.recipes.map((item) => ({ kind: "recipes" as const, item })),
       ...this.classics.map((item) => ({ kind: "classics" as const, item })),
       ...this.products.map((item) => ({ kind: "products" as const, item })),
       ...this.dishes.map((item) => ({ kind: "dishes" as const, item })),
       ...this.foods.map((item) => ({ kind: "foods" as const, item })),
+      ...this.tips.map((item) => ({ kind: "tips" as const, item })),
       ...this.stores.map((item) => ({ kind: "stores" as const, item })),
     ];
     return all.sort((a, b) => b.item.updatedAt - a.item.updatedAt).slice(0, n);
@@ -760,9 +778,9 @@ export interface RecipeTip {
   off: boolean;
 }
 
-export const SEARCH_KINDS = ["recipes", "classics", "products", "dishes", "foods", "stores"] as const;
+export const SEARCH_KINDS = ["recipes", "classics", "products", "dishes", "foods", "tips", "stores"] as const;
 export type SearchKind = (typeof SEARCH_KINDS)[number];
-type SearchItem<K extends SearchKind> = K extends "recipes" ? Recipe : K extends "classics" ? Classic : K extends "products" ? Product : K extends "dishes" ? Dish : K extends "foods" ? Food : Store;
+type SearchItem<K extends SearchKind> = K extends "recipes" ? Recipe : K extends "classics" ? Classic : K extends "products" ? Product : K extends "dishes" ? Dish : K extends "foods" ? Food : K extends "tips" ? Tip : Store;
 /** A tag a food or product gets from a food above it; `offAt` is where it was switched off ("Not here"), if it was. */
 export type InheritedTag = { tag: Tag; from: Food; offAt: Food | null };
 
@@ -775,7 +793,7 @@ export interface SearchResults {
   /** How many full matches. */
   count: number;
 }
-const emptyGroups = (): SearchGroups => ({ recipes: [], classics: [], products: [], dishes: [], foods: [], stores: [] });
+const emptyGroups = (): SearchGroups => ({ recipes: [], classics: [], products: [], dishes: [], foods: [], tips: [], stores: [] });
 
 /** Lowercase, letters/digits/spaces only, each word singular (so "potatoes" finds "potato"). */
 function norm(s: string): string {

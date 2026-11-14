@@ -1,5 +1,6 @@
 import {
   COST_LABEL,
+  TIP_KIND_LABEL,
   PLACE_TYPE_LABEL,
   fileUrl,
   RATING_EMOJI,
@@ -11,6 +12,7 @@ import {
   type Recipe,
   type SearchKind,
   type Store,
+  type Tip,
   type View,
 } from "@foodlab/shared";
 import type { ReactNode } from "react";
@@ -19,7 +21,7 @@ import { KIND_ICON, KIND_ONE } from "./controls";
 
 // One line per thing, used by search, Eat, lists and pages.
 
-type Item = Food | Product | Recipe | Store | Dish | Classic;
+type Item = Food | Product | Recipe | Store | Dish | Classic | Tip;
 
 export function Rating({ value }: { value: Product["rating"] }) {
   return value ? (
@@ -41,6 +43,11 @@ export function subline(view: View, kind: SearchKind, item: Item, hideFood = fal
     const n = view.recipesOfClassic(c.id, true).length;
     const needs = c.ingredients.filter((i) => i.role === "required").map((i) => view.food(i.foodId)?.name).filter(Boolean);
     return [up && !up.deleted ? `a kind of ${up.name}` : null, needs.length ? needs.join(", ") : null, n ? `${n} recipe${n === 1 ? "" : "s"}` : null].filter(Boolean).join(" · ");
+  }
+  if (kind === "tips") {
+    const t = item as Tip;
+    const foods = t.foodIds.map((f) => view.food(f)).filter((f) => f && !f.deleted).map((f) => f!.name);
+    return [t.kind === "technique" ? TIP_KIND_LABEL.technique : null, foods.join(", ") || null, t.when !== "always" ? t.when : null].filter(Boolean).join(" · ");
   }
   if (kind === "dishes") {
     if (hideFood) return ""; // under its place already

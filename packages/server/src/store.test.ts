@@ -134,6 +134,12 @@ describe("Store", () => {
     store.put("recipes", "r", { ...old, notes: "x" });
     const r = loadState(db).recipes.r!;
     expect([r.tipIds, r.tipsOff]).toEqual([["ring"], ["ring"]]);
+
+    store.put("tips", "cut", { ...blank.tips("cut", "How to cut an onion"), kind: "technique", links: ["https://youtu.be/x"] });
+    const { kind: _k, links: _l, ...oldTip } = store.state.tips.cut!;
+    store.put("tips", "cut", { ...oldTip, text: "Halve it root to tip." });
+    const cut = loadState(db).tips.cut!;
+    expect([cut.kind, cut.links, cut.text]).toEqual(["technique", ["https://youtu.be/x"], "Halve it root to tip."]);
   });
 
   it("tidies a food's aliases and keeps them through an older app's save", () => {

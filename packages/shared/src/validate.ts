@@ -37,6 +37,7 @@ import {
   type Tag,
   type Tip,
   TIP_WHEN,
+  TIP_KINDS,
 } from "./types";
 import { DEFAULT_AI, modelInfo, type AiModel, type AiSettings } from "./ai";
 import { wikiArticle, wikiUrl } from "./wiki";
@@ -337,6 +338,8 @@ export const validators: { [K in Kind]: (body: unknown, id: string, now: number)
       text: str(b.text, "text", 20_000),
       foodIds: ids(b.foodIds, "foodIds"),
       when: oneOf(b.when, TIP_WHEN, "when") ?? "always",
+      kind: oneOf(b.kind, TIP_KINDS, "kind") ?? "tip",
+      links: strs(b.links, "links"),
       tagIds: ids(b.tagIds, "tagIds"),
     };
   },

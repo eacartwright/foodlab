@@ -355,8 +355,8 @@ export function FoodPage({ id }: { id: string }) {
           <ul className="plain tips">
             {tips.map(({ tip, from }) => (
               <li key={tip.id}>
-                💡 <A href={pathOf("tips", tip.id)}>{tip.name}</A>
-                {tip.when !== "always" && <span className="muted small"> · {TIP_WHEN_LABEL[tip.when].toLowerCase()}</span>}
+                {tip.kind === "technique" ? "🎬" : "💡"} <A href={pathOf("tips", tip.id)}>{tip.name}</A>
+                {tip.kind === "tip" && tip.when !== "always" && <span className="muted small"> · {TIP_WHEN_LABEL[tip.when].toLowerCase()}</span>}
                 {from.id !== food.id && (
                   <span className="muted small">
                     {" "}

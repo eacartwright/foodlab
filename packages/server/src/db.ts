@@ -300,6 +300,11 @@ const MIGRATIONS: string[] = [
   ALTER TABLE recipes ADD COLUMN tip_ids TEXT NOT NULL DEFAULT '[]';   -- JSON [tipId, ...], added by hand
   ALTER TABLE recipes ADD COLUMN tips_off TEXT NOT NULL DEFAULT '[]';  -- JSON [tipId, ...], ✕'d here
   `,
+  // 2026-11-14: techniques are tips too (how to cut an onion), and a tip can have links (a video).
+  `
+  ALTER TABLE tips ADD COLUMN kind TEXT NOT NULL DEFAULT 'tip';  -- tip | technique
+  ALTER TABLE tips ADD COLUMN links TEXT NOT NULL DEFAULT '[]';  -- JSON ["https://…", ...]
+  `,
 ];
 
 export type DB = DatabaseSync;
@@ -410,7 +415,7 @@ export function loadState(db: DB): State {
     tipFoodsOf.set(r.tip_id, [...(tipFoodsOf.get(r.tip_id) ?? []), r.food_id]);
   }
   for (const r of db.prepare("SELECT * FROM tips").all() as Row[]) {
-    s.tips[r.id] = { ...base(r), name: r.name, text: r.text, when: r.applies_when, foodIds: tipFoodsOf.get(r.id) ?? [], tagIds: tagsOf.get(`tips:${r.id}`) ?? [] } satisfies Tip;
+    s.tips[r.id] = { ...base(r), name: r.name, text: r.text, when: r.applies_when, kind: r.kind ?? "tip", links: JSON.parse(r.links ?? "[]"), foodIds: tipFoodsOf.get(r.id) ?? [], tagIds: tagsOf.get(`tips:${r.id}`) ?? [] } satisfies Tip;
   }
   for (const r of db.prepare("SELECT * FROM foods").all() as Row[]) {
     s.foods[r.id] = {
@@ -591,7 +596,7 @@ export const save = {
     x.ingredients.forEach((i, n) => ins.run(x.id, i.id, n, i.foodId, i.role, i.note));
   },
   tips(db: DB, x: Tip) {
-    upsert(db, "tips", { ...baseCols(x), name: x.name, text: x.text, applies_when: x.when });
+    upsert(db, "tips", { ...baseCols(x), name: x.name, text: x.text, applies_when: x.when, kind: x.kind, links: JSON.stringify(x.links) });
     setTags(db, "tips", x.id, x.tagIds);
     db.prepare("DELETE FROM tip_foods WHERE tip_id = ?").run(x.id);
     const ins = db.prepare("INSERT INTO tip_foods (tip_id, food_id, position) VALUES (?, ?, ?)");

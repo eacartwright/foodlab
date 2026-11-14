@@ -45,6 +45,9 @@ export class Store {
     if (kind === "foods" && prev && (body as { aliases?: unknown }).aliases === undefined) (rec as Records["foods"]).aliases = (prev as Records["foods"]).aliases;
     if (kind === "products" && prev && (body as { storage?: unknown }).storage === undefined) (rec as Product).storage = (prev as Product).storage;
     if ((kind === "recipes" || kind === "dishes") && prev && (body as { classicId?: unknown }).classicId === undefined) (rec as Recipe | Dish).classicId = (prev as Recipe | Dish).classicId;
+    // An app from before techniques and links on tips (2026-11-14) saves a tip without them.
+    if (kind === "tips" && prev && (body as { kind?: unknown }).kind === undefined) (rec as Records["tips"]).kind = (prev as Records["tips"]).kind;
+    if (kind === "tips" && prev && (body as { links?: unknown }).links === undefined) (rec as Records["tips"]).links = (prev as Records["tips"]).links;
     // An app from before tips (2026-11-14) saves a recipe without them: keep the ones it has.
     if (kind === "recipes" && prev && (body as { tipIds?: unknown }).tipIds === undefined) (rec as Recipe).tipIds = (prev as Recipe).tipIds;
     if (kind === "recipes" && prev && (body as { tipsOff?: unknown }).tipsOff === undefined) (rec as Recipe).tipsOff = (prev as Recipe).tipsOff;

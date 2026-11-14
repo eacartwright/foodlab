@@ -252,6 +252,10 @@ export interface Recipe extends Base, Eating {
 export const TIP_WHEN = ["always", "cooked", "raw"] as const;
 export type TipWhen = (typeof TIP_WHEN)[number];
 export const TIP_WHEN_LABEL: Record<TipWhen, string> = { always: "Always", cooked: "Cooked", raw: "Raw" };
+/** A tip is a rule of thumb; a technique is how to do something (cut an onion, sharpen a knife). */
+export const TIP_KINDS = ["tip", "technique"] as const;
+export type TipKind = (typeof TIP_KINDS)[number];
+export const TIP_KIND_LABEL: Record<TipKind, string> = { tip: "Tip", technique: "Technique" };
 
 /**
  * A tip or technique (DESIGN.md §5.15): "Drop the thin outer ring" on Onion, when cooked. Shows on
@@ -266,6 +270,10 @@ export interface Tip extends Base {
   /** The foods it's about; their kinds count too (Onion → Yellow onion). */
   foodIds: Id[];
   when: TipWhen;
+  /** Tip or technique (2026-11-14). A technique isn't listed on recipes, only in the ingredient card. */
+  kind: TipKind;
+  /** A video, an article; the first is shown as a button. */
+  links: string[];
   tagIds: Id[];
 }
 
@@ -445,7 +453,7 @@ export const blank = {
     tipIds: [],
     tipsOff: [],
   }),
-  tips: (id: Id, name: string, now = Date.now()): Tip => ({ ...EMPTY_BASE(id, now), name, text: "", foodIds: [], when: "always", tagIds: [] }),
+  tips: (id: Id, name: string, now = Date.now()): Tip => ({ ...EMPTY_BASE(id, now), name, text: "", foodIds: [], when: "always", kind: "tip", links: [], tagIds: [] }),
   tags: (id: Id, name: string, now = Date.now()): Tag => ({ ...EMPTY_BASE(id, now), name, kind: "personal", aliases: [] }),
   devnotes: (id: Id, text: string, path: string, now = Date.now()): DevNote => ({ ...EMPTY_BASE(id, now), text, path, done: false, files: [] }),
   settings: (now = Date.now()): Settings => ({ ...EMPTY_BASE(SETTINGS_ID, now), mealTimes: DEFAULT_MEAL_TIMES, ai: DEFAULT_AI }),

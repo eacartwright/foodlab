@@ -427,6 +427,18 @@ describe("tips", () => {
     expect(shown("dry")).toEqual([]);
   });
 
+  it("leave techniques off the recipe, and show them in the ingredient card", () => {
+    const s2 = structuredClone(s);
+    s2.tips.cut = { ...blank.tips("cut", "How to cut an onion"), kind: "technique", foodIds: ["onion"], links: ["https://youtu.be/x"] };
+    const v2 = new View(s2);
+    const om = v2.state.recipes.om!;
+    expect(v2.recipeTips(om).map((x) => x.tip.id)).not.toContain("cut");
+    expect(v2.ingredientTips(om, "yellow").map((t) => t.id)).toEqual(["ring", "cut"]); // "always" is off here
+    expect(v2.ingredientTips(om, "egg")).toEqual([]);
+    expect(v2.search("onion + cut").full.tips.map((h) => h.item.id)).toEqual(["always", "cut"]);
+    expect(v2.search("technique").full.tips.map((h) => h.item.id)).toEqual(["cut"]);
+  });
+
   it("list a food's own tips and its kinds', and the recipes each shows on", () => {
     expect(v.tipsForFood("yellow").map((x) => `${x.tip.id}<${x.from.id}`)).toEqual(["always<onion", "ring<onion", "soak<onion"]);
     expect(v.recipesWithTip("ring").map((r) => r.id)).toEqual(["any", "om"]);

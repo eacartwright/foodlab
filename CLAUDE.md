@@ -253,4 +253,7 @@ tombstones (`deleted`), restorable with Undo or the page's Restore.
   shows on recipes under Notes, ✕ = not on this recipe (`tipOff`); added by hand in Edit. `TipPage.tsx`,
   `TipsList`, `View.recipeTips` / `tipsForFood` / `recipesWithTip`; food page Tips section; ingredient card.
   126 tests; migration checked on a copy of the live DB; browser-checked (desktop and phone dark).
+- 2026-11-14: **Techniques are tips** (`Tip.kind` tip / technique, `Tip.links`; migration 21): a technique
+  isn't listed on recipes, only in the ingredient card (`View.ingredientTips`); Tips list filters by kind;
+  **search has a Tips group** (`SEARCH_KINDS` has `tips`). 127 tests; browser-checked.
 - **Next:** AI recipes (DESIGN.md §5.14). M6 (weights) after.

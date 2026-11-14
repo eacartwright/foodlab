@@ -702,12 +702,23 @@ export const KIND_ONE = { recipes: "Recipe", classics: "Classic", tips: "Tip", p
  * to its page; the › between them are plain, and nothing trails (the page's name is the title
  * below). `children` go after it (a spacer and ✏️ Edit).
  */
-export function PageKind({ kind, trail = [], children }: { kind: keyof typeof KIND_ONE; trail?: { href: string; label: string }[]; children?: ReactNode }) {
+export function PageKind({
+  kind,
+  trail = [],
+  children,
+  as,
+}: {
+  kind: keyof typeof KIND_ONE;
+  trail?: { href: string; label: string }[];
+  children?: ReactNode;
+  /** Another name and icon for the kind (a technique is a tip: 🎬 TECHNIQUE, still to Tips). */
+  as?: { icon: string; label: string };
+}) {
   return (
     <div className="page-kind">
       <nav className="crumbs" aria-label="Breadcrumb">
         <A className="kind-link" href={listPath(kind)}>
-          {KIND_ICON[kind]} {KIND_ONE[kind]}
+          {as?.icon ?? KIND_ICON[kind]} {as?.label ?? KIND_ONE[kind]}
         </A>
         {trail.map((t) => (
           <span key={t.href} className="crumb">

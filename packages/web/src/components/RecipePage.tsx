@@ -201,8 +201,16 @@ function RecipeTips({ r }: { r: Recipe }) {
           <li key={tip.id} className="tip">
             <div className="tip-head">
               <span>
-                💡 {via && <span className="muted">{via.name} · </span>}
+                {tip.kind === "technique" ? "🎬" : "💡"} {via && <span className="muted">{via.name} · </span>}
                 <A href={pathOf("tips", tip.id)}>{tip.name}</A>
+                {tip.links[0] && (
+                  <>
+                    {" "}
+                    <a className="tip-link" href={tip.links[0]} target="_blank" rel="noreferrer noopener" title={tip.links[0]}>
+                      {siteOf(tip.links[0])} ↗
+                    </a>
+                  </>
+                )}
               </span>
               <button className="btn icon subtle" aria-label={`Not on this recipe: ${tip.name}`} title="Not on this recipe" onClick={() => tipOff(r, tip.id)}>
                 ✕
@@ -252,7 +260,7 @@ function TipsField({ r }: { r: Recipe }) {
 }
 
 /** "bbcgoodfood.com" for a link to one of its pages; anything else as it is. */
-const siteOf = (link: string) => {
+export const siteOf = (link: string) => {
   try {
     return new URL(link).hostname.replace(/^www\./, "");
   } catch {
@@ -267,7 +275,7 @@ function IngredientCard({ r, i }: { r: Recipe; i: RecipeIngredient }) {
   const food = view.food(i.foodId);
   const also = food ? view.recipesUsing(food.id).filter((x) => x.id !== r.id) : [];
   // This line's tips, as they show on this recipe (the method fits, not switched off).
-  const tips = view.recipeTips(r).filter((x) => !x.off && x.via && view.tipsForFood(i.foodId).some((y) => y.tip.id === x.tip.id)).map((x) => x.tip);
+  const tips = view.ingredientTips(r, i.foodId);
   return (
     <div className="ing-card">
       {food ? (
@@ -283,7 +291,15 @@ function IngredientCard({ r, i }: { r: Recipe; i: RecipeIngredient }) {
             <ul className="plain small ing-card-tips">
               {tips.map((t) => (
                 <li key={t.id}>
-                  💡 <A href={pathOf("tips", t.id)}>{t.name}</A>
+                  {t.kind === "technique" ? "🎬" : "💡"} <A href={pathOf("tips", t.id)}>{t.name}</A>
+                  {t.links[0] && (
+                    <>
+                      {" "}
+                      <a href={t.links[0]} target="_blank" rel="noreferrer noopener" title={t.links[0]}>
+                        {siteOf(t.links[0])} ↗
+                      </a>
+                    </>
+                  )}
                 </li>
               ))}
             </ul>

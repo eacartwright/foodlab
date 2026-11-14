@@ -1,11 +1,12 @@
-import { TIP_WHEN, TIP_WHEN_LABEL, type Tip } from "@foodlab/shared";
+import { TIP_KINDS, TIP_KIND_LABEL, TIP_WHEN, TIP_WHEN_LABEL, type Tip } from "@foodlab/shared";
 import { useState } from "react";
 import { ensureFood, remove } from "../actions";
 import { A, go, listPath, pathOf } from "../router";
 import { data, put, useData } from "../sync";
 import { ConfirmDialog } from "./ConfirmDialog";
-import { DraftTextarea, Field, MultiPicker, PageKind, Picker, Segmented, TagEditor, TitleInput } from "./controls";
+import { DraftTextarea, Field, LinksEditor, MultiPicker, PageKind, Picker, Segmented, TagEditor, TitleInput } from "./controls";
 import { Deleted, NotFound } from "./FoodPage";
+import { siteOf } from "./RecipePage";
 import { ItemRow, Section } from "./rows";
 
 // A tip (DESIGN.md §5.15): "Drop the thin outer ring" on Onion, when cooked. It shows on every
@@ -32,11 +33,21 @@ export function TipPage({ id }: { id: string }) {
   return (
     <article className="page">
       {t.deleted && <Deleted onRestore={() => save({ deleted: false })} />}
-      <PageKind kind="tips" />
+      <PageKind kind="tips" as={t.kind === "technique" ? { icon: "🎬", label: "Technique" } : undefined}>
+        <span className="spacer" />
+        {t.links[0] && (
+          <a className="btn subtle" href={t.links[0]} target="_blank" rel="noreferrer noopener" title={t.links[0]}>
+            {t.kind === "technique" ? "▶" : "🔗"} {siteOf(t.links[0])} ↗
+          </a>
+        )}
+      </PageKind>
       <div className="title-row">
         <TitleInput value={t.name} required aria-label="Tip" onCommit={(name) => save({ name })} />
       </div>
       <div className="fields">
+        <Field label="Kind">
+          <Segmented value={t.kind} options={TIP_KINDS} labels={TIP_KIND_LABEL} clearable={false} onChange={(kind) => kind && save({ kind })} />
+        </Field>
         <Field label="Foods">
           <MultiPicker
             values={t.foodIds}
@@ -47,11 +58,17 @@ export function TipPage({ id }: { id: string }) {
             onCreate={(n) => ensureFood(n)}
           />
         </Field>
-        <Field label="When">
-          <Segmented value={t.when} options={TIP_WHEN} labels={TIP_WHEN_LABEL} clearable={false} onChange={(when) => when && save({ when })} />
-        </Field>
+        {/* When picks the recipes a tip lists itself on; a technique is only in the ingredient card. */}
+        {t.kind === "tip" && (
+          <Field label="When">
+            <Segmented value={t.when} options={TIP_WHEN} labels={TIP_WHEN_LABEL} clearable={false} onChange={(when) => when && save({ when })} />
+          </Field>
+        )}
         <Field label="More">
           <DraftTextarea className="input" rows={4} value={t.text} onCommit={(text) => save({ text })} />
+        </Field>
+        <Field label="Links">
+          <LinksEditor value={t.links} onChange={(links) => save({ links })} />
         </Field>
         <Field label="Tags">
           <TagEditor value={t.tagIds} noMeals onChange={(tagIds) => save({ tagIds })} />

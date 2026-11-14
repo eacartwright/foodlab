@@ -12,6 +12,8 @@ import {
   SPEED_LABEL,
   STATUSES,
   STATUS_LABEL,
+  TIP_KINDS,
+  TIP_KIND_LABEL,
   TIP_WHEN_LABEL,
   nameKey,
   productName,
@@ -1198,25 +1200,27 @@ export function ClassicsList() {
   );
 }
 
-/** Tips (DESIGN.md §5.15): every tip, with its foods, when it applies and how many recipes show it. */
+/** Tips (DESIGN.md §5.15): every tip and technique, with its foods, when it applies and how many recipes show it. */
 export function TipsList() {
   const { view } = useData();
   const { query } = useRoute();
   const f = query.get("f") ?? "";
+  const kind = query.get("kind");
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState("");
   const foodsOf = (t: Tip) => t.foodIds.map((id) => view.food(id)).filter((x) => x && !x.deleted).map((x) => x!.name);
   const rows = useMemo(
     () =>
       view.tips
+        .filter((t) => !kind || t.kind === kind)
         .filter((t) => match([t.name, t.text, ...foodsOf(t), ...t.tagIds.map((id) => view.tag(id)?.name ?? "")].join(" "), f))
         .map((t) => ({ t, foods: foodsOf(t), n: view.recipesWithTip(t.id).length })),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [view, f],
+    [view, f, kind],
   );
   const create = () => {
     if (!name.trim()) return;
-    const id = ensureTip(name);
+    const id = ensureTip(name, kind === "technique" ? { kind: "technique" } : {});
     setName("");
     setAdding(false);
     go(pathOf("tips", id));
@@ -1228,7 +1232,16 @@ export function TipsList() {
       count={rows.length}
       add={() => setAdding(true)}
       filters={
-        adding && (
+        <>
+          <select className="select" value={kind ?? ""} onChange={(e) => setQuery({ kind: e.target.value || null })} aria-label="Kind">
+            <option value="">Tips and techniques</option>
+            {TIP_KINDS.map((k) => (
+              <option key={k} value={k}>
+                {TIP_KIND_LABEL[k]}s
+              </option>
+            ))}
+          </select>
+          {adding && (
           <span className="inline">
             <input
               className="input"
@@ -1249,7 +1262,8 @@ export function TipsList() {
               Cancel
             </button>
           </span>
-        )
+          )}
+        </>
       }
       empty={view.tips.length ? "No tips match." : "No tips yet."}
       head={
@@ -1264,10 +1278,15 @@ export function TipsList() {
       {rows.map(({ t, foods, n }) => (
         <tr key={t.id}>
           <td>
+            {t.kind === "technique" && (
+              <span title="Technique" aria-label="Technique">
+                🎬{" "}
+              </span>
+            )}
             <A href={pathOf("tips", t.id)}>{t.name}</A>
           </td>
           <td className="hide-sm muted small">{foods.join(", ")}</td>
-          <td className="hide-sm muted small">{t.when === "always" ? "" : TIP_WHEN_LABEL[t.when]}</td>
+          <td className="hide-sm muted small">{t.kind === "technique" || t.when === "always" ? "" : TIP_WHEN_LABEL[t.when]}</td>
           <td className="num">{n || <span className="muted">0</span>}</td>
         </tr>
       ))}
