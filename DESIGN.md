@@ -867,6 +867,14 @@ holds across recipes. Not yet: tips on products or dishes, or on equipment.
 - **Saved searches**: a `+` search kept by name, one tap from home.
 - **Groceries by store or aisle**: grouping the list by a product's store, or a store's aisle
   order, once the list is in use and it's clear whether that's wanted.
+- **Desktop app (Tauri), Windows only, just for me** (2026-11-14). A thin shell: its window loads
+  the live site (https://foodlab.evans.tools), not a bundled copy, so foodlab still updates by
+  deploying to ripley and the shell is rebuilt only when it changes. WebView2 (Chromium, part of
+  Windows) runs it, so Access login, the offline cache and sync work as they do in Chrome. The
+  reason: the Chrome-installed app opens outside links (sources, Wikipedia, videos) in Chrome, and
+  my browser is Firefox; Tauri hands them to the default browser (its opener plugin). Room later
+  for a tray icon or a global hotkey for Quick add. Over Electron (100MB+ with its own Chromium)
+  and Edge's install (links open in Edge). Costs the Rust toolchain on NOSTROMO.
 
 ## 7. Look & feel
 
