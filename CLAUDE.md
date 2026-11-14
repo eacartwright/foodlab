@@ -7,6 +7,11 @@ path. **[DESIGN.md](DESIGN.md) is the spec**; read the relevant section before c
 and update it when a decision changes. Same stack and conventions as sideshow
 (`C:\Dev\sideshow`); when in doubt, do it the way sideshow does.
 
+**Playbook:** built with the **phone-and-desktop** playbook (`C:\Dev\playbooks\phone-and-desktop`,
+github.com/eacartwright/playbooks): the shared stack, sync, hosting, UI and AI standards across
+sideshow, foodlab and evenkeel. When a standard changes here, or something here gets built in a
+second app, update the playbook in the same session (its README, "Keeping it alive").
+
 ## Run / test
 
 ```sh
