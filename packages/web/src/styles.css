@@ -1051,6 +1051,11 @@ table.parsed th {
 .tag-actions .select {
   width: 6.5em;
 }
+/* Tags: every row as tall as one with Merge and ✕ (meal rows have none), all centered. */
+table.db:has(th.tag-actions) td {
+  vertical-align: middle;
+  height: calc(var(--tap) + 17px);
+}
 /* A sortable header: looks like the header text, the whole cell is the button. */
 .sort-th {
   all: unset;
