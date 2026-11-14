@@ -201,8 +201,8 @@ function RecipeTips({ r }: { r: Recipe }) {
           <li key={tip.id} className="tip">
             <div className="tip-head">
               <span>
-                💡 <A href={pathOf("tips", tip.id)}>{tip.name}</A>
-                {via && <span className="muted small"> · {via.name}</span>}
+                💡 {via && <span className="muted">{via.name} · </span>}
+                <A href={pathOf("tips", tip.id)}>{tip.name}</A>
               </span>
               <button className="btn icon subtle" aria-label={`Not on this recipe: ${tip.name}`} title="Not on this recipe" onClick={() => tipOff(r, tip.id)}>
                 ✕

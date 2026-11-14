@@ -812,8 +812,8 @@ next one. A tip says what it's about instead, and foodlab finds the recipes.
 
 **On a recipe** (`View.recipeTips`): every tip on one of its ingredients' foods whose When fits
 the method, in ingredient order (then by name), then the ones **added by hand** (`Recipe.tipIds`).
-The recipe view lists them as **Tips**, under Notes: name (a link to the tip), the food it came
-through, its text, and **✕**: *not on this recipe*. ✕ on one that came through a food switches it
+The recipe view lists them as **Tips**, under Notes: the food it came through, then the
+name, a link to the tip ("Onions · Discard the thinnest outer ring…", 2026-11-14), then its text, and **✕**: *not on this recipe*. ✕ on one that came through a food switches it
 off here (`Recipe.tipsOff`); on one added by hand it comes off. Undo in the toast. The method match
 is crude on purpose (a Cook recipe can still use raw onion as a garnish); ✕ covers the misses,
 and no AI reads the recipe to decide (2026-11-14, Evan's call). Tapping an ingredient shows its
