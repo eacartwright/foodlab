@@ -55,7 +55,17 @@ setup); this file has only what's different. Legend: **[Evan]** = needs Evan.
 
 - **Update** after a push to `main`: the **Update Foodlab** shortcut on the desktop (it runs
   `.\scripts\update.ps1` in `C:\Apps\foodlab` as admin). The installed app picks up the
-  new build next time it's opened.
+  new build next time it's opened. Or from a dev machine: `ssh ripley-deploy foodlab` (below).
+- **Deploys over SSH** (all the apps in `C:\Apps`): ripley runs the Windows OpenSSH Server, and
+  each dev machine's key in `administrators_authorized_keys` is locked to `C:\Apps\deploy.ps1`,
+  which only runs `C:\Apps\<app>\scripts\update.ps1` for an app folder it finds (`ssh ripley-deploy`
+  alone lists them) and logs each run to `C:\Apps\deploy.log`. A new app needs nothing added.
+  A new dev machine: `ssh-keygen -t ed25519 -N "" -f ~/.ssh/ripley_deploy` (from Git Bash: an
+  empty passphrase from PowerShell comes out as `""`), add the `Host ripley-deploy` block
+  (HostName ripley, User evan, IdentityFile ~/.ssh/ripley_deploy, IdentitiesOnly yes) to
+  `~/.ssh/config`, copy the `.pub` to `C:\Apps\deploy-keys\<MACHINE>.pub` on ripley, then on
+  ripley in an admin PowerShell: `powershell -ExecutionPolicy Bypass -File C:\Apps\setup-deploy-ssh.ps1`
+  (installs sshd the first time; rerun it to add or remove keys).
 - **Health:** `Invoke-RestMethod http://127.0.0.1:8082/api/health`.
 - **Restore a backup:** `Stop-ScheduledTask foodlab`, copy the backup over `data\foodlab.db`,
   delete `data\foodlab.db-wal` and `-shm`, `Start-ScheduledTask foodlab`.

@@ -93,8 +93,10 @@ tombstones (`deleted`), restorable with Undo or the page's Restore.
 ## Working with Evan
 
 - Commit and push only when asked.
-- Deploys with the **Update Foodlab** shortcut on ripley's desktop (it runs `scripts\update.ps1`);
-  point him to that, not the script.
+- **Deploys:** when Evan asks, run `ssh ripley-deploy foodlab` (ripley's `C:\Apps\deploy.ps1` runs
+  this app's `scripts\update.ps1`; the key can do nothing else) and report how it ended (the health
+  line). It goes live, so only when asked. The **Update Foodlab** shortcut on ripley still works.
+  No `ripley-deploy` key on this machine: runbook, "Deploys over SSH".
 - **"Dev notes" means the live ones** on the mini PC (ripley), never this machine's dev DB:
   read `\\ripley\C\Apps\foodlab\data\dev-notes.md` (`Z:\Apps\foodlab\...` on the laptop). Read
   only; never open the live `.db` over the share.
