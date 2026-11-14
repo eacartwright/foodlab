@@ -45,6 +45,9 @@ export class Store {
     if (kind === "foods" && prev && (body as { aliases?: unknown }).aliases === undefined) (rec as Records["foods"]).aliases = (prev as Records["foods"]).aliases;
     if (kind === "products" && prev && (body as { storage?: unknown }).storage === undefined) (rec as Product).storage = (prev as Product).storage;
     if ((kind === "recipes" || kind === "dishes") && prev && (body as { classicId?: unknown }).classicId === undefined) (rec as Recipe | Dish).classicId = (prev as Recipe | Dish).classicId;
+    // An app from before tips (2026-11-14) saves a recipe without them: keep the ones it has.
+    if (kind === "recipes" && prev && (body as { tipIds?: unknown }).tipIds === undefined) (rec as Recipe).tipIds = (prev as Recipe).tipIds;
+    if (kind === "recipes" && prev && (body as { tipsOff?: unknown }).tipsOff === undefined) (rec as Recipe).tipsOff = (prev as Recipe).tipsOff;
     this.check(kind, rec, prev);
 
     const log: LogEntry[] = [];
@@ -118,6 +121,14 @@ export class Store {
         }
         tags(r.tagIds);
         need(s.classics, r.classicId, "classic");
+        r.tipIds.forEach((t) => need(s.tips, t, "tip"));
+        r.tipsOff.forEach((t) => need(s.tips, t, "tip"));
+        break;
+      }
+      case "tips": {
+        const t = rec as Records["tips"];
+        t.foodIds.forEach((f) => need(s.foods, f, "food"));
+        tags(t.tagIds);
         break;
       }
       case "classics": {

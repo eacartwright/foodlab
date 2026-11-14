@@ -248,4 +248,9 @@ tombstones (`deleted`), restorable with Undo or the page's Restore.
 - 2026-11-12: **swipe to remove** on the grocery list (touch only; `components/SwipeRow.tsx`, plain pointer
   events + `touch-action: pan-y`). Checked headless with real touch events: short swipe snaps back, half opens
   Remove, tap elsewhere closes, long swipe removes.
+- 2026-11-14: **Tips** (DESIGN.md §5.15; migration 20: `tips`, `tip_foods`, `recipes.tip_ids` / `tips_off`):
+  a tip on foods (their kinds count, not forms) with When (Always / Cooked / Raw by the recipe's method)
+  shows on recipes under Notes, ✕ = not on this recipe (`tipOff`); added by hand in Edit. `TipPage.tsx`,
+  `TipsList`, `View.recipeTips` / `tipsForFood` / `recipesWithTip`; food page Tips section; ingredient card.
+  126 tests; migration checked on a copy of the live DB; browser-checked (desktop and phone dark).
 - **Next:** AI recipes (DESIGN.md §5.14). M6 (weights) after.

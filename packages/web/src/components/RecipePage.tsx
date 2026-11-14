@@ -16,13 +16,13 @@ import {
   type View,
 } from "@foodlab/shared";
 import { useEffect, useState } from "react";
-import { addLog, duplicate, ensureClassic, ensureFood, remove, setIngredientFood } from "../actions";
+import { addLog, duplicate, ensureClassic, ensureFood, ensureTip, remove, setIngredientFood, tipOff } from "../actions";
 import { Markdown } from "../markdown";
 import { A, go, pathOf, setQuery, useRoute } from "../router";
 import { data, put, useData } from "../sync";
 import { showToast } from "../toast";
 import { ConfirmDialog } from "./ConfirmDialog";
-import { DraftInput, DraftTextarea, Field, NumberInput, PageKind, Picker, RatingInput, Segmented, TitleInput } from "./controls";
+import { DraftInput, DraftTextarea, Field, MultiPicker, NumberInput, PageKind, Picker, RatingInput, Segmented, TitleInput } from "./controls";
 import { EatingFields, LogSection, doneText } from "./eating";
 import { PhotoFromLink, PhotoViewer, Photos } from "./Photos";
 import { Deleted, NotFound } from "./FoodPage";
@@ -170,6 +170,7 @@ function RecipeView({ r }: { r: Recipe }) {
           <Markdown text={r.notes} />
         </Section>
       )}
+      <RecipeTips r={r} />
       {more.length > 0 && (
         <Section title="More links">
           <ul className="plain">
@@ -188,6 +189,68 @@ function RecipeView({ r }: { r: Recipe }) {
   );
 }
 
+/** Tips (DESIGN.md §5.15): through the ingredients' foods and added by hand; ✕ takes one off this recipe. */
+function RecipeTips({ r }: { r: Recipe }) {
+  const { view } = useData();
+  const tips = view.recipeTips(r).filter((x) => !x.off);
+  if (!tips.length) return null;
+  return (
+    <Section title="Tips">
+      <ul className="plain tips">
+        {tips.map(({ tip, via }) => (
+          <li key={tip.id} className="tip">
+            <div className="tip-head">
+              <span>
+                💡 <A href={pathOf("tips", tip.id)}>{tip.name}</A>
+                {via && <span className="muted small"> · {via.name}</span>}
+              </span>
+              <button className="btn icon subtle" aria-label={`Not on this recipe: ${tip.name}`} title="Not on this recipe" onClick={() => tipOff(r, tip.id)}>
+                ✕
+              </button>
+            </div>
+            {tip.text && <Markdown text={tip.text} />}
+          </li>
+        ))}
+      </ul>
+    </Section>
+  );
+}
+
+/** Edit: tips added by hand (pick or make one), and the ones through ingredients, ✕ / ↺ each. */
+function TipsField({ r }: { r: Recipe }) {
+  const { view } = useData();
+  const auto = view.recipeTips(r).filter((x) => x.via);
+  const setOff = (tipId: Id, off: boolean) => {
+    const now = data().state.recipes[r.id] ?? r;
+    put("recipes", { ...now, tipsOff: off ? [...now.tipsOff, tipId] : now.tipsOff.filter((t) => t !== tipId) });
+  };
+  return (
+    <div className="stack-sm">
+      <MultiPicker
+        values={r.tipIds}
+        options={view.tips.map((t) => ({ id: t.id, label: t.name }))}
+        createLabel="New tip"
+        linkTo={(t) => pathOf("tips", t)}
+        onChange={(tipIds) => put("recipes", { ...(data().state.recipes[r.id] ?? r), tipIds })}
+        onCreate={(n) => ensureTip(n)}
+      />
+      {auto.length > 0 && (
+        <div className="chips">
+          {auto.map(({ tip, via, off }) => (
+            <span key={tip.id} className={`chip chip-inherited chip-set${off ? " chip-off" : ""}`} title={`From ${via!.name}${off ? ", switched off here" : ""}`}>
+              <A href={pathOf("tips", tip.id)}>{tip.name}</A>
+              <span className="sr-only"> (from {via!.name}{off ? ", switched off here" : ""})</span>
+              <button aria-label={off ? `Show “${tip.name}” here` : `Not on this recipe: “${tip.name}”`} title={off ? "Back on" : "Not here"} onClick={() => setOff(tip.id, !off)}>
+                {off ? "↺" : "✕"}
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /** "bbcgoodfood.com" for a link to one of its pages; anything else as it is. */
 const siteOf = (link: string) => {
   try {
@@ -203,6 +266,8 @@ function IngredientCard({ r, i }: { r: Recipe; i: RecipeIngredient }) {
   const [relink, setRelink] = useState(false);
   const food = view.food(i.foodId);
   const also = food ? view.recipesUsing(food.id).filter((x) => x.id !== r.id) : [];
+  // This line's tips, as they show on this recipe (the method fits, not switched off).
+  const tips = view.recipeTips(r).filter((x) => !x.off && x.via && view.tipsForFood(i.foodId).some((y) => y.tip.id === x.tip.id)).map((x) => x.tip);
   return (
     <div className="ing-card">
       {food ? (
@@ -214,6 +279,15 @@ function IngredientCard({ r, i }: { r: Recipe; i: RecipeIngredient }) {
             {food.staple && <span className="staple-mark">★</span>}
             {[i.prep, i.note].filter(Boolean).length > 0 && <span className="muted small">{[i.prep, i.note].filter(Boolean).join("; ")}</span>}
           </div>
+          {tips.length > 0 && (
+            <ul className="plain small ing-card-tips">
+              {tips.map((t) => (
+                <li key={t.id}>
+                  💡 <A href={pathOf("tips", t.id)}>{t.name}</A>
+                </li>
+              ))}
+            </ul>
+          )}
           {also.length > 0 && (
             <div className="small">
               Also in{" "}
@@ -403,6 +477,9 @@ function RecipeEdit({ r }: { r: Recipe }) {
         </Field>
         <Field label="Notes">
           <DraftTextarea className="input" rows={3} aria-label="Notes" value={r.notes} onCommit={(notes) => save({ notes })} />
+        </Field>
+        <Field label="Tips">
+          <TipsField r={r} />
         </Field>
       </div>
 

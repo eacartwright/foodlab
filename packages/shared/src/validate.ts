@@ -35,6 +35,8 @@ import {
   type Records,
   type Store,
   type Tag,
+  type Tip,
+  TIP_WHEN,
 } from "./types";
 import { DEFAULT_AI, modelInfo, type AiModel, type AiSettings } from "./ai";
 import { wikiArticle, wikiUrl } from "./wiki";
@@ -323,6 +325,19 @@ export const validators: { [K in Kind]: (body: unknown, id: string, now: number)
       instructions: str(b.instructions, "instructions", 100_000),
       ingredients: list.map(ingredient),
       classicId: id(b.classicId, "classicId"),
+      tipIds: ids(b.tipIds, "tipIds"),
+      tipsOff: ids(b.tipsOff, "tipsOff"),
+    };
+  },
+  tips(body, rid, now): Tip {
+    const b = obj(body);
+    return {
+      ...base(b, rid, now),
+      name: name(b.name),
+      text: str(b.text, "text", 20_000),
+      foodIds: ids(b.foodIds, "foodIds"),
+      when: oneOf(b.when, TIP_WHEN, "when") ?? "always",
+      tagIds: ids(b.tagIds, "tagIds"),
     };
   },
   tags(body, rid, now): Tag {

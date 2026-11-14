@@ -397,3 +397,39 @@ describe("formatPhone", () => {
     expect(formatPhone("")).toBe("");
   });
 });
+
+describe("tips", () => {
+  const s = emptyState();
+  s.foods.onion = blank.foods("onion", "Onion");
+  s.foods.yellow = { ...blank.foods("yellow", "Yellow onion"), parentId: "onion" };
+  s.foods.powder = { ...blank.foods("powder", "Onion powder"), formOfId: "onion" };
+  s.foods.egg = blank.foods("egg", "Egg");
+  s.tips.ring = { ...blank.tips("ring", "Drop the thin outer ring"), foodIds: ["onion"], when: "cooked" };
+  s.tips.soak = { ...blank.tips("soak", "Soak sliced onion in ice water"), foodIds: ["onion"], when: "raw" };
+  s.tips.always = { ...blank.tips("always", "Cut onions with a sharp knife"), foodIds: ["onion"] };
+  s.tips.rest = blank.tips("rest", "Let it rest");
+  s.tips.gone = { ...blank.tips("gone", "Old tip"), foodIds: ["onion"], deleted: true };
+  const ing = (foodId: string) => ({ id: foodId, line: foodId, foodId, quantity: 1, unit: "", prep: "", optional: false, note: "" });
+  s.recipes.om = { ...blank.recipes("om", "Omelette"), method: "cook", ingredients: [ing("egg"), ing("yellow")], tipIds: ["rest"], tipsOff: ["always"] };
+  s.recipes.salsa = { ...blank.recipes("salsa", "Salsa"), method: "no-cook", ingredients: [ing("onion")] };
+  s.recipes.any = { ...blank.recipes("any", "No method"), ingredients: [ing("onion")] };
+  s.recipes.dry = { ...blank.recipes("dry", "Rub"), method: "cook", ingredients: [ing("powder")] };
+  const v = new View(s);
+  const shown = (id: string) => v.recipeTips(v.state.recipes[id]!).map((x) => `${x.tip.id}${x.via ? `<${x.via.id}` : ""}${x.off ? " off" : ""}`);
+
+  it("come through an ingredient's kinds when the method fits, then the ones added by hand", () => {
+    expect(shown("om")).toEqual(["always<onion off", "ring<onion", "rest"]);
+    expect(shown("salsa")).toEqual(["always<onion", "soak<onion"]);
+    expect(shown("any")).toEqual(["always<onion", "ring<onion", "soak<onion"]); // no method: all of them
+  });
+
+  it("don't come through forms (onion powder isn't an onion)", () => {
+    expect(shown("dry")).toEqual([]);
+  });
+
+  it("list a food's own tips and its kinds', and the recipes each shows on", () => {
+    expect(v.tipsForFood("yellow").map((x) => `${x.tip.id}<${x.from.id}`)).toEqual(["always<onion", "ring<onion", "soak<onion"]);
+    expect(v.recipesWithTip("ring").map((r) => r.id)).toEqual(["any", "om"]);
+    expect(v.recipesWithTip("always").map((r) => r.id)).toEqual(["any", "salsa"]); // switched off on the omelette
+  });
+});

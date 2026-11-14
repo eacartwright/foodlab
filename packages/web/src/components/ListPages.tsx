@@ -12,6 +12,7 @@ import {
   SPEED_LABEL,
   STATUSES,
   STATUS_LABEL,
+  TIP_WHEN_LABEL,
   nameKey,
   productName,
   type Classic,
@@ -21,10 +22,11 @@ import {
   type Product,
   type Rating,
   type Tag,
+  type Tip,
   type View,
 } from "@foodlab/shared";
 import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
-import { deleteTag, ensureClassic, ensureStore, ensureTag, mergeTag, renameTag, setTagAliases } from "../actions";
+import { deleteTag, ensureClassic, ensureStore, ensureTag, ensureTip, mergeTag, renameTag, setTagAliases } from "../actions";
 import { showToast } from "../toast";
 import { A, go, pathOf, setQuery, useRoute } from "../router";
 import { useData } from "../sync";
@@ -1192,6 +1194,83 @@ export function ClassicsList() {
           </tr>
         );
       })}
+    </ListShell>
+  );
+}
+
+/** Tips (DESIGN.md §5.15): every tip, with its foods, when it applies and how many recipes show it. */
+export function TipsList() {
+  const { view } = useData();
+  const { query } = useRoute();
+  const f = query.get("f") ?? "";
+  const [adding, setAdding] = useState(false);
+  const [name, setName] = useState("");
+  const foodsOf = (t: Tip) => t.foodIds.map((id) => view.food(id)).filter((x) => x && !x.deleted).map((x) => x!.name);
+  const rows = useMemo(
+    () =>
+      view.tips
+        .filter((t) => match([t.name, t.text, ...foodsOf(t), ...t.tagIds.map((id) => view.tag(id)?.name ?? "")].join(" "), f))
+        .map((t) => ({ t, foods: foodsOf(t), n: view.recipesWithTip(t.id).length })),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [view, f],
+  );
+  const create = () => {
+    if (!name.trim()) return;
+    const id = ensureTip(name);
+    setName("");
+    setAdding(false);
+    go(pathOf("tips", id));
+  };
+  return (
+    <ListShell
+      title="Tips"
+      icon={KIND_ICON.tips}
+      count={rows.length}
+      add={() => setAdding(true)}
+      filters={
+        adding && (
+          <span className="inline">
+            <input
+              className="input"
+              aria-label="New tip"
+              autoFocus
+              value={name}
+              enterKeyHint="done"
+              onChange={(e) => setName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") create();
+                else if (e.key === "Escape") setAdding(false);
+              }}
+            />
+            <button className="btn primary" disabled={!name.trim()} onClick={create}>
+              Add
+            </button>
+            <button className="btn subtle" onClick={() => setAdding(false)}>
+              Cancel
+            </button>
+          </span>
+        )
+      }
+      empty={view.tips.length ? "No tips match." : "No tips yet."}
+      head={
+        <tr>
+          <th>Tip</th>
+          <th className="hide-sm">Foods</th>
+          <th className="hide-sm">When</th>
+          <th className="num">Recipes</th>
+        </tr>
+      }
+    >
+      {rows.map(({ t, foods, n }) => (
+        <tr key={t.id}>
+          <td>
+            <A href={pathOf("tips", t.id)}>{t.name}</A>
+          </td>
+          <td className="hide-sm muted small">{foods.join(", ")}</td>
+          <td className="hide-sm muted small">{t.when === "always" ? "" : TIP_WHEN_LABEL[t.when]}</td>
+          <td className="num">{n || <span className="muted">0</span>}</td>
+        </tr>
+      ))}
     </ListShell>
   );
 }

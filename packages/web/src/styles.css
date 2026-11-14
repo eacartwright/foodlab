@@ -2367,3 +2367,32 @@ ul.found-list {
     grid-area: x;
   }
 }
+
+/* ---- tips (DESIGN.md §5.15) ---- */
+ul.plain.tips,
+ul.plain.tip-off-list,
+ul.plain.ing-card-tips {
+  list-style: none;
+  padding-left: 0;
+}
+ul.tips {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.tip-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-weight: 600;
+}
+.tip .md {
+  margin: 2px 0 0 1.6em;
+}
+.tip-off-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 2px 0;
+}

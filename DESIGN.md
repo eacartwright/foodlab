@@ -188,6 +188,7 @@ is a store, or has no type yet). Searching "Wegmans" finds the place, its produc
 | `myYield` | How many I usually make, in the yield's unit; the recipe opens scaled to it. Blank = as written. |
 | `prepMin` / `cookMin` | Optional. |
 | `instructions` | Light Markdown (lists, bold, links). |
+| `tipIds` / `tipsOff` | Tips added by hand, and ones through an ingredient switched off here (§5.15). |
 | eating fields | §4.6 |
 
 **Recipe ingredient**: `position`, the original `line`, `foodId`, `quantity` (exact number),
@@ -794,6 +795,42 @@ foods they needed (Anchovies, Capers, Sauerkraut…); my recipes linked where it
 (Butter chicken, Breakfast pizza ×2, Deviled eggs, Disco fries under Poutine…). Grows like
 foods: from what I cook and want to try, not a catalog.
 
+### 5.15 Tips (built 2026-11-14)
+
+Know-how I want to remember every time it applies, without writing it into each recipe: "drop
+the thin outer ring of an onion when sautéing" (it cooks faster than the rest and burns). Putting
+it in the ingredients or instructions would mean editing every onion recipe, and forgetting the
+next one. A tip says what it's about instead, and foodlab finds the recipes.
+
+| Field | Notes |
+|---|---|
+| `name` | The tip in a few words ("Drop the thin outer ring"). Required. |
+| `text` | More, if it needs it (light Markdown). Shown under the name. |
+| `foodIds` | The foods it's about. A food's **kinds count** (is-a only): a tip on Onion is on Yellow onion and Red onion, not on Onion powder (a form). Blank = a general tip, added to recipes by hand. |
+| `when` | **Always** · **Cooked** (a Cook or Bake recipe) · **Raw** (No-cook or Assembly). A recipe with no method gets them all. |
+| `tagIds` | Personal tags, no meals. |
+
+**On a recipe** (`View.recipeTips`): every tip on one of its ingredients' foods whose When fits
+the method, in ingredient order (then by name), then the ones **added by hand** (`Recipe.tipIds`).
+The recipe view lists them as **Tips**, under Notes: name (a link to the tip), the food it came
+through, its text, and **✕**: *not on this recipe*. ✕ on one that came through a food switches it
+off here (`Recipe.tipsOff`); on one added by hand it comes off. Undo in the toast. The method match
+is crude on purpose (a Cook recipe can still use raw onion as a garnish); ✕ covers the misses,
+and no AI reads the recipe to decide (2026-11-14, Evan's call). Tapping an ingredient shows its
+tips in the card.
+
+In **Edit**, the **Tips** field: the hand-added ones (pick an existing tip, or New tip), and below
+them the ones through foods as faded chips, ✕ to switch one off and ↺ to switch it back on.
+
+**A tip's page** (💡 TIP): Foods, When, More, Tags; **On recipes** (+ Recipe adds it by hand, or
+switches it back on there); **Switched off on**, each with Show it. **Tips** in the sidebar lists
+them all (filter by name, text, foods, tags) with + Add. **A food's page** lists its tips and its
+kinds' ("from Onion"); + Tip adds an existing one to the food or makes a new one on it.
+
+Recipe **Notes** stay for what's about that one recipe (from its author or me); a tip is for what
+holds across recipes. Techniques ("dicing an onion", §6) can be tips with more text until they need
+more than that. Not yet: tips in search, tips on products or dishes.
+
 ## 6. Later (designed for, not built)
 
 - **Line matching and food aliases**: *built 2026-11-09*. A recipe line links to its food by name
@@ -808,7 +845,8 @@ foods: from what I cook and want to try, not a catalog.
   leavening) decides how to round. *Built 2026-10-27 (§5.4)*: exact → kitchen measures, counted
   things in halves; not yet "the tools I own" or salt and leavening rounded more carefully.
 - **Weight alongside volume** (`grams` on ingredients), with a volume/weight toggle.
-- **Techniques** as their own pages ("dicing an onion"), linked from instructions.
+- **Techniques** as their own pages ("dicing an onion"), linked from instructions. Tips (§5.15)
+  cover the short ones; a technique can be a tip with more text until it needs more.
 - **Variants** (my version, small batch). Until then, log entries and notes cover it.
 - **Substitutions** as links. Until then, food notes.
 - **Inventory**: counts on foods or products, if they ever earn their keep. The shopping list

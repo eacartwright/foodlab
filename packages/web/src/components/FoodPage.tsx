@@ -1,7 +1,7 @@
-import type { Food } from "@foodlab/shared";
+import { TIP_WHEN_LABEL, type Food } from "@foodlab/shared";
 import { useState } from "react";
-import { duplicate, ensureFood, remove, setFoodAliases } from "../actions";
-import { go, pathOf } from "../router";
+import { duplicate, ensureFood, ensureTip, remove, setFoodAliases } from "../actions";
+import { A, go, pathOf } from "../router";
 import { data, put, useData } from "../sync";
 import {
   DraftInput,
@@ -25,7 +25,7 @@ import { WikiAbout, WikiField } from "./Wiki";
 export function FoodPage({ id }: { id: string }) {
   const { view, state } = useData();
   const food = state.foods[id];
-  const [adding, setAdding] = useState<"form" | "kind" | null>(null);
+  const [adding, setAdding] = useState<"form" | "kind" | "tip" | null>(null);
   const [confirm, setConfirm] = useState(false);
   const [aliasReset, setAliasReset] = useState(0);
   if (!food) return <NotFound what="food" />;
@@ -49,6 +49,7 @@ export function FoodPage({ id }: { id: string }) {
   const used = view.recipesUsing(food.id);
   const viaForms = view.recipesUsingForms(food.id);
   const preps = view.prepsOf(food.id);
+  const tips = view.tipsForFood(food.id);
   // A new form or kind can't be this food or anything above it, and isn't one already.
   const above = new Set([food.id, ...view.ancestors(food.id).map((f) => f.id)]);
   const addable = (have: Food[]) =>
@@ -317,6 +318,56 @@ export function FoodPage({ id }: { id: string }) {
           </div>
         ) : (
           <p className="empty-line">No recipes yet.</p>
+        )}
+      </Section>
+
+      <Section
+        title="Tips"
+        count={tips.length}
+        actions={
+          <button className="btn subtle" onClick={() => setAdding("tip")}>
+            + Tip
+          </button>
+        }
+      >
+        {adding === "tip" && (
+          <div className="inline-add">
+            <Picker
+              value={null}
+              options={view.tips.filter((t) => !t.foodIds.includes(food.id)).map((t) => ({ id: t.id, label: t.name }))}
+              aria-label="Add a tip"
+              placeholder=""
+              autoFocus
+              keepOpen
+              createLabel="New tip"
+              onChange={(t) => {
+                const tip = t ? data().state.tips[t] : undefined;
+                if (tip && !tip.foodIds.includes(food.id)) put("tips", { ...tip, foodIds: [...tip.foodIds, food.id] });
+              }}
+              onCreate={(n) => ensureTip(n, { foodIds: [food.id] })}
+            />
+            <button className="btn" onClick={() => setAdding(null)}>
+              Done
+            </button>
+          </div>
+        )}
+        {tips.length > 0 ? (
+          <ul className="plain tips">
+            {tips.map(({ tip, from }) => (
+              <li key={tip.id}>
+                💡 <A href={pathOf("tips", tip.id)}>{tip.name}</A>
+                {tip.when !== "always" && <span className="muted small"> · {TIP_WHEN_LABEL[tip.when].toLowerCase()}</span>}
+                {from.id !== food.id && (
+                  <span className="muted small">
+                    {" "}
+                    · from <A href={pathOf("foods", from.id)}>{from.name}</A>
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          adding !== "tip" && <p className="empty-line">None yet.</p>
         )}
       </Section>
 

@@ -21,6 +21,7 @@ import {
   type LogTarget,
   type Rating,
   type Recipe,
+  type Tip,
   type Records,
   type Store,
   type Tag,
@@ -74,6 +75,37 @@ export function setClassicAliases(c: Classic, text: string) {
     });
   put("classics", { ...now, aliases: [...new Map(words.map((w) => [nameKey(w), w])).values()] });
   if (taken.length) showToast(`Left off: ${taken.join(", ")}`);
+}
+
+/** The tip with this name, made if there's none (DESIGN.md §5.15). */
+export function ensureTip(name: string, extra: Partial<Tip> = {}): Id {
+  const found = data().view.findTip(name);
+  if (found) return found.id;
+  const t = { ...blank.tips(newId(), tidyName(name)), ...extra };
+  put("tips", t);
+  return t.id;
+}
+
+/**
+ * Take a tip off a recipe: one added by hand is removed; one that came through an ingredient is
+ * switched off here. Undo puts it back.
+ */
+export function tipOff(r: Recipe, tipId: Id) {
+  const now = data().state.recipes[r.id] ?? r;
+  const byHand = now.tipIds.includes(tipId);
+  const viaFood = data().view.recipeTips(now).some((x) => x.tip.id === tipId && x.via);
+  put("recipes", { ...now, tipIds: now.tipIds.filter((t) => t !== tipId), tipsOff: viaFood && !now.tipsOff.includes(tipId) ? [...now.tipsOff, tipId] : now.tipsOff });
+  showToast(`Not on this recipe: “${data().state.tips[tipId]?.name ?? "tip"}”`, {
+    label: "Undo",
+    run: () => {
+      const back = data().state.recipes[r.id] ?? now;
+      put("recipes", {
+        ...back,
+        tipIds: byHand && !back.tipIds.includes(tipId) ? [...back.tipIds, tipId] : back.tipIds,
+        tipsOff: viaFood ? back.tipsOff.filter((t) => t !== tipId) : back.tipsOff,
+      });
+    },
+  });
 }
 
 export function ensureTag(name: string): Id {

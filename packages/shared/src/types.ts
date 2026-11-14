@@ -242,6 +242,31 @@ export interface Recipe extends Base, Eating {
   ingredients: RecipeIngredient[];
   /** The classic it's a version of (DESIGN.md §5.14), or null. */
   classicId: Id | null;
+  /** Tips added by hand (DESIGN.md §5.15), in order. */
+  tipIds: Id[];
+  /** Tips that would show through an ingredient but don't fit this recipe (✕). */
+  tipsOff: Id[];
+}
+
+/** When a tip applies (DESIGN.md §5.15): Cooked = a cook or bake recipe, Raw = no-cook or assembly. */
+export const TIP_WHEN = ["always", "cooked", "raw"] as const;
+export type TipWhen = (typeof TIP_WHEN)[number];
+export const TIP_WHEN_LABEL: Record<TipWhen, string> = { always: "Always", cooked: "Cooked", raw: "Raw" };
+
+/**
+ * A tip or technique (DESIGN.md §5.15): "Drop the thin outer ring" on Onion, when cooked. Shows on
+ * every recipe using one of its foods (or a kind of one) whose method fits, and on recipes it's
+ * added to by hand.
+ */
+export interface Tip extends Base {
+  /** The tip in a few words. */
+  name: string;
+  /** More, if it needs it (light Markdown). */
+  text: string;
+  /** The foods it's about; their kinds count too (Onion → Yellow onion). */
+  foodIds: Id[];
+  when: TipWhen;
+  tagIds: Id[];
 }
 
 export type TagKind = "meal" | "personal";
@@ -314,6 +339,7 @@ export interface Records {
   recipes: Recipe;
   dishes: Dish;
   classics: Classic;
+  tips: Tip;
   tags: Tag;
   log: LogEntry;
   devnotes: DevNote;
@@ -321,13 +347,13 @@ export interface Records {
   settings: Settings;
 }
 export type Kind = keyof Records;
-export const KINDS: Kind[] = ["foods", "products", "stores", "recipes", "dishes", "classics", "tags", "log", "devnotes", "groceries", "settings"];
+export const KINDS: Kind[] = ["foods", "products", "stores", "recipes", "dishes", "classics", "tips", "tags", "log", "devnotes", "groceries", "settings"];
 export type AnyRecord = Records[Kind];
 
 /** Everything, keyed by id per kind. Deleted records are included (tombstones). */
 export type State = { [K in Kind]: Record<Id, Records[K]> } & { rev: number };
 
-export const emptyState = (): State => ({ rev: 0, foods: {}, products: {}, stores: {}, recipes: {}, dishes: {}, classics: {}, tags: {}, log: {}, devnotes: {}, groceries: {}, settings: {} });
+export const emptyState = (): State => ({ rev: 0, foods: {}, products: {}, stores: {}, recipes: {}, dishes: {}, classics: {}, tips: {}, tags: {}, log: {}, devnotes: {}, groceries: {}, settings: {} });
 
 /** The fixed meal tags (DESIGN.md §4.9), seeded with these ids. */
 export const MEAL_TAGS: { id: Id; name: string }[] = [
@@ -416,7 +442,10 @@ export const blank = {
     instructions: "",
     ingredients: [],
     classicId: null,
+    tipIds: [],
+    tipsOff: [],
   }),
+  tips: (id: Id, name: string, now = Date.now()): Tip => ({ ...EMPTY_BASE(id, now), name, text: "", foodIds: [], when: "always", tagIds: [] }),
   tags: (id: Id, name: string, now = Date.now()): Tag => ({ ...EMPTY_BASE(id, now), name, kind: "personal", aliases: [] }),
   devnotes: (id: Id, text: string, path: string, now = Date.now()): DevNote => ({ ...EMPTY_BASE(id, now), text, path, done: false, files: [] }),
   settings: (now = Date.now()): Settings => ({ ...EMPTY_BASE(SETTINGS_ID, now), mealTimes: DEFAULT_MEAL_TIMES, ai: DEFAULT_AI }),

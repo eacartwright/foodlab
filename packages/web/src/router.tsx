@@ -59,8 +59,8 @@ export function A({ href, onClick, ...rest }: AnchorHTMLAttributes<HTMLAnchorEle
   );
 }
 
-export type PageKindName = "foods" | "products" | "recipes" | "stores" | "dishes" | "classics";
+export type PageKindName = "foods" | "products" | "recipes" | "stores" | "dishes" | "classics" | "tips";
 /** Stores are Places on screen and in the address (M4); /stores still works. */
-const SEGMENT: Record<PageKindName, string> = { foods: "foods", products: "products", recipes: "recipes", stores: "places", dishes: "dishes", classics: "classics" };
+const SEGMENT: Record<PageKindName, string> = { foods: "foods", products: "products", recipes: "recipes", stores: "places", dishes: "dishes", classics: "classics", tips: "tips" };
 export const listPath = (kind: PageKindName) => `/${SEGMENT[kind]}`;
 export const pathOf = (kind: PageKindName, id: string) => `${listPath(kind)}/${encodeURIComponent(id)}`;

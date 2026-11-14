@@ -121,6 +121,21 @@ describe("Store", () => {
     expect(() => store.put("dishes", "d", { ...blank.dishes("d", "Panera's Caesar"), classicId: "nope" })).toThrow(/classic/);
   });
 
+  it("saves tips with their foods, checks a recipe's tips, and keeps them through an older app's save", () => {
+    store.put("foods", "onion", blank.foods("onion", "Onion"));
+    store.put("tips", "ring", { ...blank.tips("ring", "Drop the thin outer ring"), foodIds: ["onion"], when: "cooked", text: "It burns first." });
+    const back = loadState(db).tips.ring!;
+    expect([back.name, back.foodIds, back.when, back.text]).toEqual(["Drop the thin outer ring", ["onion"], "cooked", "It burns first."]);
+    expect(() => store.put("tips", "x", { ...blank.tips("x", "X"), foodIds: ["nope"] })).toThrow(/food/);
+    expect(() => store.put("tips", "x", { ...blank.tips("x", "X"), when: "sometimes" })).toThrow(Invalid);
+    expect(() => store.put("recipes", "r", { ...blank.recipes("r", "Omelette"), tipIds: ["nope"] })).toThrow(/tip/);
+    store.put("recipes", "r", { ...blank.recipes("r", "Omelette"), tipIds: ["ring"], tipsOff: ["ring"] });
+    const { tipIds: _a, tipsOff: _b, ...old } = store.state.recipes.r!;
+    store.put("recipes", "r", { ...old, notes: "x" });
+    const r = loadState(db).recipes.r!;
+    expect([r.tipIds, r.tipsOff]).toEqual([["ring"], ["ring"]]);
+  });
+
   it("tidies a food's aliases and keeps them through an older app's save", () => {
     store.put("foods", "s", { ...blank.foods("s", "Scallions"), aliases: [" green  onions ", "Green onion", "scallion", "spring onions"] });
     expect(store.state.foods.s!.aliases).toEqual(["green onions", "spring onions"]); // no repeats, not its own name

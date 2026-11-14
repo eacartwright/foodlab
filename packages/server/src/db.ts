@@ -1,7 +1,7 @@
 import { DatabaseSync } from "node:sqlite";
 import { existsSync, mkdirSync } from "node:fs";
 import { dirname } from "node:path";
-import { DEFAULT_AI, emptyState, type Attachment, type Classic, type ClassicIngredient, type DevNote, type Dish, type Photo, type Settings, type Food, type GroceryItem, type Id, type LogEntry, type Product, type Recipe, type RecipeIngredient, type State, type Store, type Tag } from "@foodlab/shared";
+import { DEFAULT_AI, emptyState, type Attachment, type Classic, type ClassicIngredient, type DevNote, type Dish, type Photo, type Settings, type Food, type GroceryItem, type Id, type LogEntry, type Product, type Recipe, type RecipeIngredient, type State, type Store, type Tag, type Tip } from "@foodlab/shared";
 
 // SQLite persistence: ordinary relational tables, one row per record, links in their own tables
 // (product_stores, recipe_ingredients, item_tags), so the file reads well in any SQLite browser
@@ -276,6 +276,30 @@ const MIGRATIONS: string[] = [
   ALTER TABLE recipes ADD COLUMN classic_id TEXT;
   ALTER TABLE dishes ADD COLUMN classic_id TEXT;
   `,
+  // 2026-11-14: tips ("Drop the thin outer ring" on Onion, when cooked), shown on recipes through
+  // their ingredients' foods or added by hand; a recipe can switch one off. Tags in item_tags
+  // (item_kind tips).
+  `
+  CREATE TABLE tips (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    text TEXT NOT NULL DEFAULT '',
+    applies_when TEXT NOT NULL DEFAULT 'always',  -- always | cooked | raw
+    deleted INTEGER NOT NULL DEFAULT 0,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    rev INTEGER NOT NULL
+  );
+  CREATE TABLE tip_foods (
+    tip_id TEXT NOT NULL,
+    food_id TEXT NOT NULL,
+    position INTEGER NOT NULL,
+    PRIMARY KEY (tip_id, food_id)
+  );
+  CREATE INDEX tip_foods_food ON tip_foods(food_id);
+  ALTER TABLE recipes ADD COLUMN tip_ids TEXT NOT NULL DEFAULT '[]';   -- JSON [tipId, ...], added by hand
+  ALTER TABLE recipes ADD COLUMN tips_off TEXT NOT NULL DEFAULT '[]';  -- JSON [tipId, ...], ✕'d here
+  `,
 ];
 
 export type DB = DatabaseSync;
@@ -381,6 +405,13 @@ export function loadState(db: DB): State {
       ingredients: classicIngredientsOf.get(r.id) ?? [],
     } satisfies Classic;
   }
+  const tipFoodsOf = new Map<Id, Id[]>();
+  for (const r of db.prepare("SELECT * FROM tip_foods ORDER BY tip_id, position").all() as Row[]) {
+    tipFoodsOf.set(r.tip_id, [...(tipFoodsOf.get(r.tip_id) ?? []), r.food_id]);
+  }
+  for (const r of db.prepare("SELECT * FROM tips").all() as Row[]) {
+    s.tips[r.id] = { ...base(r), name: r.name, text: r.text, when: r.applies_when, foodIds: tipFoodsOf.get(r.id) ?? [], tagIds: tagsOf.get(`tips:${r.id}`) ?? [] } satisfies Tip;
+  }
   for (const r of db.prepare("SELECT * FROM foods").all() as Row[]) {
     s.foods[r.id] = {
       ...base(r),
@@ -443,6 +474,8 @@ export function loadState(db: DB): State {
       instructions: r.instructions,
       ingredients: ingredientsOf.get(r.id) ?? [],
       classicId: r.classic_id ?? null,
+      tipIds: JSON.parse(r.tip_ids ?? "[]"),
+      tipsOff: JSON.parse(r.tips_off ?? "[]"),
     } satisfies Recipe;
   }
   for (const r of db.prepare("SELECT * FROM tags").all() as Row[]) {
@@ -508,7 +541,7 @@ function upsert(db: DB, table: string, cols: Record<string, unknown>) {
   );
 }
 
-function setTags(db: DB, kind: "foods" | "products" | "recipes" | "stores" | "dishes" | "classics", id: Id, tagIds: Id[]) {
+function setTags(db: DB, kind: "foods" | "products" | "recipes" | "stores" | "dishes" | "classics" | "tips", id: Id, tagIds: Id[]) {
   db.prepare("DELETE FROM item_tags WHERE item_kind = ? AND item_id = ?").run(kind, id);
   const ins = db.prepare("INSERT INTO item_tags (item_kind, item_id, tag_id) VALUES (?, ?, ?)");
   for (const t of tagIds) ins.run(kind, id, t);
@@ -557,6 +590,13 @@ export const save = {
     const ins = db.prepare("INSERT INTO classic_ingredients (classic_id, id, position, food_id, role, note) VALUES (?, ?, ?, ?, ?, ?)");
     x.ingredients.forEach((i, n) => ins.run(x.id, i.id, n, i.foodId, i.role, i.note));
   },
+  tips(db: DB, x: Tip) {
+    upsert(db, "tips", { ...baseCols(x), name: x.name, text: x.text, applies_when: x.when });
+    setTags(db, "tips", x.id, x.tagIds);
+    db.prepare("DELETE FROM tip_foods WHERE tip_id = ?").run(x.id);
+    const ins = db.prepare("INSERT INTO tip_foods (tip_id, food_id, position) VALUES (?, ?, ?)");
+    x.foodIds.forEach((f, n) => ins.run(x.id, f, n));
+  },
   products(db: DB, x: Product) {
     upsert(db, "products", {
       ...baseCols(x),
@@ -587,6 +627,8 @@ export const save = {
       cook_min: x.cookMin,
       instructions: x.instructions,
       classic_id: x.classicId,
+      tip_ids: JSON.stringify(x.tipIds),
+      tips_off: JSON.stringify(x.tipsOff),
     });
     setTags(db, "recipes", x.id, x.tagIds);
     db.prepare("DELETE FROM recipe_ingredients WHERE recipe_id = ?").run(x.id);

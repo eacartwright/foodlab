@@ -20,6 +20,7 @@ import {
   type Status,
   type Store,
   type Tag,
+  type Tip,
   type Travels,
 } from "./types";
 
@@ -46,6 +47,7 @@ export class View {
   readonly recipes: Recipe[];
   readonly dishes: Dish[];
   readonly classics: Classic[];
+  readonly tips: Tip[];
   readonly tags: Tag[];
   readonly groceries: GroceryItem[];
   /** Foods by `nameKey` of their name, then of their aliases (a name wins). */
@@ -63,6 +65,7 @@ export class View {
   private readonly recipesByClassic = new Map<Id, Recipe[]>();
   private readonly dishesByClassic = new Map<Id, Dish[]>();
   private readonly classicsByFood = new Map<Id, Classic[]>();
+  private readonly tipsByFood = new Map<Id, Tip[]>();
 
   constructor(readonly state: State) {
     this.foods = live(state.foods).sort(byName);
@@ -71,6 +74,7 @@ export class View {
     this.recipes = live(state.recipes).sort(byName);
     this.dishes = live(state.dishes ?? {}).sort(byName);
     this.classics = live(state.classics ?? {}).sort(byName);
+    this.tips = live(state.tips ?? {}).sort(byName);
     this.tags = live(state.tags).sort((a, b) => (a.kind === b.kind ? (a.kind === "meal" ? 0 : byName(a, b)) : a.kind === "meal" ? -1 : 1));
 
     const push = <K, V>(m: Map<K, V[]>, k: K, v: V) => {
@@ -98,6 +102,7 @@ export class View {
       for (const i of c.ingredients ?? []) push(this.classicsByFood, i.foodId, c);
     }
     for (const r of this.recipes) if (r.classicId) push(this.recipesByClassic, r.classicId, r);
+    for (const t of this.tips) for (const f of t.foodIds) push(this.tipsByFood, f, t);
     for (const d of this.dishes) if (d.classicId) push(this.dishesByClassic, d.classicId, d);
     for (const p of this.products) {
       if (p.foodId) push(this.productsByFood, p.foodId, p);
@@ -151,6 +156,43 @@ export class View {
   productsAt = (storeId: Id) => this.productsByStore.get(storeId) ?? [];
   /** A place's dishes, best first. */
   dishesAt = (placeId: Id) => this.dishesByPlace.get(placeId) ?? [];
+
+  // ---- tips (DESIGN.md §5.15) ----
+  tip = (id: Id | null | undefined) => (id ? this.state.tips?.[id] : undefined);
+  findTip = (name: string) => this.tips.find((t) => nameKey(t.name) === nameKey(name));
+  /** Tips about a food or what it is (Yellow onion gets Onion's), nearest first, with the food each is on. */
+  tipsForFood(foodId: Id | null): { tip: Tip; from: Food }[] {
+    const out: { tip: Tip; from: Food }[] = [];
+    const seen = new Set<Id>();
+    for (const f of this.kindsUp(foodId)) {
+      for (const tip of this.tipsByFood.get(f.id) ?? []) if (!seen.has(tip.id)) (seen.add(tip.id), out.push({ tip, from: f }));
+    }
+    return out;
+  }
+  /**
+   * The tips on a recipe: through its ingredients' foods (when the method fits; a recipe with no
+   * method gets them all), in ingredient order, then the ones added by hand. `off` = ✕'d here.
+   */
+  recipeTips(r: Recipe): RecipeTip[] {
+    const out: RecipeTip[] = [];
+    const seen = new Set<Id>();
+    const done = !r.method ? null : r.method === "cook" || r.method === "bake" ? "cooked" : "raw";
+    const off = new Set(r.tipsOff ?? []);
+    for (const i of r.ingredients) {
+      for (const { tip, from } of this.tipsForFood(i.foodId)) {
+        if (seen.has(tip.id) || (done && tip.when !== "always" && tip.when !== done)) continue;
+        seen.add(tip.id);
+        out.push({ tip, via: from, off: off.has(tip.id) });
+      }
+    }
+    for (const id of r.tipIds ?? []) {
+      const tip = this.tip(id);
+      if (tip && !tip.deleted && !seen.has(id)) (seen.add(id), out.push({ tip, via: null, off: false }));
+    }
+    return out;
+  }
+  /** The recipes a tip shows on (✕'d ones left out). */
+  recipesWithTip = (tipId: Id) => this.recipes.filter((r) => this.recipeTips(r).some((x) => x.tip.id === tipId && !x.off));
 
   // ---- classics (DESIGN.md §5.14) ----
   classic = (id: Id | null | undefined) => (id ? this.state.classics?.[id] : undefined);
@@ -218,13 +260,14 @@ export class View {
   }
 
   /** The live foods, products, recipes, dishes and places with this tag. */
-  tagged(tagId: Id): { kind: "foods" | "products" | "recipes" | "dishes" | "stores"; item: Food | Product | Recipe | Dish | Store }[] {
+  tagged(tagId: Id): { kind: "foods" | "products" | "recipes" | "dishes" | "stores" | "tips"; item: Food | Product | Recipe | Dish | Store | Tip }[] {
     return [
       ...this.foods.filter((f) => f.tagIds.includes(tagId)).map((item) => ({ kind: "foods" as const, item })),
       ...this.products.filter((p) => p.tagIds.includes(tagId)).map((item) => ({ kind: "products" as const, item })),
       ...this.recipes.filter((r) => r.tagIds.includes(tagId)).map((item) => ({ kind: "recipes" as const, item })),
       ...this.dishes.filter((d) => d.tagIds.includes(tagId)).map((item) => ({ kind: "dishes" as const, item })),
       ...this.stores.filter((s) => s.tagIds.includes(tagId)).map((item) => ({ kind: "stores" as const, item })),
+      ...this.tips.filter((t) => t.tagIds.includes(tagId)).map((item) => ({ kind: "tips" as const, item })),
     ];
   }
 
@@ -708,6 +751,13 @@ export interface EatFilter {
   minKeepsDays?: number | null;
   effort?: Effort[];
   showDown?: boolean;
+}
+
+/** A tip on a recipe: `via` the ingredient food it came through (null = added by hand). */
+export interface RecipeTip {
+  tip: Tip;
+  via: Food | null;
+  off: boolean;
 }
 
 export const SEARCH_KINDS = ["recipes", "classics", "products", "dishes", "foods", "stores"] as const;
