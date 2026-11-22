@@ -1440,6 +1440,32 @@ ul.grocery-list input[type="checkbox"] {
 .grocery-stores {
   margin-left: auto;
 }
+/* The drag handle: touch-action none, so a finger on it drags instead of scrolling. */
+.grocery-grip {
+  flex-shrink: 0;
+  width: 32px;
+  min-height: 48px;
+  border: 0;
+  border-radius: var(--control-radius);
+  background: none;
+  color: var(--muted);
+  font-size: 1.2rem;
+  cursor: grab;
+  touch-action: none;
+}
+.grocery-grip:hover {
+  color: var(--text);
+}
+ul.grocery-list li.dragging {
+  position: relative;
+  z-index: 1;
+  border-radius: var(--control-radius);
+  outline: 2px solid var(--primary);
+}
+ul.grocery-list li.dragging .grocery-grip {
+  cursor: grabbing;
+  color: var(--primary);
+}
 ul.grocery-list li.got .grocery-name {
   flex: 1;
   color: var(--muted);

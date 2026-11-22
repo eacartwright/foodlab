@@ -1,10 +1,10 @@
-import { productName, type GroceryItem } from "@foodlab/shared";
-import { useState } from "react";
+import { moveGrocery, productName, type GroceryItem, type View } from "@foodlab/shared";
+import { useRef, useState, type ButtonHTMLAttributes } from "react";
 import { addToGroceries, doneShopping, ensureFood, gotGrocery, needGrocery, remove, saveGrocery, tripStart, ungotGrocery } from "../actions";
 import { A, pathOf } from "../router";
 import { useData } from "../sync";
 import { showToast } from "../toast";
-import { DraftInput, Field, Picker } from "./controls";
+import { DraftInput, Field, Picker, Segmented } from "./controls";
 import { Section } from "./rows";
 import { SwipeRow } from "./SwipeRow";
 
@@ -12,18 +12,95 @@ import { SwipeRow } from "./SwipeRow";
 // checking it off sends it back to Usual, one tap from the list again. Phone-first: it's used
 // in the store.
 
+type Names = "foods" | "products";
+const NAMES_KEY = "foodlab:groceryNames";
+
+/** What a row says: its food or its product (the switch, per device), else the name as typed. */
+function labelOf(g: GroceryItem, names: Names, view: View): string {
+  const food = view.food(g.foodId);
+  const product = g.productId ? view.state.products[g.productId] : undefined;
+  const p = product && !product.deleted ? productName(product) : undefined;
+  const f = food && !food.deleted ? food.name : undefined;
+  return (names === "products" ? (p ?? f) : (f ?? p)) ?? g.name;
+}
+
+function storedNames(): Names {
+  try {
+    return localStorage.getItem(NAMES_KEY) === "products" ? "products" : "foods";
+  } catch {
+    return "foods";
+  }
+}
+
 export function GroceriesPage() {
   const { view } = useData();
   const [text, setText] = useState("");
   const [editing, setEditing] = useState<string | null>(null);
   const [tidy, setTidy] = useState(false);
+  const [names, setNames] = useState<Names>(storedNames);
+  const [drag, setDrag] = useState<{ id: string; to: number } | null>(null);
+  const ul = useRef<HTMLUListElement>(null);
   const since = tripStart();
   const list = view.groceryList();
+  const label = (g: GroceryItem) => labelOf(g, names, view);
   const trip = view.groceryTrip(since);
   const typed = text.trim();
   // Tidying deletes what I've bought before; staples come from foods, so they stay.
   const usual = typed ? view.groceryMatches(typed, since) : view.groceryUsual(since).filter((u) => !tidy || u.item);
-  const already = typed ? list.filter((g) => g.name.toLowerCase().includes(typed.toLowerCase())) : [];
+  const already = typed ? list.filter((g) => label(g).toLowerCase().includes(typed.toLowerCase())) : [];
+
+  // Dragging by the handle: the list shows the new order as it goes, saved on letting go.
+  const others = drag ? list.filter((g) => g.id !== drag.id) : list;
+  const dragged = drag && list.find((g) => g.id === drag.id);
+  const shown = dragged ? [...others.slice(0, drag.to), dragged, ...others.slice(drag.to)] : list;
+  /** Where the pointer is among the other rows: how many of them sit above it. */
+  const indexAt = (y: number, id: string) =>
+    [...(ul.current?.querySelectorAll<HTMLElement>("li[data-id]") ?? [])].filter((li) => li.dataset.id !== id && li.getBoundingClientRect().top + li.offsetHeight / 2 < y).length;
+  const move = (id: string, to: number) => {
+    for (const m of moveGrocery(list, id, to)) {
+      const g = view.state.groceries[m.id];
+      if (g) saveGrocery(g, { neededAt: m.neededAt });
+    }
+  };
+  // The moves and the drop are heard on the window: reordering moves the row's element, which
+  // loses the pointer capture, so the handle itself may never hear the finger lift.
+  const grip = (g: GroceryItem, i: number): Grip => ({
+    onPointerDown: (e) => {
+      if (e.button !== 0 || drag) return;
+      e.preventDefault(); // no text selection
+      e.stopPropagation(); // a drag, not a swipe
+      const id = g.id;
+      let to = i;
+      setDrag({ id, to });
+      const onMove = (ev: PointerEvent) => {
+        if (ev.pointerId !== e.pointerId) return;
+        // Near the top or bottom of the screen, scroll along.
+        if (ev.clientY > window.innerHeight - 90) window.scrollBy(0, 10);
+        else if (ev.clientY < 60) window.scrollBy(0, -10);
+        const at = indexAt(ev.clientY, id);
+        if (at !== to) setDrag({ id, to: (to = at) });
+      };
+      const end = (ev: PointerEvent) => {
+        if (ev.pointerId !== e.pointerId) return;
+        window.removeEventListener("pointermove", onMove);
+        window.removeEventListener("pointerup", end);
+        window.removeEventListener("pointercancel", end);
+        if (ev.type === "pointerup") move(id, to);
+        setDrag(null);
+      };
+      window.addEventListener("pointermove", onMove);
+      window.addEventListener("pointerup", end);
+      window.addEventListener("pointercancel", end);
+    },
+    onKeyDown: (e) => {
+      const to = e.key === "ArrowUp" ? i - 1 : e.key === "ArrowDown" ? i + 1 : null;
+      if (to === null || to < 0 || to >= list.length) return;
+      e.preventDefault();
+      move(g.id, to);
+      // The row moved: keep the focus on its handle.
+      setTimeout(() => ul.current?.querySelector<HTMLElement>(`li[data-id="${g.id}"] .grocery-grip`)?.focus());
+    },
+  });
 
   const add = () => {
     if (!typed) return;
@@ -35,10 +112,29 @@ export function GroceriesPage() {
 
   return (
     <div className="page groceries">
-      <h1 className="page-title">
-        🧺 Groceries
-        {list.length > 0 && <span className="count">{list.length}</span>}
-      </h1>
+      <div className="list-head">
+        <h1 className="page-title">
+          🧺 Groceries
+          {list.length > 0 && <span className="count">{list.length}</span>}
+        </h1>
+        <span className="spacer" />
+        <Segmented
+          value={names}
+          options={["foods", "products"] as const}
+          labels={{ foods: "Foods", products: "Products" }}
+          clearable={false}
+          label="Show items as"
+          onChange={(v) => {
+            const next = v ?? "foods";
+            setNames(next);
+            try {
+              localStorage.setItem(NAMES_KEY, next);
+            } catch {
+              // Blocked storage: it just isn't remembered.
+            }
+          }}
+        />
+      </div>
       <div className="inline">
         <input
           className="input grow"
@@ -58,14 +154,22 @@ export function GroceriesPage() {
       </div>
 
       {list.length === 0 && trip.length === 0 && <p className="empty-line">Nothing on the list.</p>}
-      <ul className="grocery-list">
-        {list.map((g) => (
-          <GroceryRow key={g.id} g={g} editing={editing === g.id} onEdit={() => setEditing(editing === g.id ? null : g.id)} />
+      <ul className="grocery-list" ref={ul}>
+        {shown.map((g, i) => (
+          <GroceryRow
+            key={g.id}
+            g={g}
+            label={label(g)}
+            editing={editing === g.id}
+            onEdit={() => setEditing(editing === g.id ? null : g.id)}
+            grip={list.length > 1 ? grip(g, i) : undefined}
+            dragging={drag?.id === g.id}
+          />
         ))}
         {trip.map((g) => (
           <li key={g.id} className="got">
-            <input type="checkbox" checked aria-label={`Not got: ${g.name}`} title="Not got: back on the list" onChange={() => ungotGrocery(g)} />
-            <span className="grocery-name">{g.name}</span>
+            <input type="checkbox" checked aria-label={`Not got: ${label(g)}`} title="Not got: back on the list" onChange={() => ungotGrocery(g)} />
+            <span className="grocery-name">{label(g)}</span>
           </li>
         ))}
       </ul>
@@ -119,36 +223,43 @@ export function GroceriesPage() {
 }
 
 /** Off the list without counting it as bought (back to Usual), with Undo. */
-function notNeeded(g: GroceryItem) {
+function notNeeded(g: GroceryItem, label: string) {
   saveGrocery(g, { need: false, note: "" });
-  showToast(`${g.name} is off the list`, { label: "Undo", run: () => saveGrocery(g, { need: true, note: g.note }) });
+  showToast(`${label} is off the list`, { label: "Undo", run: () => saveGrocery(g, { need: true, note: g.note }) });
 }
 
-function GroceryRow({ g, editing, onEdit }: { g: GroceryItem; editing: boolean; onEdit: () => void }) {
+type Grip = Required<Pick<ButtonHTMLAttributes<HTMLButtonElement>, "onPointerDown" | "onKeyDown">>;
+
+function GroceryRow({ g, label, editing, onEdit, grip, dragging }: { g: GroceryItem; label: string; editing: boolean; onEdit: () => void; grip?: Grip; dragging: boolean }) {
   const { view } = useData();
   const stores = view.groceryStores(g);
   const food = view.food(g.foodId);
   const product = g.productId ? view.state.products[g.productId] : undefined;
   const products = (food ? view.productsOf(food.id) : view.products).map((p) => ({ id: p.id, label: productName(p) }));
   return (
-    <li className={editing ? "editing" : ""}>
-      <SwipeRow label="Remove" onAction={() => notNeeded(g)} disabled={editing}>
-        <input type="checkbox" checked={false} aria-label={`Got ${g.name}`} onChange={() => gotGrocery(g)} />
-        <button className="grocery-main" onClick={onEdit} aria-expanded={editing} title="Note, food, product">
-          <span className="grocery-name">{g.name}</span>
+    <li data-id={g.id} className={[editing && "editing", dragging && "dragging"].filter(Boolean).join(" ")}>
+      <SwipeRow label="Remove" onAction={() => notNeeded(g, label)} disabled={editing || dragging}>
+        <input type="checkbox" checked={false} aria-label={`Got ${label}`} onChange={() => gotGrocery(g)} />
+        <button className="grocery-main" onClick={onEdit} aria-expanded={editing} title="Food, product, note">
+          <span className="grocery-name">{label}</span>
           {g.note && <span className="grocery-note"> · {g.note}</span>}
           {food?.plu && <span className="muted grocery-plu" title="PLU"> · {food.plu}</span>}
           {stores.length > 0 && <span className="muted small grocery-stores">{stores.map((s) => s.name).join(", ")}</span>}
         </button>
+        {grip && (
+          <button className="grocery-grip" aria-label={`Move ${label} (arrow keys)`} title="Drag to reorder" {...grip}>
+            ⠿
+          </button>
+        )}
       </SwipeRow>
       {editing && (
         <div className="grocery-edit fields compact">
-          <Field label="Name">
-            <DraftInput className="input" value={g.name} required aria-label="Name" onCommit={(name) => saveGrocery(g, { name })} />
-          </Field>
-          <Field label="This time">
-            <DraftInput className="input" value={g.note} placeholder="2, the big one…" aria-label="Note" autoFocus onCommit={(note) => saveGrocery(g, { note })} />
-          </Field>
+          {/* Name only for free text: a food or product names it (DESIGN.md §5.8). */}
+          {!g.foodId && !g.productId && (
+            <Field label="Name">
+              <DraftInput className="input" value={g.name} required aria-label="Name" onCommit={(name) => saveGrocery(g, { name })} />
+            </Field>
+          )}
           {!product?.notFood && (
             <Field label="Food">
               <Picker
@@ -169,13 +280,16 @@ function GroceryRow({ g, editing, onEdit }: { g: GroceryItem; editing: boolean; 
               onChange={(productId) => saveGrocery(g, { productId, foodId: (productId && view.state.products[productId]?.foodId) || g.foodId })}
             />
           </Field>
+          <Field label="This time">
+            <DraftInput className="input" value={g.note} placeholder="2, the big one…" aria-label="Note" autoFocus onCommit={(note) => saveGrocery(g, { note })} />
+          </Field>
           <div className="row-actions">
             {product && <A href={pathOf("products", product.id)}>Open {productName(product)}</A>}
             {!product && food && <A href={pathOf("foods", food.id)}>Open {food.name}</A>}
             <span className="spacer" />
             <button
               className="btn subtle"
-              onClick={() => notNeeded(g)}
+              onClick={() => notNeeded(g, label)}
               title="Off the list without counting it as bought"
             >
               Not needed

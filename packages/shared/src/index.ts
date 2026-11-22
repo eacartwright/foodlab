@@ -9,3 +9,4 @@ export * from "./recipeRead";
 export * from "./ai";
 export * from "./places";
 export * from "./wiki";
+export * from "./groceries";

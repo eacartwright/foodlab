@@ -261,4 +261,8 @@ tombstones (`deleted`), restorable with Undo or the page's Restore.
 - 2026-11-14: **Techniques are tips** (`Tip.kind` tip / technique, `Tip.links`; migration 21): a technique
   isn't listed on recipes, only in the ingredient card (`View.ingredientTips`); Tips list filters by kind;
   **search has a Tips group** (`SEARCH_KINDS` has `tips`). 127 tests; browser-checked.
+- 2026-11-21: **Groceries**: drag to reorder by a ⠿ handle (sets `neededAt`, `shared/groceries.ts` `moveGrocery`;
+  listeners on the window, since reordering moves the row and loses pointer capture; arrow keys too); a
+  **Foods / Products** switch for what rows say (per device); the row's Name box only for free text, then
+  Food, Product, This time. 130 tests; browser-checked (mouse, keys, real touch, phone dark).
 - **Next:** AI recipes (DESIGN.md §5.14). M6 (weights) after.

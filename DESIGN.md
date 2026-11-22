@@ -303,7 +303,7 @@ counter, and the same ten things typed out again every week.)
 | `foodId` / `productId` | Optional links, filled in when the typed name matches a food or product (by `nameKey`), or picked later. A product gives the item its stores. |
 | `need` | yes / no. **On the list** or not. The only thing the everyday path changes. |
 | `note` | This time only: "2", "the big one". Cleared when it goes back on the list. |
-| `neededAt` | When it last went on the list: the list's order. |
+| `neededAt` | When it last went on the list: the list's order. Dragging an item sets it between its new neighbours (`shared/groceries.ts` `moveGrocery`). |
 | `gotAt` | When it was last checked off: this trip, and undoing it. |
 | `inTrip` | Checked off and still on screen this trip. Done shopping clears it, so it ends the trip on every device. |
 | `count` | Times got. Orders the Usual list. |
@@ -606,11 +606,15 @@ get, beside the word in the sidebar and drawer, on the icon in the phone's tab b
 └──────────────────────────────┘
 ```
 
-- **The list**: what's needed, in the order added. Tap the circle to check it off.
+- **The list**: what's needed, in the order added, or as dragged by the ⠿ handle at the row's end (mouse, finger,
+  or arrow keys on the focused handle; 2026-11-21). Tap the box to check it off.
+- **Foods / Products** (top right, per device, 2026-11-21): each row says its food's name ("Table salt") or
+  its product's ("Morton Plain Table Salt"), falling back to the other, then to the name as typed.
 - **This trip**: checked items stay on screen struck through for 3 hours or until **Done
   shopping**, which syncs, so the trip ends on the phone and the desktop alike. Tapping the
   checked box again undoes it (no separate Undo). Then they quietly join Usual. They never pile up.
-- Tapping an item opens its row: name, this time's note, food, product, Not needed, Delete.
+- Tapping an item opens its row: food, product, this time's note, Not needed, Delete. **Name** shows only
+  for free text (no food or product): otherwise the food or product names it (2026-11-21).
 - On a touch screen, swiping an item left shows **Remove** (= Not needed, with Undo); a long swipe
   does it straight away. A mouse never swipes. `SwipeRow.tsx` is generic: any list can use it.
 - **Usual**: everything I've bought that isn't needed, most-bought first, plus staples (§4.7)
