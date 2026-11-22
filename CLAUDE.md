@@ -271,4 +271,8 @@ tombstones (`deleted`), restorable with Undo or the page's Restore.
   a website counts recipes by their first link's site (`View.sourceOf` / `sourceForLink`, `siteHost`);
   Source + Page in recipe Edit; search group. 132 tests; migration checked on a copy of the live DB;
   browser-checked (desktop and phone dark).
+- 2026-11-22, Evan's dev note: the grocery row's Product box makes a **New product** of the row's food
+  (`newProductFor`, `splitBrand`: "wegman" → Wegmans 2% milk, sold at Wegmans); This time isn't focused
+  on opening (the phone's keyboard); **Open food** and **Open product** links. 132 tests; browser-checked
+  at phone width on a copy of the live DB.
 - **Next:** AI recipes (DESIGN.md §5.14). M6 (weights) after.

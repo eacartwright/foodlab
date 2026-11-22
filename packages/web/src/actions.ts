@@ -7,6 +7,7 @@ import {
   parseLine,
   productName,
   siteHost,
+  splitBrand,
   swapTag,
   tidyName,
   today,
@@ -40,6 +41,20 @@ export function ensureFood(name: string, extra: Partial<Food> = {}): Id {
   const food = { ...blank.foods(newId(), tidyName(name)), ...extra };
   put("foods", food);
   return food.id;
+}
+
+/**
+ * A new product of this food, typed in the grocery row ("wegman" → Wegmans 2% milk). A brand
+ * that's also a place is sold there, as in Quick add.
+ */
+export function newProductFor(text: string, foodId: Id | null): Id {
+  const { view } = data();
+  const food = foodId ? view.food(foodId) : undefined;
+  const { brand, name } = splitBrand(text, view.brands(), food?.name ?? "");
+  const store = brand ? view.stores.find((s) => nameKey(s.name) === nameKey(brand)) : undefined;
+  const p = { ...blank.products(newId(), tidyName(name)), brand, foodId, storeIds: store ? [store.id] : [] };
+  put("products", p);
+  return p.id;
 }
 
 /** The place with this name, made if there's none (a new one from a dish is a restaurant). */

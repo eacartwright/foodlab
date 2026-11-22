@@ -2,6 +2,7 @@
 // Every record is saved whole (PUT /api/<kind>/<id>); `updatedAt` and `rev` are set by the server.
 
 import { DEFAULT_AI, type AiSettings } from "./ai";
+import { nameKey } from "./ingredients";
 
 export type Id = string;
 
@@ -508,6 +509,18 @@ export function withoutBrand(name: string, brand: string): string {
   // Only at a word break, and never down to nothing ("Kraft" by Kraft stays).
   if (!/^[\s,:–—-]/.test(rest)) return name;
   return rest.replace(/^[\s,:–—-]+/, "") || name;
+}
+
+/**
+ * A product typed for a food (the grocery row's Product box): just a known brand ("wegman")
+ * is that brand's one of the food ("Wegmans" + "2% milk"); a brand in front is split off.
+ */
+export function splitBrand(text: string, brands: string[], foodName: string): { brand: string; name: string } {
+  const t = text.trim();
+  const whole = brands.find((b) => nameKey(b) === nameKey(t));
+  if (whole) return { brand: whole, name: foodName || whole };
+  const front = brands.find((b) => withoutBrand(t, b) !== t);
+  return front ? { brand: front, name: withoutBrand(t, front) } : { brand: "", name: t };
 }
 
 /**

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { swapTag, View } from "./derive";
-import { blank, emptyState, formatPhone, MEAL_TAGS, productName, withoutBrand, WORK_LUNCH, type Food, type GroceryItem, type Product, type Recipe, type State } from "./types";
+import { blank, emptyState, formatPhone, MEAL_TAGS, productName, splitBrand, withoutBrand, WORK_LUNCH, type Food, type GroceryItem, type Product, type Recipe, type State } from "./types";
 
 // A small world: Lemon → Lemon juice (form) → Santa Cruz (product, Wegmans); Meat → Chicken thigh.
 function world(): State {
@@ -253,6 +253,10 @@ describe("products by brand", () => {
     expect(productName({ brand: "", name: "Eggs" })).toBe("Eggs");
     expect(withoutBrand("Bell & Evans - Nuggets", "bell & evans")).toBe("Nuggets");
     expect(withoutBrand("Krafty cheese", "Kraft")).toBe("Krafty cheese");
+    const brands = ["Wegmans", "Kraft"];
+    expect(splitBrand("wegman", brands, "2% milk")).toEqual({ brand: "Wegmans", name: "2% milk" });
+    expect(splitBrand("Kraft Singles", brands, "American cheese")).toEqual({ brand: "Kraft", name: "Singles" });
+    expect(splitBrand("Fairlife", brands, "2% milk")).toEqual({ brand: "", name: "Fairlife" });
   });
 
   it("finds and sorts products by the whole name; Eat never shows what isn't gluten-free", () => {

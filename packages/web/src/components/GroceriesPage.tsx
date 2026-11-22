@@ -1,6 +1,6 @@
 import { moveGrocery, productName, type GroceryItem, type View } from "@foodlab/shared";
 import { useRef, useState, type ButtonHTMLAttributes } from "react";
-import { addToGroceries, doneShopping, ensureFood, gotGrocery, needGrocery, remove, saveGrocery, tripStart, ungotGrocery } from "../actions";
+import { addToGroceries, doneShopping, ensureFood, gotGrocery, needGrocery, newProductFor, remove, saveGrocery, tripStart, ungotGrocery } from "../actions";
 import { A, pathOf } from "../router";
 import { useData } from "../sync";
 import { showToast } from "../toast";
@@ -277,15 +277,18 @@ function GroceryRow({ g, label, editing, onEdit, grip, dragging }: { g: GroceryI
               value={g.productId}
               options={products}
               placeholder="Which one? (optional)"
+              createLabel="New product"
               onChange={(productId) => saveGrocery(g, { productId, foodId: (productId && view.state.products[productId]?.foodId) || g.foodId })}
+              onCreate={(text) => newProductFor(text, g.foodId)}
             />
           </Field>
           <Field label="This time">
-            <DraftInput className="input" value={g.note} placeholder="2, the big one…" aria-label="Note" autoFocus onCommit={(note) => saveGrocery(g, { note })} />
+            {/* Not focused on opening: on the phone that pops the keyboard up. */}
+            <DraftInput className="input" value={g.note} placeholder="2, the big one…" aria-label="Note" onCommit={(note) => saveGrocery(g, { note })} />
           </Field>
           <div className="row-actions">
-            {product && <A href={pathOf("products", product.id)}>Open {productName(product)}</A>}
-            {!product && food && <A href={pathOf("foods", food.id)}>Open {food.name}</A>}
+            {food && <A href={pathOf("foods", food.id)}>Open food</A>}
+            {product && <A href={pathOf("products", product.id)}>Open product</A>}
             <span className="spacer" />
             <button
               className="btn subtle"
