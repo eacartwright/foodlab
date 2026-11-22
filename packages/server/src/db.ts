@@ -1,7 +1,7 @@
 import { DatabaseSync } from "node:sqlite";
 import { existsSync, mkdirSync } from "node:fs";
 import { dirname } from "node:path";
-import { DEFAULT_AI, emptyState, type Attachment, type Classic, type ClassicIngredient, type DevNote, type Dish, type Photo, type Settings, type Food, type GroceryItem, type Id, type LogEntry, type Product, type Recipe, type RecipeIngredient, type State, type Store, type Tag, type Tip } from "@foodlab/shared";
+import { DEFAULT_AI, emptyState, type Attachment, type Classic, type ClassicIngredient, type DevNote, type Dish, type Photo, type Settings, type Food, type GroceryItem, type Id, type LogEntry, type Product, type Recipe, type RecipeIngredient, type State, type Store, type Source, type Tag, type Tip } from "@foodlab/shared";
 
 // SQLite persistence: ordinary relational tables, one row per record, links in their own tables
 // (product_stores, recipe_ingredients, item_tags), so the file reads well in any SQLite browser
@@ -305,6 +305,25 @@ const MIGRATIONS: string[] = [
   ALTER TABLE tips ADD COLUMN kind TEXT NOT NULL DEFAULT 'tip';  -- tip | technique
   ALTER TABLE tips ADD COLUMN links TEXT NOT NULL DEFAULT '[]';  -- JSON ["https://…", ...]
   `,
+  // 2026-11-22: sources, favorite recipe websites and cookbooks; a recipe can say which (and the
+  // page). A website also counts the recipes whose link is on its site, worked out, not stored.
+  `
+  CREATE TABLE sources (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    kind TEXT NOT NULL DEFAULT 'website',  -- website | book
+    url TEXT NOT NULL DEFAULT '',
+    author TEXT NOT NULL DEFAULT '',
+    notes TEXT NOT NULL DEFAULT '',
+    rating TEXT,                           -- love | up | down
+    deleted INTEGER NOT NULL DEFAULT 0,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    rev INTEGER NOT NULL
+  );
+  ALTER TABLE recipes ADD COLUMN source_id TEXT;
+  ALTER TABLE recipes ADD COLUMN source_page TEXT NOT NULL DEFAULT '';
+  `,
 ];
 
 export type DB = DatabaseSync;
@@ -481,7 +500,12 @@ export function loadState(db: DB): State {
       classicId: r.classic_id ?? null,
       tipIds: JSON.parse(r.tip_ids ?? "[]"),
       tipsOff: JSON.parse(r.tips_off ?? "[]"),
+      sourceId: r.source_id ?? null,
+      sourcePage: r.source_page ?? "",
     } satisfies Recipe;
+  }
+  for (const r of db.prepare("SELECT * FROM sources").all() as Row[]) {
+    s.sources[r.id] = { ...base(r), name: r.name, kind: r.kind, url: r.url, author: r.author, notes: r.notes, rating: r.rating } satisfies Source;
   }
   for (const r of db.prepare("SELECT * FROM tags").all() as Row[]) {
     s.tags[r.id] = { ...base(r), name: r.name, kind: r.kind, aliases: JSON.parse(r.aliases ?? "[]") } satisfies Tag;
@@ -634,12 +658,17 @@ export const save = {
       classic_id: x.classicId,
       tip_ids: JSON.stringify(x.tipIds),
       tips_off: JSON.stringify(x.tipsOff),
+      source_id: x.sourceId,
+      source_page: x.sourcePage,
     });
     setTags(db, "recipes", x.id, x.tagIds);
     db.prepare("DELETE FROM recipe_ingredients WHERE recipe_id = ?").run(x.id);
     const ins = db.prepare(`INSERT INTO recipe_ingredients (recipe_id, id, position, line, food_id, quantity, unit, prep, optional, note)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
     x.ingredients.forEach((i, n) => ins.run(x.id, i.id, n, i.line, i.foodId, i.quantity, i.unit, i.prep, i.optional ? 1 : 0, i.note));
+  },
+  sources(db: DB, x: Source) {
+    upsert(db, "sources", { ...baseCols(x), name: x.name, kind: x.kind, url: x.url, author: x.author, notes: x.notes, rating: x.rating });
   },
   tags(db: DB, x: Tag) {
     upsert(db, "tags", { ...baseCols(x), name: x.name, kind: x.kind, aliases: JSON.stringify(x.aliases) });

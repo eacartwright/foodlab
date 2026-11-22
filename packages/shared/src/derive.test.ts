@@ -445,3 +445,23 @@ describe("tips", () => {
     expect(v.recipesWithTip("always").map((r) => r.id)).toEqual(["any", "salsa"]); // switched off on the omelette
   });
 });
+
+describe("sources", () => {
+  it("knows a recipe's source by name or by its link's site, and finds recipes through it", () => {
+    const s = world();
+    s.sources.se = { ...blank.sources("se", "Serious Eats"), url: "https://www.seriouseats.com/" };
+    s.sources.nyt = { ...blank.sources("nyt", "NYT Cooking"), url: "nytimes.com" };
+    s.sources.fl = { ...blank.sources("fl", "The Food Lab"), kind: "book", author: "Kenji López-Alt" };
+    s.recipes.lc = { ...s.recipes.lc!, links: ["https://www.seriouseats.com/lemon-chicken"] };
+    s.recipes.hash = { ...s.recipes.hash!, links: ["https://cooking.nytimes.com/recipes/1-hash"], sourceId: "fl", sourcePage: "212" };
+    const v = new View(s);
+    expect(v.sourceOf(v.state.recipes.lc!)?.id).toBe("se");
+    expect(v.sourceOf(v.state.recipes.hash!)?.id).toBe("fl"); // named beats the link
+    expect(v.recipesFromSource("se").map((r) => r.id)).toEqual(["lc"]);
+    expect(v.recipesFromSource("nyt")).toEqual([]);
+    expect(v.sourceForLink("https://cooking.nytimes.com/x")?.id).toBe("nyt");
+    expect(v.sourceForLink("https://notseriouseats.com/x")).toBeUndefined();
+    expect(v.search("food lab").full.recipes.map((h) => h.item.id)).toEqual(["hash"]);
+    expect(v.search("food lab").full.sources.map((h) => h.item.id)).toEqual(["fl"]);
+  });
+});

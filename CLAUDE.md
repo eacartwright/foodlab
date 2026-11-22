@@ -265,4 +265,10 @@ tombstones (`deleted`), restorable with Undo or the page's Restore.
   listeners on the window, since reordering moves the row and loses pointer capture; arrow keys too); a
   **Foods / Products** switch for what rows say (per device); the row's Name box only for free text, then
   Food, Product, This time. 130 tests; browser-checked (mouse, keys, real touch, phone dark).
+- 2026-11-22: **Recipes · Classics · Sources tabs** (DESIGN.md §5.16; `RecipeTabs` in `ListPages.tsx`,
+  Classics out of the sidebar, Recipes lit on all three). **Sources** (migration 22: `sources`,
+  `recipes.source_id` / `source_page`): websites and books, `SourcePage.tsx`, `SourcesList`, `ensureSource`;
+  a website counts recipes by their first link's site (`View.sourceOf` / `sourceForLink`, `siteHost`);
+  Source + Page in recipe Edit; search group. 132 tests; migration checked on a copy of the live DB;
+  browser-checked (desktop and phone dark).
 - **Next:** AI recipes (DESIGN.md §5.14). M6 (weights) after.

@@ -12,6 +12,9 @@ import {
   SPEED_LABEL,
   STATUSES,
   STATUS_LABEL,
+  SOURCE_KINDS,
+  SOURCE_KIND_LABEL,
+  siteHost,
   TIP_KINDS,
   TIP_KIND_LABEL,
   TIP_WHEN_LABEL,
@@ -28,7 +31,7 @@ import {
   type View,
 } from "@foodlab/shared";
 import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
-import { deleteTag, ensureClassic, ensureStore, ensureTag, ensureTip, mergeTag, renameTag, setTagAliases } from "../actions";
+import { deleteTag, ensureClassic, ensureSource, ensureStore, ensureTag, ensureTip, mergeTag, renameTag, setTagAliases } from "../actions";
 import { showToast } from "../toast";
 import { A, go, pathOf, setQuery, useRoute } from "../router";
 import { useData } from "../sync";
@@ -53,7 +56,10 @@ function ListShell({
   children,
   empty,
   textBelow = false,
+  tabs,
 }: {
+  /** Beside the title (on the phone, the line below): Recipes · Classics · Sources. */
+  tabs?: ReactNode;
   title: string;
   icon: string;
   count: number;
@@ -82,6 +88,7 @@ function ListShell({
         <h1 className="page-title">
           {icon} {title} <span className="count">{count}</span>
         </h1>
+        {tabs}
         <span className="spacer" />
         {add && (
           <button className="btn primary" onClick={add}>
@@ -642,6 +649,25 @@ function FoodPath({ path }: { path: Food[] }) {
   );
 }
 
+/** Recipes, Classics and Sources are one sidebar entry (2026-11-22): tabs across their lists. */
+function RecipeTabs() {
+  const { path } = useRoute();
+  const tabs = [
+    { href: "/recipes", label: "Recipes" },
+    { href: "/classics", label: "Classics" },
+    { href: "/sources", label: "Sources" },
+  ];
+  return (
+    <nav className="segmented list-tabs" aria-label="Recipes, classics, sources">
+      {tabs.map((t) => (
+        <A key={t.href} href={t.href} className={path === t.href ? "on" : ""} aria-current={path === t.href ? "page" : undefined}>
+          {t.label}
+        </A>
+      ))}
+    </nav>
+  );
+}
+
 export function RecipesList() {
   const { view } = useData();
   const { query } = useRoute();
@@ -670,6 +696,7 @@ export function RecipesList() {
   });
   return (
     <ListShell
+      tabs={<RecipeTabs />}
       title="Recipes"
       icon={KIND_ICON.recipes}
       count={rows.length}
@@ -1144,6 +1171,7 @@ export function ClassicsList() {
   };
   return (
     <ListShell
+      tabs={<RecipeTabs />}
       title="Classics"
       icon={KIND_ICON.classics}
       count={rows.length}
@@ -1287,6 +1315,109 @@ export function TipsList() {
           </td>
           <td className="hide-sm muted small">{foods.join(", ")}</td>
           <td className="hide-sm muted small">{t.kind === "technique" || t.when === "always" ? "" : TIP_WHEN_LABEL[t.when]}</td>
+          <td className="num">{n || <span className="muted">0</span>}</td>
+        </tr>
+      ))}
+    </ListShell>
+  );
+}
+
+/** Favorite recipe websites and cookbooks (DESIGN.md §5.16), with how many of my recipes are from each. */
+export function SourcesList() {
+  const { view } = useData();
+  const { query } = useRoute();
+  const f = query.get("f") ?? "";
+  const kind = query.get("kind");
+  const rating = query.get("rating");
+  const [adding, setAdding] = useState(false);
+  const [name, setName] = useState("");
+  const rows = useMemo(
+    () =>
+      view.sources
+        .filter((s) => (!kind || s.kind === kind) && ratingOk(s.rating, rating) && match([s.name, s.author, s.notes, siteHost(s.url)].join(" "), f))
+        .map((s) => ({ s, n: view.recipesFromSource(s.id).length })),
+    [view, f, kind, rating],
+  );
+  const { sorted, th } = useSort(rows, {
+    rating: { value: (x) => rank(x.s.rating), desc: true },
+    name: { value: (x) => x.s.name },
+    kind: { value: (x) => SOURCE_KIND_LABEL[x.s.kind] },
+    by: { value: (x) => x.s.author || null },
+    recipes: { value: (x) => x.n, desc: true },
+  });
+  const create = () => {
+    if (!name.trim()) return;
+    const id = ensureSource(name);
+    setName("");
+    setAdding(false);
+    go(pathOf("sources", id));
+  };
+  return (
+    <ListShell
+      tabs={<RecipeTabs />}
+      title="Sources"
+      icon={KIND_ICON.sources}
+      count={rows.length}
+      add={() => setAdding(true)}
+      filters={
+        <>
+          <select className="select" value={kind ?? ""} onChange={(e) => setQuery({ kind: e.target.value || null })} aria-label="Kind">
+            <option value="">Websites and books</option>
+            {SOURCE_KINDS.map((k) => (
+              <option key={k} value={k}>
+                {SOURCE_KIND_LABEL[k]}s
+              </option>
+            ))}
+          </select>
+          <RatingFilter />
+          {adding && (
+            <span className="inline">
+              <input
+                className="input"
+                aria-label="New source: a name, or a website's address"
+                autoFocus
+                value={name}
+                enterKeyHint="done"
+                onChange={(e) => setName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") create();
+                  else if (e.key === "Escape") setAdding(false);
+                }}
+              />
+              <button className="btn primary" disabled={!name.trim()} onClick={create}>
+                Add
+              </button>
+              <button className="btn subtle" onClick={() => setAdding(false)}>
+                Cancel
+              </button>
+            </span>
+          )}
+        </>
+      }
+      empty={view.sources.length ? "No sources match." : "No sources yet: + Add takes a name, or a website's address."}
+      head={
+        <tr>
+          {th("rating", "❤️", "rate-col", "Rating")}
+          {th("name", "Source")}
+          {th("kind", "Kind", "hide-sm")}
+          {th("by", "By", "hide-sm")}
+          {th("recipes", "Recipes", "num")}
+        </tr>
+      }
+    >
+      {sorted.map(({ s, n }) => (
+        <tr key={s.id}>
+          <td className="rate-col">
+            <RatingMark value={s.rating} />
+          </td>
+          <td>
+            <A href={pathOf("sources", s.id)} className="strong">
+              {s.kind === "book" ? "📚" : "🌐"} {s.name}
+            </A>
+            {s.kind === "website" && siteHost(s.url) && siteHost(s.url) !== s.name.toLowerCase() && <span className="muted small"> · {siteHost(s.url)}</span>}
+          </td>
+          <td className="hide-sm muted small">{SOURCE_KIND_LABEL[s.kind]}</td>
+          <td className="hide-sm muted small">{s.author}</td>
           <td className="num">{n || <span className="muted">0</span>}</td>
         </tr>
       ))}

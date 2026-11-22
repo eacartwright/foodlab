@@ -16,7 +16,7 @@ import {
   type View,
 } from "@foodlab/shared";
 import { useEffect, useState } from "react";
-import { addLog, duplicate, ensureClassic, ensureFood, ensureTip, remove, setIngredientFood, tipOff } from "../actions";
+import { addLog, duplicate, ensureClassic, ensureFood, ensureSource, ensureTip, remove, setIngredientFood, tipOff } from "../actions";
 import { Markdown } from "../markdown";
 import { A, go, pathOf, setQuery, useRoute } from "../router";
 import { data, put, useData } from "../sync";
@@ -66,6 +66,7 @@ function RecipeView({ r }: { r: Recipe }) {
   // The first link is where the recipe came from: a button up top. Any others (a video, what it
   // was adapted from) go at the bottom.
   const [source, ...more] = r.links;
+  const from = view.sourceOf(r);
   const tags = r.tagIds.map((t) => view.tag(t)).filter((t) => t && !t.deleted);
   const madeToday = view.logOf(r.id).some((e) => e.kind === "made" && e.date === today());
 
@@ -118,9 +119,16 @@ function RecipeView({ r }: { r: Recipe }) {
             >
               {madeToday ? "✓ Made today" : "Made it today"}
             </button>
+            {/* A book (or a site with no link here) goes to its Source page; a link opens the page, named for the site when it's one of mine. */}
+            {from && (from.kind === "book" || !source || view.sourceForLink(source)?.id !== from.id) && (
+              <A className="btn subtle" href={pathOf("sources", from.id)}>
+                {from.kind === "book" ? "📚" : "🌐"} {from.name}
+                {from.kind === "book" && r.sourcePage ? `, p. ${r.sourcePage}` : ""}
+              </A>
+            )}
             {source && (
               <a className="btn subtle" href={source} target="_blank" rel="noreferrer noopener" title={source}>
-                🔗 {siteOf(source)} ↗
+                🔗 {view.sourceForLink(source)?.name ?? siteOf(source)} ↗
               </a>
             )}
           </div>
@@ -419,6 +427,21 @@ function RecipeEdit({ r }: { r: Recipe }) {
             onCreate={(n) => ensureClassic(n)}
           />
         </Field>
+        <Field label="Source">
+          <Picker
+            value={r.sourceId}
+            options={view.sources.map((s) => ({ id: s.id, label: s.name }))}
+            placeholder={view.sourceForLink(r.links[0])?.name ?? ""}
+            createLabel="New source"
+            onChange={(sourceId) => save({ sourceId, sourcePage: sourceId ? r.sourcePage : "" })}
+            onCreate={(n) => ensureSource(n)}
+          />
+        </Field>
+        {view.source(r.sourceId)?.kind === "book" && (
+          <Field label="Page">
+            <DraftInput className="input narrow" inputMode="numeric" value={r.sourcePage} onCommit={(sourcePage) => save({ sourcePage })} />
+          </Field>
+        )}
         <Field label="Ingredients">
           <DraftTextarea
             className="input mono-ish"

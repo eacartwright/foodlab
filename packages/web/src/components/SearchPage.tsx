@@ -8,7 +8,7 @@ import { ItemRow, Section } from "./rows";
 
 // Home: one box over everything (DESIGN.md §5.1). "breakfast + lemon + potato" = all three.
 
-const GROUP_TITLE = { recipes: "Recipes", classics: "Classics", products: "Products", dishes: "Dishes", foods: "Foods", tips: "Tips", stores: "Places" } as const;
+const GROUP_TITLE = { recipes: "Recipes", classics: "Classics", products: "Products", dishes: "Dishes", foods: "Foods", tips: "Tips", sources: "Sources", stores: "Places" } as const;
 const finePointer = typeof matchMedia !== "undefined" && matchMedia("(pointer: fine)").matches;
 
 export function SearchPage() {

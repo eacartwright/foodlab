@@ -35,6 +35,8 @@ import {
   type Records,
   type Store,
   type Tag,
+  type Source,
+  SOURCE_KINDS,
   type Tip,
   TIP_WHEN,
   TIP_KINDS,
@@ -328,6 +330,8 @@ export const validators: { [K in Kind]: (body: unknown, id: string, now: number)
       classicId: id(b.classicId, "classicId"),
       tipIds: ids(b.tipIds, "tipIds"),
       tipsOff: ids(b.tipsOff, "tipsOff"),
+      sourceId: id(b.sourceId, "sourceId"),
+      sourcePage: str(b.sourcePage, "sourcePage", 40).trim(),
     };
   },
   tips(body, rid, now): Tip {
@@ -341,6 +345,18 @@ export const validators: { [K in Kind]: (body: unknown, id: string, now: number)
       kind: oneOf(b.kind, TIP_KINDS, "kind") ?? "tip",
       links: strs(b.links, "links"),
       tagIds: ids(b.tagIds, "tagIds"),
+    };
+  },
+  sources(body, rid, now): Source {
+    const b = obj(body);
+    return {
+      ...base(b, rid, now),
+      name: name(b.name),
+      kind: oneOf(b.kind, SOURCE_KINDS, "kind") ?? "website",
+      url: str(b.url, "url", 2000).trim(),
+      author: str(b.author, "author", 200).trim(),
+      notes: str(b.notes, "notes", 20_000),
+      rating: oneOf(b.rating, RATINGS, "rating"),
     };
   },
   tags(body, rid, now): Tag {

@@ -778,7 +778,7 @@ to keep, change or drop, never saved by itself. Cost goes through the usual mete
 comes back half unlinked.
 
 **As built (2026-11-09, migration 19; `Classic`, `classics` / `classic_ingredients` tables,
-`recipes.classic_id`, `dishes.classic_id`):** 📖 **Classics** in the sidebar, after Recipes: the
+`recipes.classic_id`, `dishes.classic_id`):** 📖 **Classics**, a tab of Recipes (§5.16; its own sidebar entry until 2026-11-22): the
 tree (groups bold, kinds indented), what each needs and how many of my recipes (its kinds'
 too); + Add asks for a name and opens the new classic. A classic's page: the About card, **Kind
 of**, **Also called**, **Wikipedia**, tags (no meal chips: those are for what I eat), notes;
@@ -843,6 +843,33 @@ kinds' ("from Onion"); + Tip adds an existing one to the food or makes a new one
 
 Recipe **Notes** stay for what's about that one recipe (from its author or me); a tip is for what
 holds across recipes. Not yet: tips on products or dishes, or on equipment.
+
+### 5.16 Recipe tabs and sources (built 2026-11-22)
+
+**Recipes · Classics · Sources** are one sidebar entry, 🍳 Recipes: tabs beside each list's title
+(on the phone, the line below), each its own list and address (`/recipes`, `/classics`, `/sources`).
+Recipes stays lit in the sidebar and the phone's tab bar on all three. (Why: the sidebar was getting long,
+and classics and sources are both ways into recipes.)
+
+A **source** (`sources` kind, migration 22) is a favorite recipe website or cookbook:
+
+| Field | Notes |
+|---|---|
+| `name` | "Serious Eats", "The Food Lab". |
+| `kind` | website / book. |
+| `url` | The site (or the book's page somewhere). |
+| `author` | "By" for a website. |
+| `notes`, `rating` | As everywhere (❤️ 👍 👎); no rating log entries. |
+
+- A recipe names one in Edit (**Source**, after Classic; `Recipe.sourceId`), and a book's **Page**
+  (`sourcePage`). Picking New source makes a book from a name, a website from an address.
+- A **website** needs no naming: a recipe whose first link is on its site (or a subdomain:
+  cooking.nytimes.com is on nytimes.com) is from it (`View.sourceOf`, `sourceForLink`). Named beats the link.
+- The recipe view shows 📚 *The Food Lab, p. 212* (to the source's page) for a book, and the 🔗 link
+  button says the site's name ("🔗 Serious Eats ↗") when it's one of mine.
+- The Sources list: name, kind, by, rating, how many of my recipes. A source's page: Kind, Link, By /
+  Author, Rating, Notes, and its recipes, loved first.
+- Search has a Sources group, and a recipe is found by its source's name and author ("food lab").
 
 ## 6. Later (designed for, not built)
 

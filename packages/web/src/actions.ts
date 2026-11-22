@@ -6,6 +6,7 @@ import {
   nameKey,
   parseLine,
   productName,
+  siteHost,
   swapTag,
   tidyName,
   today,
@@ -75,6 +76,23 @@ export function setClassicAliases(c: Classic, text: string) {
     });
   put("classics", { ...now, aliases: [...new Map(words.map((w) => [nameKey(w), w])).values()] });
   if (taken.length) showToast(`Left off: ${taken.join(", ")}`);
+}
+
+/**
+ * The source with this name, made if there's none (DESIGN.md §5.16). A web address makes a
+ * website named for its site; anything else a book (Kind switches on its page).
+ */
+export function ensureSource(name: string): Id {
+  const typed = name.trim();
+  const host = /\s/.test(typed) ? "" : siteHost(typed);
+  const { view } = data();
+  const found = host ? view.sources.find((s) => siteHost(s.url) === host) : view.findSource(typed);
+  if (found) return found.id;
+  const s = host
+    ? { ...blank.sources(newId(), host), url: /^https?:\/\//i.test(typed) ? typed : `https://${typed}` }
+    : { ...blank.sources(newId(), tidyName(typed)), kind: "book" as const };
+  put("sources", s);
+  return s.id;
 }
 
 /** The tip with this name, made if there's none (DESIGN.md §5.15). */

@@ -1,5 +1,6 @@
 import {
   COST_LABEL,
+  SOURCE_KIND_LABEL,
   TIP_KIND_LABEL,
   PLACE_TYPE_LABEL,
   fileUrl,
@@ -11,6 +12,7 @@ import {
   type Product,
   type Recipe,
   type SearchKind,
+  type Source,
   type Store,
   type Tip,
   type View,
@@ -21,7 +23,7 @@ import { KIND_ICON, KIND_ONE } from "./controls";
 
 // One line per thing, used by search, Eat, lists and pages.
 
-type Item = Food | Product | Recipe | Store | Dish | Classic | Tip;
+type Item = Food | Product | Recipe | Store | Dish | Classic | Tip | Source;
 
 export function Rating({ value }: { value: Product["rating"] }) {
   return value ? (
@@ -43,6 +45,11 @@ export function subline(view: View, kind: SearchKind, item: Item, hideFood = fal
     const n = view.recipesOfClassic(c.id, true).length;
     const needs = c.ingredients.filter((i) => i.role === "required").map((i) => view.food(i.foodId)?.name).filter(Boolean);
     return [up && !up.deleted ? `a kind of ${up.name}` : null, needs.length ? needs.join(", ") : null, n ? `${n} recipe${n === 1 ? "" : "s"}` : null].filter(Boolean).join(" · ");
+  }
+  if (kind === "sources") {
+    const s = item as Source;
+    const n = view.recipesFromSource(s.id).length;
+    return [SOURCE_KIND_LABEL[s.kind], s.author || null, n ? `${n} recipe${n === 1 ? "" : "s"}` : null].filter(Boolean).join(" · ");
   }
   if (kind === "tips") {
     const t = item as Tip;
@@ -107,7 +114,7 @@ export function ItemRow({
   noSub?: boolean;
 }) {
   const eating = kind === "recipes" || kind === "products" || kind === "dishes" ? (item as Product | Recipe | Dish) : null;
-  const rated = eating ?? (kind === "stores" ? (item as Store) : null);
+  const rated = eating ?? (kind === "stores" ? (item as Store) : kind === "sources" ? (item as Source) : null);
   const sub = noSub ? "" : subline(view, kind, item, hideFood);
   return (
     <A className={`row ${item.deleted ? "is-deleted" : ""}`} href={pathOf(kind, item.id)}>

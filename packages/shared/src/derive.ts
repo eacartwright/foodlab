@@ -1,6 +1,7 @@
 import { nameKey } from "./ingredients";
 import {
   GF_LABEL,
+  SOURCE_KIND_LABEL,
   TIP_KIND_LABEL,
   STORAGE_WORDS,
   PLACE_TYPE_LABEL,
@@ -17,6 +18,7 @@ import {
   type Product,
   type Rating,
   type Recipe,
+  type Source,
   type State,
   type Status,
   type Store,
@@ -33,6 +35,16 @@ export type Eatable = { kind: "recipes"; item: Recipe } | { kind: "products"; it
 export type Where = "home" | "out" | "all";
 
 const live = <T extends { deleted: boolean }>(rec: Record<Id, T>) => Object.values(rec).filter((x) => !x.deleted);
+/** A link's site, lowercase and without "www." ("seriouseats.com"); "" if it isn't a web address. */
+export function siteHost(link: string | undefined): string {
+  if (!link) return "";
+  try {
+    const u = new URL(/^[a-z]+:\/\//i.test(link) ? link : `https://${link}`);
+    return /^https?:$/.test(u.protocol) && u.hostname.includes(".") ? u.hostname.toLowerCase().replace(/^www\./, "") : "";
+  } catch {
+    return "";
+  }
+}
 const byName = (a: { name: string }, b: { name: string }) => nameOf(a).localeCompare(nameOf(b), undefined, { sensitivity: "base" });
 
 /** ❤️ first, then 👍, then not rated, then 👎. */
@@ -49,6 +61,7 @@ export class View {
   readonly dishes: Dish[];
   readonly classics: Classic[];
   readonly tips: Tip[];
+  readonly sources: Source[];
   readonly tags: Tag[];
   readonly groceries: GroceryItem[];
   /** Foods by `nameKey` of their name, then of their aliases (a name wins). */
@@ -76,6 +89,7 @@ export class View {
     this.dishes = live(state.dishes ?? {}).sort(byName);
     this.classics = live(state.classics ?? {}).sort(byName);
     this.tips = live(state.tips ?? {}).sort(byName);
+    this.sources = live(state.sources ?? {}).sort(byName);
     this.tags = live(state.tags).sort((a, b) => (a.kind === b.kind ? (a.kind === "meal" ? 0 : byName(a, b)) : a.kind === "meal" ? -1 : 1));
 
     const push = <K, V>(m: Map<K, V[]>, k: K, v: V) => {
@@ -157,6 +171,32 @@ export class View {
   productsAt = (storeId: Id) => this.productsByStore.get(storeId) ?? [];
   /** A place's dishes, best first. */
   dishesAt = (placeId: Id) => this.dishesByPlace.get(placeId) ?? [];
+
+  // ---- sources (DESIGN.md §5.16) ----
+  source = (id: Id | null | undefined) => (id ? this.state.sources?.[id] : undefined);
+  findSource = (name: string) => this.sources.find((s) => nameKey(s.name) === nameKey(name));
+
+  /** The website a link is on, from my sources (cooking.nytimes.com is on nytimes.com). */
+  sourceForLink(link: string | undefined): Source | undefined {
+    const host = siteHost(link);
+    if (!host) return undefined;
+    return this.sources.find((s) => {
+      const h = s.kind === "website" ? siteHost(s.url) : "";
+      return !!h && (host === h || host.endsWith(`.${h}`));
+    });
+  }
+
+  /** Where a recipe came from: the source it names, else the website its first link is on. */
+  sourceOf(r: Recipe): Source | undefined {
+    const s = this.source(r.sourceId);
+    if (s && !s.deleted) return s;
+    return this.sourceForLink(r.links[0]);
+  }
+
+  /** The recipes from a source: named it, or (a website) their link is on its site. Loved first. */
+  recipesFromSource(sourceId: Id): Recipe[] {
+    return this.recipes.filter((r) => this.sourceOf(r)?.id === sourceId).sort(byRating);
+  }
 
   // ---- tips (DESIGN.md §5.15) ----
   tip = (id: Id | null | undefined) => (id ? this.state.tips?.[id] : undefined);
@@ -591,7 +631,7 @@ export class View {
   }
 
   /** The words a thing can be found by, lowercased. */
-  private haystack(kind: SearchKind, x: Food | Product | Recipe | Store | Dish | Classic | Tip): string[] {
+  private haystack(kind: SearchKind, x: Food | Product | Recipe | Store | Dish | Classic | Tip | Source): string[] {
     const out: string[] = [x.name];
     // A recipe or dish is found through its classic and the classic's kinds ("salad" finds a Caesar).
     const classicWords = (id: Id | null) => {
@@ -635,6 +675,12 @@ export class View {
       }
       tagWords(r.tagIds);
       classicWords(r.classicId);
+      // "food lab" finds the recipes from the book.
+      const src = this.sourceOf(r);
+      if (src) out.push(src.name, src.author);
+    } else if (kind === "sources") {
+      const s = x as Source;
+      out.push(s.author, s.notes, SOURCE_KIND_LABEL[s.kind], siteHost(s.url));
     } else if (kind === "classics") {
       const c = x as Classic;
       out.push(c.notes, ...(c.aliases ?? []), ...this.classicAncestors(c.id).map((a) => a.name));
@@ -686,6 +732,7 @@ export class View {
     consider("dishes", this.dishes);
     consider("foods", this.foods);
     consider("tips", this.tips);
+    consider("sources", this.sources);
     consider("stores", this.stores);
     for (const g of [empty.full, empty.partial]) {
       for (const k of SEARCH_KINDS) {
@@ -729,7 +776,7 @@ export class View {
   }
 
   /** Recently changed things, for the empty search page. */
-  recent(n = 12): ({ kind: SearchKind; item: Food | Product | Recipe | Store | Dish | Classic | Tip })[] {
+  recent(n = 12): ({ kind: SearchKind; item: Food | Product | Recipe | Store | Dish | Classic | Tip | Source })[] {
     const all = [
       ...this.recipes.map((item) => ({ kind: "recipes" as const, item })),
       ...this.classics.map((item) => ({ kind: "classics" as const, item })),
@@ -737,6 +784,7 @@ export class View {
       ...this.dishes.map((item) => ({ kind: "dishes" as const, item })),
       ...this.foods.map((item) => ({ kind: "foods" as const, item })),
       ...this.tips.map((item) => ({ kind: "tips" as const, item })),
+      ...this.sources.map((item) => ({ kind: "sources" as const, item })),
       ...this.stores.map((item) => ({ kind: "stores" as const, item })),
     ];
     return all.sort((a, b) => b.item.updatedAt - a.item.updatedAt).slice(0, n);
@@ -778,9 +826,9 @@ export interface RecipeTip {
   off: boolean;
 }
 
-export const SEARCH_KINDS = ["recipes", "classics", "products", "dishes", "foods", "tips", "stores"] as const;
+export const SEARCH_KINDS = ["recipes", "classics", "products", "dishes", "foods", "tips", "sources", "stores"] as const;
 export type SearchKind = (typeof SEARCH_KINDS)[number];
-type SearchItem<K extends SearchKind> = K extends "recipes" ? Recipe : K extends "classics" ? Classic : K extends "products" ? Product : K extends "dishes" ? Dish : K extends "foods" ? Food : K extends "tips" ? Tip : Store;
+type SearchItem<K extends SearchKind> = K extends "recipes" ? Recipe : K extends "classics" ? Classic : K extends "products" ? Product : K extends "dishes" ? Dish : K extends "foods" ? Food : K extends "tips" ? Tip : K extends "sources" ? Source : Store;
 /** A tag a food or product gets from a food above it; `offAt` is where it was switched off ("Not here"), if it was. */
 export type InheritedTag = { tag: Tag; from: Food; offAt: Food | null };
 
@@ -793,7 +841,7 @@ export interface SearchResults {
   /** How many full matches. */
   count: number;
 }
-const emptyGroups = (): SearchGroups => ({ recipes: [], classics: [], products: [], dishes: [], foods: [], tips: [], stores: [] });
+const emptyGroups = (): SearchGroups => ({ recipes: [], classics: [], products: [], dishes: [], foods: [], tips: [], sources: [], stores: [] });
 
 /** Lowercase, letters/digits/spaces only, each word singular (so "potatoes" finds "potato"). */
 function norm(s: string): string {

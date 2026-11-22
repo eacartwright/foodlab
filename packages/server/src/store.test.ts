@@ -142,6 +142,19 @@ describe("Store", () => {
     expect([cut.kind, cut.links, cut.text]).toEqual(["technique", ["https://youtu.be/x"], "Halve it root to tip."]);
   });
 
+  it("saves sources, checks a recipe's source, and keeps it through an older app's save", () => {
+    store.put("sources", "fl", { ...blank.sources("fl", "The Food Lab"), kind: "book", author: " J. Kenji López-Alt ", rating: "love" });
+    const back = loadState(db).sources.fl!;
+    expect([back.name, back.kind, back.author, back.rating]).toEqual(["The Food Lab", "book", "J. Kenji López-Alt", "love"]);
+    expect(() => store.put("sources", "x", { ...blank.sources("x", "X"), kind: "magazine" })).toThrow(Invalid);
+    expect(() => store.put("recipes", "r", { ...blank.recipes("r", "Chili"), sourceId: "nope" })).toThrow(/source/);
+    store.put("recipes", "r", { ...blank.recipes("r", "Chili"), sourceId: "fl", sourcePage: " 212 " });
+    const { sourceId: _a, sourcePage: _b, ...old } = store.state.recipes.r!;
+    store.put("recipes", "r", { ...old, notes: "x" });
+    const r = loadState(db).recipes.r!;
+    expect([r.sourceId, r.sourcePage, r.notes]).toEqual(["fl", "212", "x"]);
+  });
+
   it("tidies a food's aliases and keeps them through an older app's save", () => {
     store.put("foods", "s", { ...blank.foods("s", "Scallions"), aliases: [" green  onions ", "Green onion", "scallion", "spring onions"] });
     expect(store.state.foods.s!.aliases).toEqual(["green onions", "spring onions"]); // no repeats, not its own name

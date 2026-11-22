@@ -461,6 +461,39 @@ textarea::placeholder {
   background: var(--primary);
   color: var(--on-primary);
 }
+/* Recipes · Classics · Sources: links that look like the switch. */
+.list-tabs a {
+  display: inline-flex;
+  align-items: center;
+  min-height: calc(var(--control) - 3px);
+  padding: 0 12px;
+  border-right: 1.5px solid var(--border);
+  color: var(--text);
+  font-weight: 600;
+  text-decoration: none;
+}
+.list-tabs a:last-child {
+  border-right: 0;
+}
+.list-tabs a:hover {
+  background: var(--surface-2);
+}
+.list-tabs a.on {
+  background: var(--primary);
+  color: var(--on-primary);
+}
+.list-head .list-tabs {
+  margin: 0 0 8px 4px;
+}
+@media (max-width: 860px) {
+  .list-head {
+    flex-wrap: wrap;
+  }
+  .list-head .list-tabs {
+    order: 3;
+    margin-left: 0;
+  }
+}
 .rating-input {
   display: inline-flex;
   gap: 6px;

@@ -3,10 +3,11 @@ import { DevNotesDialog } from "./components/DevNotes";
 import { EatPage } from "./components/EatPage";
 import { FoodPage } from "./components/FoodPage";
 import { GroceriesPage } from "./components/GroceriesPage";
-import { ClassicsList, DishesList, TipsList, FoodsList, PlacesList, ProductsList, RecipesList, TagsList } from "./components/ListPages";
+import { ClassicsList, DishesList, SourcesList, TipsList, FoodsList, PlacesList, ProductsList, RecipesList, TagsList } from "./components/ListPages";
 import { DishPage } from "./components/DishPage";
 import { ClassicPage } from "./components/ClassicPage";
 import { TipPage } from "./components/TipPage";
+import { SourcePage } from "./components/SourcePage";
 import { ProductPage } from "./components/ProductPage";
 import { closeQuickAddFromBack, fromShare, openQuickAdd, QuickAdd, useQuickAdd } from "./components/QuickAdd";
 import { RecipePage } from "./components/RecipePage";
@@ -26,7 +27,6 @@ const NAV = [
   { href: "/foods", label: "Foods", icon: "🥕" },
   { href: "/products", label: "Products", icon: "🛒" },
   { href: "/recipes", label: "Recipes", icon: "🍳" },
-  { href: "/classics", label: "Classics", icon: "📖" },
   { href: "/tips", label: "Tips", icon: "💡" },
   { href: "/dishes", label: "Dishes", icon: "🥘" },
   { href: "/places", label: "Places", icon: "📍" },
@@ -46,7 +46,7 @@ const isTyping = (el: EventTarget | null) => el instanceof HTMLElement && (el.is
 
 function Page() {
   const { path, query } = useRoute();
-  const m = /^\/(foods|products|recipes|stores|places|dishes|classics|tips)\/([^/]+)$/.exec(path);
+  const m = /^\/(foods|products|recipes|stores|places|dishes|classics|tips|sources)\/([^/]+)$/.exec(path);
   if (m) {
     const id = decodeURIComponent(m[2]!);
     if (m[1] === "foods") return <FoodPage key={id} id={id} />;
@@ -55,6 +55,7 @@ function Page() {
     if (m[1] === "dishes") return <DishPage key={id} id={id} />;
     if (m[1] === "classics") return <ClassicPage key={id} id={id} />;
     if (m[1] === "tips") return <TipPage key={id} id={id} />;
+    if (m[1] === "sources") return <SourcePage key={id} id={id} />;
     return <PlacePage key={id} id={id} />;
   }
   switch (path) {
@@ -77,6 +78,8 @@ function Page() {
       return <ClassicsList />;
     case "/tips":
       return <TipsList />;
+    case "/sources":
+      return <SourcesList />;
     case "/staples":
       return <StaplesPage />;
     case "/tags":
@@ -188,7 +191,9 @@ export function App() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  const active = (href: string) => (href === "/" ? path === "/" : path === href || path.startsWith(`${href}/`));
+  // Classics and Sources are tabs of Recipes (2026-11-22): Recipes stays lit on them.
+  const under = (href: string) => path === href || path.startsWith(`${href}/`);
+  const active = (href: string) => (href === "/" ? path === "/" : under(href) || (href === "/recipes" && (under("/classics") || under("/sources"))));
   const nav = (
     <nav className="nav" aria-label="Main">
       {NAV.map((n, i) =>
