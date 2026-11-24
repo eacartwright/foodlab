@@ -508,7 +508,7 @@ rating, buy again or history; a product's notes, links and gluten-free stay with
 
 A **recipe** opens in **recipe view** (the casual personality): yield and time, ingredients as
 written with each food a link, instructions, notes and history. Tapping an ingredient shows a
-small card (other recipes using it, Open; the preferred product is hidden, see below). **Edit** switches to the fields
+small card (the food and its tips, Wrong food?; "Also in" other recipes removed 2026-11-23; the preferred product is hidden, see below). **Edit** switches to the fields
 and the ingredient lines. A new recipe opens in Edit. The first link is the **source**: a **🔗 site.com ↗**
 button beside Made it today (2026-10-28). Any others (a video, what it was adapted from, a crust
 from another site) are **More links** at the bottom; Edit still takes as many as wanted.

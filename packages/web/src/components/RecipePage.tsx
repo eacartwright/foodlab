@@ -276,12 +276,11 @@ export const siteOf = (link: string) => {
   }
 };
 
-/** Tapping an ingredient: where else it's used, and fixing the link. */
+/** Tapping an ingredient: its food, its tips, and fixing the link. */
 function IngredientCard({ r, i }: { r: Recipe; i: RecipeIngredient }) {
   const { view } = useData();
   const [relink, setRelink] = useState(false);
   const food = view.food(i.foodId);
-  const also = food ? view.recipesUsing(food.id).filter((x) => x.id !== r.id) : [];
   // This line's tips, as they show on this recipe (the method fits, not switched off).
   const tips = view.ingredientTips(r, i.foodId);
   return (
@@ -311,18 +310,6 @@ function IngredientCard({ r, i }: { r: Recipe; i: RecipeIngredient }) {
                 </li>
               ))}
             </ul>
-          )}
-          {also.length > 0 && (
-            <div className="small">
-              Also in{" "}
-              {also.slice(0, 5).map((x, n) => (
-                <span key={x.id}>
-                  {n > 0 && ", "}
-                  <A href={pathOf("recipes", x.id)}>{x.name}</A>
-                </span>
-              ))}
-              {also.length > 5 && ` and ${also.length - 5} more`}
-            </div>
           )}
         </>
       ) : (
