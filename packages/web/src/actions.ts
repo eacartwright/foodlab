@@ -345,7 +345,7 @@ export function duplicate(kind: "foods" | "products" | "recipes" | "dishes", id:
       ...copy,
       name: name(r.name),
       rating: null,
-      status: "tried",
+      status: "want",
       ingredients: r.ingredients.map((i) => ({ ...i, id: newId() })),
     });
   }

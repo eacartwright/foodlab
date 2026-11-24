@@ -217,7 +217,7 @@ A line can link any food, a kind included: the level chosen says how picky the r
 | Field | Values |
 |---|---|
 | `rating` | ❤️ · 👍 · 👎 (offered best first), blank = not rated. |
-| `status` | `tried` · `want to try`. |
+| `status` | `tried` · `want to try`. A new recipe (Quick add or Duplicate) starts as want to try unless rated; a product or dish only when added from a link. |
 | `glutenFree` | Products: `certified` · `labeled` · `ingredients` (no gluten ingredients) · `facility` (shared facility) · `no`, blank by default. Dishes: `menu` · `modified` · `ask` · `no` (§4.11). Recipes: none on screen (2026-10-31; the column stays, unread). |
 | `notes` | |
 | `links` | URLs (recipe source, product page, Find Me Gluten Free). |

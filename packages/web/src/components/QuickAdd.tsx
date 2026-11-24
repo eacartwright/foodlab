@@ -158,8 +158,8 @@ export function QuickAdd({ init }: { init: QuickAddInit }) {
     if (!n) return;
     const id = newId();
     const links = link.trim() ? [link.trim()] : [];
-    // Something shared from the web and not rated yet is usually something to try.
-    const status = !rating && links.length ? ("want" as const) : ("tried" as const);
+    // Something shared from the web and not rated yet is usually something to try; a new recipe nearly always is.
+    const status = !rating && (links.length || kind === "recipes") ? ("want" as const) : ("tried" as const);
     if (kind === "foods") {
       const existing = view.findFood(n);
       if (existing) {
