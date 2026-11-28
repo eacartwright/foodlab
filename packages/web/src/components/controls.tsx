@@ -630,14 +630,25 @@ export function TagEditor({
   );
 }
 
-/** A list of links: each opens in a new tab; type or paste one to add it; ↑ ↓ reorder them. */
+/** A list of links: each opens in a new tab; type or paste one to add it; ✏️ edits one; ↑ ↓ reorder them. */
 export function LinksEditor({ value, onChange }: { value: string[]; onChange: (v: string[]) => void }) {
   const [text, setText] = useState("");
+  // The link being edited, and its text so far.
+  const [editing, setEditing] = useState<{ n: number; text: string } | null>(null);
+  const tidy = (t: string) => (/^[a-z]+:/i.test(t) ? t : `https://${t}`);
   const add = () => {
     const t = text.trim();
     if (!t) return;
-    onChange([...value, /^[a-z]+:/i.test(t) ? t : `https://${t}`]);
+    onChange([...value, tidy(t)]);
     setText("");
+  };
+  // Emptied = removed; unchanged = nothing saved.
+  const commit = () => {
+    if (!editing) return;
+    const t = editing.text.trim();
+    setEditing(null);
+    if (!t) onChange(value.filter((_, i) => i !== editing.n));
+    else if (tidy(t) !== value[editing.n]) onChange(value.map((l, i) => (i === editing.n ? tidy(t) : l)));
   };
   const move = (n: number, by: number) => {
     const v = value.filter((_, i) => i !== n);
@@ -646,26 +657,47 @@ export function LinksEditor({ value, onChange }: { value: string[]; onChange: (v
   };
   return (
     <div className="stack-sm">
-      {value.map((l, n) => (
-        <div className="link-row" key={n}>
-          <a href={l} target="_blank" rel="noreferrer noopener">
-            {l.replace(/^https?:\/\/(www\.)?/, "")}
-          </a>
-          {value.length > 1 && (
-            <>
-              <button className="btn icon subtle" aria-label="Move link up" disabled={n === 0} onClick={() => move(n, -1)}>
-                ↑
-              </button>
-              <button className="btn icon subtle" aria-label="Move link down" disabled={n === value.length - 1} onClick={() => move(n, 1)}>
-                ↓
-              </button>
-            </>
-          )}
-          <button className="btn icon subtle" aria-label="Remove link" onClick={() => onChange(value.filter((_, i) => i !== n))}>
-            ✕
-          </button>
-        </div>
-      ))}
+      {value.map((l, n) =>
+        editing?.n === n ? (
+          <div className="link-row" key={n}>
+            <input
+              className="input"
+              inputMode="url"
+              aria-label="Link"
+              autoFocus
+              value={editing.text}
+              onChange={(e) => setEditing({ n, text: e.target.value })}
+              onBlur={commit}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") commit();
+                if (e.key === "Escape") setEditing(null);
+              }}
+            />
+          </div>
+        ) : (
+          <div className="link-row" key={n}>
+            <a href={l} target="_blank" rel="noreferrer noopener">
+              {l.replace(/^https?:\/\/(www\.)?/, "")}
+            </a>
+            <button className="btn icon subtle" aria-label="Edit link" title="Edit" onClick={() => setEditing({ n, text: l })}>
+              ✏️
+            </button>
+            {value.length > 1 && (
+              <>
+                <button className="btn icon subtle" aria-label="Move link up" disabled={n === 0} onClick={() => move(n, -1)}>
+                  ↑
+                </button>
+                <button className="btn icon subtle" aria-label="Move link down" disabled={n === value.length - 1} onClick={() => move(n, 1)}>
+                  ↓
+                </button>
+              </>
+            )}
+            <button className="btn icon subtle" aria-label="Remove link" onClick={() => onChange(value.filter((_, i) => i !== n))}>
+              ✕
+            </button>
+          </div>
+        ),
+      )}
       <input
         className="input"
         inputMode="url"

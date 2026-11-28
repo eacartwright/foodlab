@@ -2465,3 +2465,7 @@ ul.tips {
   gap: 10px;
   padding: 2px 0;
 }
+.link-row .input {
+  flex: 1;
+  min-width: 0;
+}
