@@ -420,6 +420,7 @@ export function ProductsList() {
   const f = query.get("f") ?? "";
   const store = query.get("store");
   const rating = query.get("rating");
+  const status = query.get("status");
   const rows = useMemo(
     () =>
       view.products.filter((p) => {
@@ -427,10 +428,11 @@ export function ProductsList() {
         return (
           (match(productName(p), f) || view.foodPath(p.foodId).some((x) => match(x.name, f))) &&
           (!store || p.storeIds.includes(store)) &&
-          ratingOk(p.rating, rating)
+          ratingOk(p.rating, rating) &&
+          (!status || p.status === status)
         );
       }),
-    [view, f, store, rating],
+    [view, f, store, rating, status],
   );
   const { sorted, th } = useSort(rows, {
     rating: { value: (p) => rank(p.rating), desc: true },
@@ -443,7 +445,7 @@ export function ProductsList() {
   // Tree: foods as folding headings, each product under its food (DESIGN.md §5.3).
   const { tree, folded, fold, toggle } = useTreeState("products");
   const nodes = useMemo(() => view.foodTree(), [view]);
-  const filtering = !!f.trim() || !!store || !!rating;
+  const filtering = !!f.trim() || !!store || !!rating || !!status;
   return (
     <ListShell
       title="Products"
@@ -454,6 +456,14 @@ export function ProductsList() {
       filters={
         <>
           <TreeSwitch kind="products" tree={tree} />
+          <select className="select" value={status ?? ""} onChange={(e) => setQuery({ status: e.target.value || null })} aria-label="Tried">
+            <option value="">Tried or not</option>
+            {[...STATUSES].reverse().map((x) => (
+              <option key={x} value={x}>
+                {STATUS_LABEL[x]}
+              </option>
+            ))}
+          </select>
           <RatingFilter />
           <select className="select" value={store ?? ""} onChange={(e) => setQuery({ store: e.target.value || null })} aria-label="Store">
             <option value="">Any store</option>
