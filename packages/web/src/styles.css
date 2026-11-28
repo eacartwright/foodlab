@@ -1506,7 +1506,6 @@ ul.grocery-list li.dragging .grocery-grip {
   color: var(--primary);
 }
 ul.grocery-list li.got .grocery-name {
-  flex: 1;
   color: var(--muted);
   font-weight: 400;
   text-decoration: line-through;

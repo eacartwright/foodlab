@@ -172,8 +172,8 @@ export function GroceriesPage() {
             <span className="grocery-name">{label(g)}</span>
             {/* The PLU stays readable, not struck through: it's typed in at the checkout. */}
             {view.food(g.foodId)?.plu && (
-              <span className="grocery-plu" title="PLU">
-                {view.food(g.foodId)!.plu}
+              <span className="muted grocery-plu" title="PLU">
+                · {view.food(g.foodId)!.plu}
               </span>
             )}
           </li>
