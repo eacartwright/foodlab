@@ -85,7 +85,7 @@ export function ProductPage({ id }: { id: string }) {
         <Field label="Sold at">
           <MultiPicker
             values={p.storeIds}
-            options={view.stores.map((s) => ({ id: s.id, label: s.name }))}
+            options={view.storesFavFirst.map((s) => ({ id: s.id, label: s.name }))}
             onChange={(storeIds) => save({ storeIds })}
             onCreate={ensureStore}
             createLabel="New place"

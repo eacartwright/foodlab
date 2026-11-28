@@ -357,6 +357,15 @@ describe("groceries", () => {
   });
 });
 
+describe("favorite places", () => {
+  it("come first for Sold at, each part by name", () => {
+    const s = world();
+    s.stores.tops = { ...blank.stores("tops", "Tops"), favorite: true };
+    s.stores.mb = { ...s.stores.mb!, favorite: true };
+    expect(new View(s).storesFavFirst.map((x) => x.id)).toEqual(["mb", "tops", "weg"]);
+  });
+});
+
 describe("places and dishes (M4)", () => {
   function out() {
     const s = world();

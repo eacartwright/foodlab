@@ -87,7 +87,13 @@ export function PlacePage({ id }: { id: string }) {
   return (
     <article className="page">
       {s.deleted && <Deleted onRestore={() => save({ deleted: false })} />}
-      <PageKind kind="stores" />
+      <PageKind kind="stores">
+        <span className="kind-actions">
+          <button className={`btn staple ${s.favorite ? "on" : ""}`} aria-pressed={s.favorite} onClick={() => save({ favorite: !latest().favorite })} title="Where I usually shop: first in Sold at">
+            {s.favorite ? "★ Favorite" : "☆ Favorite"}
+          </button>
+        </span>
+      </PageKind>
       <div className="title-row">
         <TitleInput value={s.name} required aria-label="Name" onCommit={(name) => save({ name })} />
       </div>

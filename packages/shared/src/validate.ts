@@ -283,6 +283,7 @@ export const validators: { [K in Kind]: (body: unknown, id: string, now: number)
       cost: oneOf(b.cost, COSTS, "cost"),
       status: oneOf(b.status, STATUSES, "status"),
       rating: oneOf(b.rating, RATINGS, "rating"),
+      favorite: bool(b.favorite),
       locations: locations(b),
       links: strs(b.links, "links"),
       tagIds: ids(b.tagIds, "tagIds"),

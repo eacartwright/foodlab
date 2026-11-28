@@ -1493,7 +1493,13 @@ ul.grocery-list li.dragging {
   position: relative;
   z-index: 1;
   border-radius: var(--control-radius);
-  outline: 2px solid var(--primary);
+  border-bottom-color: transparent;
+  background: var(--bg);
+  box-shadow: 0 0 0 2px var(--primary);
+}
+/* The row's square background would poke out of the rounded ring. */
+ul.grocery-list li.dragging .swipe {
+  border-radius: var(--control-radius);
 }
 ul.grocery-list li.dragging .grocery-grip {
   cursor: grabbing;

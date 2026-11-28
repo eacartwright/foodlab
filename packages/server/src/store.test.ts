@@ -246,6 +246,16 @@ describe("products that aren't food", () => {
   });
 });
 
+describe("favorite places", () => {
+  it("keeps the flag across a reload; an old app's save, with none, isn't one", () => {
+    store.put("stores", "w", { ...blank.stores("w", "Wegmans"), favorite: true });
+    expect(loadState(db).stores.w?.favorite).toBe(true);
+    const { favorite: _, ...old } = blank.stores("t", "Tops");
+    store.put("stores", "t", old);
+    expect(loadState(db).stores.t?.favorite).toBe(false);
+  });
+});
+
 describe("migrations", () => {
   it("v13: products already there are food", () => {
     const file = join(dir, "v12.db");

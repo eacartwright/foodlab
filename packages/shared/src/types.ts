@@ -161,6 +161,8 @@ export interface Store extends Base {
   /** Been / want to go; null = not said (most stores). */
   status: Status | null;
   rating: Rating | null;
+  /** Where I usually shop: first in Sold at. */
+  favorite: boolean;
   /** Where it is: one for most places, several for a chain (Wegmans Pittsford, Perinton). */
   locations: PlaceLocation[];
   /** Its site, Find Me Gluten Free, a menu. */
@@ -452,6 +454,7 @@ export const blank = {
     cost: null,
     status: null,
     rating: null,
+    favorite: false,
     locations: [],
     links: [],
     tagIds: [],

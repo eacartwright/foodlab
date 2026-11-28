@@ -287,8 +287,16 @@ function GroceryRow({ g, label, editing, onEdit, grip, dragging }: { g: GroceryI
             <DraftInput className="input" value={g.note} placeholder="2, the big one…" aria-label="Note" onCommit={(note) => saveGrocery(g, { note })} />
           </Field>
           <div className="row-actions">
-            {food && <A href={pathOf("foods", food.id)}>Open food</A>}
-            {product && <A href={pathOf("products", product.id)}>Open product</A>}
+            {food && (
+              <A className="btn subtle" href={pathOf("foods", food.id)}>
+                Open food
+              </A>
+            )}
+            {product && (
+              <A className="btn subtle" href={pathOf("products", product.id)}>
+                Open product
+              </A>
+            )}
             <span className="spacer" />
             <button
               className="btn subtle"

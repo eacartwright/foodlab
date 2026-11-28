@@ -160,6 +160,10 @@ export class View {
     }
     return undefined;
   };
+  /** Places for a Sold at box: favorites first, then the rest, each by name. */
+  get storesFavFirst(): Store[] {
+    return [...this.stores.filter((s) => s.favorite), ...this.stores.filter((s) => !s.favorite)];
+  }
   findStore = (name: string) => this.stores.find((s) => nameKey(s.name) === nameKey(name));
   /** The tag with this name, or else the one with it as an alias ("bright" → tangy). */
   findTag = (name: string) => {

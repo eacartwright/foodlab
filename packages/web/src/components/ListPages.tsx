@@ -467,7 +467,7 @@ export function ProductsList() {
           <RatingFilter />
           <select className="select" value={store ?? ""} onChange={(e) => setQuery({ store: e.target.value || null })} aria-label="Store">
             <option value="">Any store</option>
-            {view.stores.map((s) => (
+            {view.storesFavFirst.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.name}
               </option>

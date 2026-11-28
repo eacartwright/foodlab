@@ -324,6 +324,8 @@ const MIGRATIONS: string[] = [
   ALTER TABLE recipes ADD COLUMN source_id TEXT;
   ALTER TABLE recipes ADD COLUMN source_page TEXT NOT NULL DEFAULT '';
   `,
+  // 2026-11-27: favorite places (where I usually shop), first in Sold at.
+  `ALTER TABLE stores ADD COLUMN favorite INTEGER NOT NULL DEFAULT 0;`,
 ];
 
 export type DB = DatabaseSync;
@@ -462,6 +464,7 @@ export function loadState(db: DB): State {
       cost: r.cost,
       status: r.status,
       rating: r.rating,
+      favorite: !!r.favorite,
       locations: JSON.parse(r.locations),
       links: JSON.parse(r.links),
       tagIds: tagsOf.get(`stores:${r.id}`) ?? [],
@@ -603,6 +606,7 @@ export const save = {
       cost: x.cost,
       status: x.status,
       rating: x.rating,
+      favorite: x.favorite ? 1 : 0,
       locations: JSON.stringify(x.locations),
       links: JSON.stringify(x.links),
     });

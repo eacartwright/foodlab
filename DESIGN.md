@@ -169,6 +169,7 @@ from the hot bar, so it's one record, not two. Still `stores` in the code, table
 | `cost` | $ · $$ · $$$. |
 | `status` | **Been** · **Want to go** (stored as tried / want), blank = not said (most stores). |
 | `rating` | ❤️ · 👍 · 👎, like everything else. |
+| `favorite` | (2026-11-27, migration 23) Where I usually shop: **☆ Favorite** at the top of the page. Favorites come first, then the rest, each by name, in Sold at (product page, Quick add) and the Products store filter. |
 | `locations` | (2026-10-31) Where it is: one for most places, several for a chain. Each has a `name` that tells it apart ("Pittsford"; blank when there's one), `address` (🗺️ Map ↗), `phone` (📞 Call) and `hours` (text, as the place says them). Products and dishes point at the place, not a location: "sold at Wegmans" is what I ask. Migration 12 moved a place's address / phone / hours into its first location. |
 | `links` | Its site, Find Me Gluten Free, a menu. |
 | `tags`, `notes` | |

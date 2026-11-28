@@ -269,7 +269,7 @@ export function QuickAdd({ init }: { init: QuickAddInit }) {
                 <Field label="Sold at">
                   <MultiPicker
                     values={storeIds}
-                    options={view.stores.map((s) => ({ id: s.id, label: s.name }))}
+                    options={view.storesFavFirst.map((s) => ({ id: s.id, label: s.name }))}
                     onChange={setStoreIds}
                     onCreate={ensureStore}
                     placeholder=""

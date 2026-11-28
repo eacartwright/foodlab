@@ -275,4 +275,9 @@ tombstones (`deleted`), restorable with Undo or the page's Restore.
   (`newProductFor`, `splitBrand`: "wegman" → Wegmans 2% milk, sold at Wegmans); This time isn't focused
   on opening (the phone's keyboard); **Open food** and **Open product** links. 132 tests; browser-checked
   at phone width on a copy of the live DB.
+- 2026-11-27: new products start as Want to try unless rated (406 unrated, unlogged live products switched
+  through the API); Products has the Tried or not filter. **Favorite places** (`Store.favorite`, migration 23,
+  `View.storesFavFirst`): ☆ Favorite on a place, first in Sold at. Grocery rows: Open food / Open product are
+  buttons; the dragged row's ring is a rounded box-shadow (the outline's corners were clipped). 134 tests;
+  migration checked on a copy of the live DB; browser-checked.
 - **Next:** AI recipes (DESIGN.md §5.14). M6 (weights) after.
