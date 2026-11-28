@@ -52,6 +52,8 @@ export function WikiAbout({ url }: { url: string }) {
 /** The Wikipedia field: the article, or Find (search, prefilled with the name) and paste. */
 export function WikiField({ value, name, onChange }: { value: string; name: string; onChange: (url: string) => void }) {
   const [finding, setFinding] = useState(false);
+  const [editing, setEditing] = useState(false);
+  if (editing) return <WikiLinkEdit value={value} onSave={(u) => (u !== value && onChange(u), setEditing(false))} onCancel={() => setEditing(false)} />;
   if (finding) return <WikiFinder name={name} onPick={(u) => (onChange(u), setFinding(false))} onCancel={() => setFinding(false)} />;
   if (!value)
     return (
@@ -64,6 +66,9 @@ export function WikiField({ value, name, onChange }: { value: string; name: stri
       <a href={value} target="_blank" rel="noopener noreferrer">
         {wikiName(value)} ↗
       </a>
+      <button className="btn icon subtle" aria-label="Edit the Wikipedia link" title="Edit" onClick={() => setEditing(true)}>
+        ✏️
+      </button>
       <button className="btn subtle" onClick={() => setFinding(true)}>
         Change
       </button>
@@ -71,6 +76,34 @@ export function WikiField({ value, name, onChange }: { value: string; name: stri
         ✕
       </button>
     </span>
+  );
+}
+
+/** The link itself, to fix by hand: Enter or leaving saves a Wikipedia article's link, emptied removes it, Esc cancels. */
+function WikiLinkEdit({ value, onSave, onCancel }: { value: string; onSave: (url: string) => void; onCancel: () => void }) {
+  const [text, setText] = useState(value);
+  const article = wikiArticle(text);
+  const commit = () => {
+    if (!text.trim()) onSave("");
+    else if (article) onSave(wikiUrl(article));
+  };
+  return (
+    <div className="stack-sm">
+      <input
+        className="input"
+        inputMode="url"
+        aria-label="Wikipedia link"
+        autoFocus
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        onBlur={() => (text.trim() && !article ? onCancel() : commit())}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") commit();
+          if (e.key === "Escape") onCancel();
+        }}
+      />
+      {text.trim() && !article && <p className="warn small">Not a Wikipedia article's link.</p>}
+    </div>
   );
 }
 
