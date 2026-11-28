@@ -433,6 +433,7 @@ export const blank = {
   products: (id: Id, name: string, now = Date.now()): Product => ({
     ...EMPTY_BASE(id, now),
     ...EMPTY_EATING(),
+    status: "want", // a new product is something to try until it's tried or rated
     name,
     foodId: null,
     notFood: false,
