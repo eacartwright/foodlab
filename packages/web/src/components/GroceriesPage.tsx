@@ -170,6 +170,12 @@ export function GroceriesPage() {
           <li key={g.id} className="got">
             <input type="checkbox" checked aria-label={`Not got: ${label(g)}`} title="Not got: back on the list" onChange={() => ungotGrocery(g)} />
             <span className="grocery-name">{label(g)}</span>
+            {/* The PLU stays readable, not struck through: it's typed in at the checkout. */}
+            {view.food(g.foodId)?.plu && (
+              <span className="grocery-plu" title="PLU">
+                {view.food(g.foodId)!.plu}
+              </span>
+            )}
           </li>
         ))}
       </ul>
